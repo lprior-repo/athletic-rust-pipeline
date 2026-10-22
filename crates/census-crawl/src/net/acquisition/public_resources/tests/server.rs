@@ -15,15 +15,6 @@ pub(super) struct Reply<'a> {
 }
 
 impl<'a> Reply<'a> {
-    pub(super) fn robots(body: &'a [u8]) -> Self {
-        Self {
-            path: "/robots.txt",
-            status: 200,
-            body,
-            content_type: "text/plain",
-            headers: "",
-        }
-    }
     pub(super) fn directory(body: &'a [u8]) -> Self {
         Self {
             path: "/teams",

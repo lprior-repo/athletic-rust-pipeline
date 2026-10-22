@@ -236,7 +236,7 @@ async fn minted_genuine_observed_packet_survives_review_current_cold_and_store_f
     check!(eq; repeated.receipt(), &receipt);
     let cold = freeze(&fixture.store, &held)?;
     check!(eq; cold.bytes(), original.bytes());
-    check!(eq; fixture.fetcher.stats().await.physical_requests(), 3);
+    check!(eq; fixture.fetcher.stats().await.physical_requests(), 2);
     let Fixture {
         root,
         store,

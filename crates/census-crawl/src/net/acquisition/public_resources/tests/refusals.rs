@@ -44,19 +44,26 @@ async fn changed_directory_headers_or_intent_refuse_before_registration_or_http(
 }
 
 #[tokio::test]
-async fn separately_bound_robots_headers_refuse_before_either_root_is_registered() -> TestResult {
+async fn historical_robots_headers_are_not_current_directory_authority() -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     let robots = FetchOptions {
         headers: vec![("accept".into(), "text/plain".into())],
         ..FetchOptions::default()
     };
     let fixture = Fixture::with_robots_options(&listener, &robots)?;
-    let before = Witness::capture(&fixture.store)?;
-    check!(matches!(
-        fixture.acquire().await,
-        Err(FetchError::Capture(CaptureTransportError::RequestMismatch))
-    ));
-    unchanged(&fixture, &listener, &before).await
+    let fetch =
+        async { Ok::<_, Box<dyn std::error::Error + Send + Sync>>(fixture.acquire().await?) };
+    let (requests, captured) = tokio::try_join!(
+        server::serve(listener, [server::Reply::directory(DIRECTORY)]),
+        fetch,
+    )?;
+    check!(eq; requests.len(), 1);
+    check!(eq; captured.directory().capture().body, DIRECTORY);
+    assertions::no_directory_attempt(
+        &fixture.store,
+        &fixture.work(PublicResourceRootKindV1::Robots)?,
+    )?;
+    Ok(())
 }
 
 async fn unchanged(fixture: &Fixture, listener: &TcpListener, before: &Witness) -> TestResult {

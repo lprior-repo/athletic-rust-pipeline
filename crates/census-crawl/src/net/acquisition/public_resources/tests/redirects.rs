@@ -16,16 +16,12 @@ async fn allowed_redirect_retains_every_actual_hop_and_replays_without_an_extra_
     let (requests, captured) = tokio::try_join!(
         serve(
             listener,
-            [
-                Reply::robots(ALLOW),
-                Reply::redirect("Location: /teams\r\n"),
-                final_reply,
-            ]
+            [Reply::redirect("Location: /teams\r\n"), final_reply,]
         ),
         fetch
     )?;
-    check!(eq; requests.len(), 3);
-    check!(eq; fixture.fetcher.stats().await.physical_requests(), 3);
+    check!(eq; requests.len(), 2);
+    check!(eq; fixture.fetcher.stats().await.physical_requests(), 2);
     exact_hop(
         captured.directory(),
         0,
@@ -62,33 +58,25 @@ async fn allowed_redirect_retains_every_actual_hop_and_replays_without_an_extra_
     let replayed = fixture.acquire().await?;
     check!(eq; retained(&fixture.store, replayed.directory())?, original);
     check!(eq; Witness::capture(&fixture.store)?, before);
-    check!(eq; fixture.fetcher.stats().await.physical_requests(), 3);
+    check!(eq; fixture.fetcher.stats().await.physical_requests(), 2);
     Ok(())
 }
 
 #[tokio::test]
-async fn disallowed_redirect_is_refused_before_the_target_dispatch() -> TestResult {
+async fn login_redirect_is_refused_before_the_target_dispatch() -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     let fixture = Fixture::new(&listener)?;
     let fetch =
         async { Ok::<_, Box<dyn std::error::Error + Send + Sync>>(fixture.acquire().await) };
     let (requests, result) = tokio::try_join!(
-        serve(
-            listener,
-            [
-                Reply::robots(ALLOW),
-                Reply::redirect("Location: /private\r\n"),
-            ]
-        ),
+        serve(listener, [Reply::redirect("Location: /login\r\n"),]),
         fetch
     )?;
-    let digest = crate::net::cache::content_digest(ALLOW);
     check!(
-        matches!(result, Err(FetchError::Policy { detail }) if detail ==
-        format!("robots disallows {ORIGIN}/private; policy={ORIGIN}/robots.txt sha256={digest}"))
+        matches!(result, Err(FetchError::Policy { detail }) if detail.contains("authentication"))
     );
-    check!(eq; requests.len(), 2);
-    check!(eq; fixture.fetcher.stats().await.physical_requests(), 2);
+    check!(eq; requests.len(), 1);
+    check!(eq; fixture.fetcher.stats().await.physical_requests(), 1);
     let work = fixture.work(PublicResourceRootKindV1::MileSplitTeamDirectory)?;
     let prefix = format!("work/{}/attempt/1/dispatch/", work.id()?);
     let keys = fixture
@@ -104,19 +92,13 @@ async fn disallowed_redirect_is_refused_before_the_target_dispatch() -> TestResu
 }
 
 #[tokio::test]
-async fn robots_allowed_path_cannot_substitute_the_native_directory_resource() -> TestResult {
+async fn same_origin_path_cannot_substitute_the_native_directory_resource() -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     let fixture = Fixture::new(&listener)?;
     let fetch =
         async { Ok::<_, Box<dyn std::error::Error + Send + Sync>>(fixture.acquire().await) };
     let (requests, result) = tokio::try_join!(
-        serve(
-            listener,
-            [
-                Reply::robots(ALLOW),
-                Reply::redirect("Location: /teams/next\r\n")
-            ],
-        ),
+        serve(listener, [Reply::redirect("Location: /teams/next\r\n")],),
         fetch,
     )?;
     check!(
@@ -124,8 +106,8 @@ async fn robots_allowed_path_cannot_substitute_the_native_directory_resource() -
         census_store::StoreError::Capture(census_store::CaptureError::Domain(
             CaptureDomainError::RequestTargetMismatch))))
     );
-    check!(eq; requests.len(), 2);
-    check!(eq; fixture.fetcher.stats().await.physical_requests(), 2);
+    check!(eq; requests.len(), 1);
+    check!(eq; fixture.fetcher.stats().await.physical_requests(), 1);
     let work = fixture.work(PublicResourceRootKindV1::MileSplitTeamDirectory)?;
     let prefix = format!("work/{}/attempt/1/dispatch/", work.id()?);
     let keys = fixture

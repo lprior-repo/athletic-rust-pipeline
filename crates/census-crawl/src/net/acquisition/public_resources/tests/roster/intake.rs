@@ -41,7 +41,6 @@ async fn acquire_pair(
         serve(
             listener,
             [
-                Reply::robots(ALLOW),
                 Reply::directory(INDEX),
                 Reply {
                     content_type,
@@ -51,7 +50,7 @@ async fn acquire_pair(
         ),
         acquire
     )?;
-    check!(eq; requests.len(), 3);
+    check!(eq; requests.len(), 2);
     check!(eq; pair.0.directory().capture().body.as_slice(), INDEX);
     check!(eq; pair.1.capture().body.as_slice(), ROSTER);
     exact_hop(
@@ -117,7 +116,7 @@ fn mint(
 }
 
 #[tokio::test]
-async fn genuine_source_bodies_mint_observed_school_and_cold_replay_without_fourth_http(
+async fn genuine_source_bodies_mint_observed_school_and_cold_replay_without_third_http(
 ) -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     let fixture = Fixture::new(&listener)?;
@@ -145,7 +144,7 @@ async fn genuine_source_bodies_mint_observed_school_and_cold_replay_without_four
     check!(repeated.repeated());
     check!(eq; repeated.receipt(), &held.receipt);
     check!(eq; leaves::verify_root(&fixture.store, &held.packet, &held.bytes)?, held.root);
-    check!(eq; fixture.fetcher.stats().await.physical_requests(), 3);
+    check!(eq; fixture.fetcher.stats().await.physical_requests(), 2);
     check!(eq; Witness::capture(&fixture.store)?, held.witness);
     Ok(())
 }
@@ -166,7 +165,7 @@ async fn actual_non_html_roster_header_cannot_mint_a_school_packet() -> TestResu
         )?
         .is_empty());
     check!(eq; Witness::capture(&fixture.store)?, held);
-    check!(eq; fixture.fetcher.stats().await.physical_requests(), 3);
+    check!(eq; fixture.fetcher.stats().await.physical_requests(), 2);
     Ok(())
 }
 
@@ -182,6 +181,6 @@ async fn changed_real_packet_body_or_terminal_receipt_cannot_be_decoded_as_proof
     let held = Witness::capture(&fixture.store)?;
     leaves::refuse_changed_leaf(&fixture.store, &packet)?;
     check!(eq; Witness::capture(&fixture.store)?, held);
-    check!(eq; fixture.fetcher.stats().await.physical_requests(), 3);
+    check!(eq; fixture.fetcher.stats().await.physical_requests(), 2);
     Ok(())
 }

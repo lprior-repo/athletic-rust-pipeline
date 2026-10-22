@@ -5,6 +5,14 @@ Final goal: [spec v2](docs/specifications/athletic-recruiting-end-vision-spec-v2
 under [ADR-038](docs/adr/ADR-038-selected-profile-reusable-production-state.md).
 One current runtime; no legacy execution or shims. Acceptance requires evidence.
 
+## Runtime source access
+
+Do not add runtime robots.txt fetches, parsing, allow/disallow enforcement, freshness
+gates or crawl-delay policy. Historical robots captures, bindings and receipts remain
+immutable evidence, not current authority. Preserve authentication, CAPTCHA, paywall
+and access-denial stops, configured pacing/rate limits, SSRF/redirect checks and secrets.
+No global bypass, denial retry, alternate transport or implicit history rewrite.
+
 ## Startup and commands
 
 Every session/reset: read `rust-contract`, `holzman-rust`, `async-rust-reviewer`,

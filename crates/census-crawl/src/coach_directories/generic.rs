@@ -63,11 +63,7 @@ async fn fetch(
         crate::school_sites::persist_contact_prefix(ctx, school, checkpoint)?;
         return Ok(Vec::new());
     }
-    let outcome = match ctx
-        .fetcher
-        .get_robots_checked(url, &ctx.fetch_options())
-        .await
-    {
+    let outcome = match ctx.fetcher.get_public_http(url, &ctx.fetch_options()).await {
         Ok(outcome) => outcome,
         Err(error) => {
             let attempt = ContactResearchAttempt {

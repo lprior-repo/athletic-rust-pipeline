@@ -15,6 +15,7 @@ pub(super) enum ResponseUrl<'a> {
 
 #[derive(Default)]
 pub(super) struct Metadata<'a> {
+    pub status: Option<u16>,
     pub headers: Option<&'a [(String, String)]>,
     pub content_type: Option<&'a str>,
     pub response_url: ResponseUrl<'a>,
@@ -64,7 +65,7 @@ pub(super) fn seed_response(
     std::fs::create_dir_all(cache)?;
     std::fs::write(cache.join(format!("{key}.body")), body)?;
     let mut meta = json!({
-        "url": url, "method": "GET", "status": 200,
+        "url": url, "method": "GET", "status": metadata.status.map_or(200, |status| status),
         "content_digest": format!("{:x}", Sha256::digest(body)),
         "bytes": body.len(), "fetched_at": acquired_at,
     });

@@ -81,7 +81,7 @@ impl Run<'_> {
             allow_not_found: false,
             headers: Vec::new(),
         };
-        match self.fetcher.get_robots_checked(url, &options).await {
+        match self.fetcher.get_public_http(url, &options).await {
             Ok(capture) => self.capture(capture),
             Err(error) => {
                 self.record_issue(url, &format!("fetch: {error}"))?;

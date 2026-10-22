@@ -127,7 +127,6 @@ fn verify_artifacts(out: &Path, acquired_at: &str) -> TestResult {
 
 fn seed(cache: &Path, acquired_at: &str) -> TestResult {
     for (path, body) in [
-        ("/robots.txt", b"User-agent: *\nAllow: /\n".as_slice()),
         (
             "/bad",
             b"<template><a href='/must-not-follow'>Coaches</a>".as_slice(),

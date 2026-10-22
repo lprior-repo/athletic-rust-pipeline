@@ -88,20 +88,6 @@ fn seed_cache(dir: &std::path::Path) -> TestResult {
             ..crate::capture_cache::Metadata::default()
         },
     )?;
-    seed_robots(dir, b"User-agent: *\nAllow: /\n")
-}
-
-fn seed_robots(dir: &std::path::Path, body: &[u8]) -> TestResult {
-    crate::capture_cache::seed_response(
-        dir,
-        "https://cacmustangs.org/robots.txt",
-        body,
-        &census_crawl::net::now_iso8601(),
-        crate::capture_cache::Metadata {
-            content_type: Some("text/plain"),
-            ..crate::capture_cache::Metadata::default()
-        },
-    )?;
     Ok(())
 }
 
@@ -174,10 +160,19 @@ async fn default_jurisdiction_cannot_relabel_an_explicit_foreign_queue_subject()
 }
 
 #[tokio::test]
-async fn disallowed_canonical_contact_capture_remains_blocked() -> TestResult {
+async fn denied_canonical_contact_capture_remains_blocked() -> TestResult {
     let year = SchoolYear::new(2026).ok_or("year")?;
     let (_dir, store, fetcher, args) = setup(&[NAME], year)?;
-    seed_robots(fetcher.cache_dir(), b"User-agent: *\nDisallow: /\n")?;
+    crate::capture_cache::seed_response(
+        fetcher.cache_dir(),
+        URL,
+        b"Access denied",
+        "2026-10-07T12:34:56Z",
+        crate::capture_cache::Metadata {
+            status: Some(403),
+            ..crate::capture_cache::Metadata::default()
+        },
+    )?;
     let report = run(&fetcher, &args, &store).await?;
     check!(eq; (report.planned, report.crawled, report.failed, report.emails), (1, 1, 1, 0));
     let school = store
@@ -187,7 +182,7 @@ async fn disallowed_canonical_contact_capture_remains_blocked() -> TestResult {
         .ok_or("retained school")?;
     check!(
         school.mailbox_claims.is_empty(),
-        "robots refusal cannot create contact claims"
+        "access denial cannot create contact claims"
     );
     check!(eq; school_mailbox_research(&school, SchoolMailboxPurpose::SchoolOffice, year), ContactResearchOutcome::Blocked);
     Ok(())

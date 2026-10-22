@@ -14,7 +14,9 @@ impl Fetcher {
             .require_cache_root(acquisition.store, self.cache_dir())?;
         let reference = match directory.directory.provenance() {
             CaptureProvenanceView::Retained { occurrence, .. } => occurrence,
-            _ => return Err(policy::refusal("roster directory capture is not retained").into()),
+            _ => {
+                return Err(public_http::refusal("roster directory capture is not retained").into())
+            }
         };
         let evidence = acquisition.owner.directory_evidence(
             acquisition.store,
@@ -24,15 +26,8 @@ impl Fetcher {
         let assessed = assess_directory_roster_child(&evidence, &directory.directory, team_id)?;
         let prepared = acquisition.store.prepare_public_roster_child(&assessed)?;
         let options = self.checked_acquisition_options(prepared.work(), options)?;
-        let robots = retained_robots(acquisition, &directory.robots)?;
-        let request = prepared.work().request();
-        let target = policy::parse_url(request.original_url())?;
-        let rules = policy::Policy::from_capture(
-            &target,
-            robots.capture(),
-            request.effective_user_agent(),
-        )?;
-        rules.check(target.as_str())?;
+        let origin = public_http::parse_url(prepared.work().request().original_url())?.origin();
+        let scope = TransportScope::PublicHttp(&origin);
         let owned = acquisition.store.register_public_roster_child(prepared)?;
         let decision = acquisition
             .store
@@ -47,62 +42,12 @@ impl Fetcher {
                 census_store::ExactBodySource::NoneSupplied,
             )?,
             _ => {
-                self.acquire_public_roster(acquisition, owned, &options, &robots, &rules)
+                self.get_acquisition_with_scope(acquisition.store, owned, &options, scope)
                     .await?
             }
         };
         let captured = super::super::accepted(captured, &options)?;
-        replay::verified_policy(&robots, &captured, &rules)?;
+        replay::verified_scope(&captured, scope)?;
         Ok(captured)
     }
-
-    async fn acquire_public_roster(
-        &self,
-        acquisition: &PublicResourceAcquisition<'_>,
-        owned: OwnedAcquisitionWork,
-        options: &FetchOptions,
-        robots: &CapturedFetch,
-        rules: &policy::Policy,
-    ) -> Result<CapturedFetch, FetchError> {
-        if !policy::capture_is_current(robots.capture(), chrono::Utc::now())? {
-            return Err(policy::refusal("owned robots policy is no longer current"));
-        }
-        let target = policy::parse_url(owned.work().request().original_url())?;
-        self.raise_robots_delay(
-            target
-                .host_str()
-                .ok_or_else(|| policy::refusal("roster host absent"))?,
-            rules.delay(),
-        )
-        .await?;
-        self.get_acquisition_with_admission(
-            acquisition.store,
-            owned,
-            options,
-            Admission::Checked(rules),
-        )
-        .await
-    }
-}
-
-fn retained_robots(
-    acquisition: &PublicResourceAcquisition<'_>,
-    captured: &CapturedFetch,
-) -> Result<CapturedFetch, FetchError> {
-    let retained = captured
-        .retained_observed()?
-        .ok_or(CaptureTransportError::BackingUnavailable)?;
-    let work = acquisition
-        .owner
-        .for_root(acquisition.store, PublicResourceRootKindV1::Robots)?;
-    let id = work.id().map_err(census_store::CaptureError::Domain)?;
-    if retained.occurrence().attempt().work_id() != &id
-        || retained.occurrence().attempt().store_identity() != work.slot().store_identity()
-        || retained.occurrence() != retained.original()
-    {
-        return Err(policy::refusal(
-            "roster robots capture differs from owned root",
-        ));
-    }
-    super::super::read::replay(acquisition.store, retained.occurrence())
 }

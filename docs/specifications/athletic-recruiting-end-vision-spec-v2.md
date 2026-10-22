@@ -26,6 +26,15 @@ This specification defines a reusable public-source database for NCAA-relevant h
 - [18 Implementation handoff and acceptance checklist](#18-implementation-handoff-and-acceptance-checklist)
 - [19 Five state rollout appendix](#19-five-state-rollout-appendix)
 
+Current source-access decision, 2026-10-22: runtime acquisition must not fetch or parse
+robots.txt, enforce its directives or derive pacing from it. Historical robots observations,
+captures, declaration bindings and receipts retain their original meaning and bytes; they
+are not present-day admission authority. This supersedes robots-based runtime requirements,
+not authentication, CAPTCHA, paywall/access-denial stops, configured pacing/rate limits,
+SSRF, redirect or secret protections. Do not retry a denied source or change transport to
+bypass a stop. The historical source findings below remain evidence, not a new permission
+or a claim that acquisition or qualification is complete.
+
 ## 1 Purpose and product scope
 
 Build a persistent, public-source-discovered high-school Track and Field and Cross Country database that supports NCAA college recruiting and gets more useful with every run. Discover athletes across the configured geography and graduating classes, identify them correctly, select their best valid performance for each comparable event, and connect them to their school, school address, and current public professional coaching contacts. Produce a usable recruiting workbook and machine-readable datasets with source evidence and honest gaps.

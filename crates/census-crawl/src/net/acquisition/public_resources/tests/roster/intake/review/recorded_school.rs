@@ -93,7 +93,7 @@ async fn genuine_owned_school_recorded_and_original_readers_preserve_current_col
     let before = Witness::capture(&fixture.store)?;
     observe(&fixture.store, &held)?;
     check!(eq; Witness::capture(&fixture.store)?, before);
-    check!(eq; fixture.fetcher.stats().await.physical_requests(), 3);
+    check!(eq; fixture.fetcher.stats().await.physical_requests(), 2);
     let Fixture {
         root,
         store,

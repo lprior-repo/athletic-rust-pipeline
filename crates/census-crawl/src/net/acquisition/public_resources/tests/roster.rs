@@ -33,17 +33,10 @@ async fn owned_directory_child_uses_exact_request_and_cold_replays_original_byte
         Ok::<_, Box<dyn std::error::Error + Send + Sync>>((directory, child))
     };
     let (requests, (_, child)) = tokio::try_join!(
-        serve(
-            listener,
-            [
-                Reply::robots(ALLOW),
-                Reply::directory(INDEX),
-                roster_reply(),
-            ]
-        ),
+        serve(listener, [Reply::directory(INDEX), roster_reply(),]),
         fetch
     )?;
-    check!(eq; requests.len(), 3);
+    check!(eq; requests.len(), 2);
     check!(eq; child.capture().body, ROSTER);
     check!(!child.capture().from_cache);
     exact_hop(
@@ -85,7 +78,7 @@ async fn owned_directory_child_uses_exact_request_and_cold_replays_original_byte
     check!(replayed.capture().from_cache);
     check!(eq; retained(&fixture.store, &replayed)?, original);
     check!(eq; fixture.store.receipt(&operation)?, Some(receipt));
-    check!(eq; fixture.fetcher.stats().await.physical_requests(), 3);
+    check!(eq; fixture.fetcher.stats().await.physical_requests(), 2);
     check!(eq; Witness::capture(&fixture.store)?, before);
     Ok(())
 }
@@ -96,10 +89,7 @@ async fn altered_child_options_or_unpublished_native_id_refuse_without_writes() 
     let fixture = Fixture::new(&listener)?;
     let fetch =
         async { Ok::<_, Box<dyn std::error::Error + Send + Sync>>(fixture.acquire().await?) };
-    let (_, directory) = tokio::try_join!(
-        serve(listener, [Reply::robots(ALLOW), Reply::directory(INDEX)]),
-        fetch,
-    )?;
+    let (_, directory) = tokio::try_join!(serve(listener, [Reply::directory(INDEX)]), fetch,)?;
     let before = Witness::capture(&fixture.store)?;
     for options in [
         FetchOptions {
@@ -131,37 +121,63 @@ async fn altered_child_options_or_unpublished_native_id_refuse_without_writes() 
             .is_err());
         check!(eq; Witness::capture(&fixture.store)?, before);
     }
-    check!(eq; fixture.fetcher.stats().await.physical_requests(), 2);
+    check!(eq; fixture.fetcher.stats().await.physical_requests(), 1);
     Ok(())
 }
 
 #[tokio::test]
-async fn owned_policy_that_disallows_roster_refuses_before_child_registration() -> TestResult {
+async fn denied_roster_stops_without_retrying_or_replacing_directory() -> TestResult {
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     let fixture = Fixture::new(&listener)?;
-    let policy =
-        b"User-agent: *\nAllow: /teams\nDisallow: /teams/12439-detroit-catholic-central/roster\n";
-    let fetch =
-        async { Ok::<_, Box<dyn std::error::Error + Send + Sync>>(fixture.acquire().await?) };
-    let (_, directory) = tokio::try_join!(
-        serve(listener, [Reply::robots(policy), Reply::directory(INDEX)]),
-        fetch,
+    let fetch = async {
+        let directory = fixture.acquire().await?;
+        let original = retained(&fixture.store, directory.directory())?;
+        let result = fixture
+            .fetcher
+            .get_public_resource_roster(
+                &fixture.context(),
+                &directory,
+                TEAM,
+                &FetchOptions::default(),
+            )
+            .await;
+        check!(matches!(
+            result,
+            Err(crate::CrawlError::Fetch(FetchError::Http {
+                status: 403,
+                ..
+            }))
+        ));
+        check!(eq; retained(&fixture.store, directory.directory())?, original);
+        let before = Witness::capture(&fixture.store)?;
+        check!(fixture
+            .fetcher
+            .get_public_resource_roster(
+                &fixture.context(),
+                &directory,
+                TEAM,
+                &FetchOptions::default(),
+            )
+            .await
+            .is_err());
+        check!(eq; Witness::capture(&fixture.store)?, before);
+        Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
+    };
+    let (requests, ()) = tokio::try_join!(
+        serve(
+            listener,
+            [
+                Reply::directory(INDEX),
+                Reply {
+                    status: 403,
+                    body: b"denied",
+                    ..roster_reply()
+                },
+            ]
+        ),
+        fetch
     )?;
-    let before = Witness::capture(&fixture.store)?;
-    let result = fixture
-        .fetcher
-        .get_public_resource_roster(
-            &fixture.context(),
-            &directory,
-            TEAM,
-            &FetchOptions::default(),
-        )
-        .await;
-    check!(
-        matches!(result, Err(crate::CrawlError::Fetch(FetchError::Policy { detail }))
-        if detail.starts_with("robots disallows "))
-    );
-    check!(eq; Witness::capture(&fixture.store)?, before);
+    check!(eq; requests.len(), 2);
     check!(eq; fixture.fetcher.stats().await.physical_requests(), 2);
     Ok(())
 }
@@ -171,10 +187,7 @@ async fn foreign_owned_directory_cannot_create_roster_child_in_another_store() -
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     let first = Fixture::new(&listener)?;
     let fetch = async { Ok::<_, Box<dyn std::error::Error + Send + Sync>>(first.acquire().await?) };
-    let (_, directory) = tokio::try_join!(
-        serve(listener, [Reply::robots(ALLOW), Reply::directory(INDEX)]),
-        fetch,
-    )?;
+    let (_, directory) = tokio::try_join!(serve(listener, [Reply::directory(INDEX)]), fetch,)?;
     let unused = TcpListener::bind("127.0.0.1:0").await?;
     let second = Fixture::new(&unused)?;
     let before = Witness::capture(&second.store)?;

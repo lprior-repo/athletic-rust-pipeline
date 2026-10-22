@@ -11,24 +11,36 @@ impl Fetcher {
         work: OwnedAcquisitionWork,
         options: &FetchOptions,
     ) -> Result<CapturedFetch, FetchError> {
-        self.get_acquisition_with_admission(
+        self.get_acquisition_with_scope(
             store,
             work,
             options,
-            crate::net::robots::Admission::Unrestricted,
+            crate::net::public_http::TransportScope::Provider,
         )
         .await
     }
 
-    pub(super) async fn get_acquisition_with_admission(
+    pub(super) async fn get_acquisition_with_scope(
         &self,
         store: &Store,
         work: OwnedAcquisitionWork,
         options: &FetchOptions,
-        admission: crate::net::robots::Admission<'_>,
+        scope: crate::net::public_http::TransportScope<'_>,
     ) -> Result<CapturedFetch, FetchError> {
+        if work
+            .work()
+            .slot()
+            .public_resource()
+            .is_some_and(|resource| {
+                resource.kind() == census_domain::model::PublicSourceResourceKindV1::Robots
+            })
+        {
+            return Err(FetchError::Policy {
+                detail: "robots.txt dispatch is disabled".to_owned(),
+            });
+        }
         let url = work.work().request().original_url().to_owned();
-        admission.check(&url)?;
+        scope.check(&url)?;
         let options = self.checked_acquisition_options(work.work(), options)?;
         let options = options.as_ref();
         let mut budget = AcquisitionReadBudget::for_work();
@@ -57,7 +69,7 @@ impl Fetcher {
             AcquireDecision::Ready
             | AcquireDecision::ResumeReserved(_)
             | AcquireDecision::RetryOwed(_) => {
-                self.acquire_registered(store, work, &url, options, admission)
+                self.acquire_registered(store, work, &url, options, scope)
                     .await
             }
             AcquireDecision::Settled(_) => Err(CaptureTransportError::Settled.into()),
@@ -66,7 +78,7 @@ impl Fetcher {
             }
             AcquireDecision::Interrupted => Err(CaptureTransportError::Interrupted.into()),
         }?;
-        admission.check(
+        scope.check(
             captured
                 .capture()
                 .response_url
@@ -104,14 +116,14 @@ impl Fetcher {
         Ok(options)
     }
 
-    #[tracing::instrument(skip(self, store, work, options, admission))]
+    #[tracing::instrument(skip(self, store, work, options, scope))]
     async fn acquire_registered(
         &self,
         store: &Store,
         work: OwnedAcquisitionWork,
         url: &str,
         options: &FetchOptions,
-        admission: crate::net::robots::Admission<'_>,
+        scope: crate::net::public_http::TransportScope<'_>,
     ) -> Result<CapturedFetch, FetchError> {
         let representation =
             super::super::execute::representation::canonical_request(url, &options.headers)?;
@@ -146,14 +158,14 @@ impl Fetcher {
         #[cfg(test)]
         session.set_interruption(self.capture_interrupt);
         let fetched = self
-            .fetch_with_admission(
+            .fetch_with_scope(
                 "GET",
                 url,
                 None,
                 options,
                 super::super::REQUEST_TIMEOUT_SECS,
                 &mut session,
-                admission,
+                scope,
             )
             .await;
         finish_acquisition(session, fetched)

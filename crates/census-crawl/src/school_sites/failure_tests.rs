@@ -33,13 +33,6 @@ async fn fetch_admits_exact_school_page_budget_and_refuses_one_more_byte() -> Te
         vec!["school.example".to_owned()],
     )?
     .with_offline(true);
-    cache(
-        &fetcher,
-        "https://school.example/robots.txt",
-        "https://school.example/robots.txt",
-        b"",
-        200,
-    )?;
     let prefix = "<p>Head Track Coach Jane Doe</p><!--";
     let padding = crate::school_sites::MAX_PAGE_BYTES
         .checked_sub(prefix.len())
@@ -93,13 +86,6 @@ async fn malformed_page_keeps_error_and_capture_then_continues_admitted_pages() 
         vec!["school.org".to_owned()],
     )?
     .with_offline(true);
-    cache(
-        &fetcher,
-        "https://school.org/robots.txt",
-        "https://school.org/robots.txt",
-        b"",
-        200,
-    )?;
     let home = b"<p>Head Track Coach Jane Doe</p><a href='/bad'>Coaches</a><a href='/good'>Coaches</a><a href='/missing'>Coaches</a>";
     let good = b"<p>School office <a href='mailto:office@school.org'>office@school.org</a></p>";
     for (url, body) in [
@@ -148,13 +134,6 @@ async fn undecodable_home_retains_capture_and_stops_that_site_only() -> TestResu
         vec!["school.example".to_owned()],
     )?
     .with_offline(true);
-    cache(
-        &fetcher,
-        "https://school.example/robots.txt",
-        "https://school.example/robots.txt",
-        b"",
-        200,
-    )?;
     cache(
         &fetcher,
         "https://school.example/",

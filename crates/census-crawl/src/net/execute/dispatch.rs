@@ -22,14 +22,12 @@ impl Fetcher {
         }
         #[cfg(test)]
         session.prearm_timeout(url)?;
-        let started_at = if session.observed_http_required()
-            || matches!(plan.admission, crate::net::robots::Admission::Checked(_))
-        {
+        let started_at = if session.observed_http_required() {
             self.capture_clock.observed_at()
         } else {
             String::new()
         };
-        plan.admission.check_dispatch(url, &started_at)?;
+        plan.scope.check(url)?;
         let armed = session.arm(&request, &started_at)?;
         #[cfg(test)]
         session.interrupt(crate::net::acquisition::CaptureInterruption::AfterArm)?;

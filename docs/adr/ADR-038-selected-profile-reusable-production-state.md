@@ -178,6 +178,18 @@ qualified source`6a0c6ee7…5444f` remain exact predecessors with their native
 requirement, not relabeled optimized documents. The ledger records actual optimized
 configuration and original-A/G0/G1 CLI qualification; each later release must requalify.
 
+**2026-10-22 robots removal:** removing the runtime module changes the current
+210-file row-local source inventory to
+`821d84c35a0d0b3d6b620294b1695a24a1a14429f8c3aaec0bd292cb57c1235a`.
+Only the current expected source digest changes; original kernel documents,
+whole-document pins, interpreter ownership and context allowances remain intact.
+Removing the unused robots dependency and its orphaned dependencies changes
+Cargo.lock to `5cdfaee3a9d8ba1e9233d0176313f339a1364ba09d04e9e7794a7e79faed7265`.
+This does not admit that lock context as a historical replay lane or inherit any
+earlier native/release qualification. The exact resulting build still requires
+original-A, frozen/current readback and deployment qualification. The dated
+evidence ledger records executed checks and remaining boundaries.
+
 **Current-source native counterpart:** a native producer and optimized consumer
 of the same source revision have different compiler-profile documents. They
 cannot self-pin one another through a source-containing historical registry.

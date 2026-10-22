@@ -5,6 +5,15 @@ plan. [ARCHITECTURE.md](../ARCHITECTURE.md) owns mission, engineering policy and
 (§8–9), and [ADRs](adr/README.md) own decisions.
 [Verification evidence](VERIFICATION-EVIDENCE.md) records observed results; removed ledgers do not certify current behavior.
 
+Current source-access decision, 2026-10-22: runtime acquisition must not fetch or parse
+robots.txt, enforce its directives or derive pacing from it. Historical robots observations,
+captures, declaration bindings and receipts retain their original meaning and bytes; they
+are not present-day admission authority. This supersedes robots-based runtime requirements,
+not authentication, CAPTCHA, paywall/access-denial stops, configured pacing/rate limits,
+SSRF, redirect or secret protections. Do not retry a denied source or change transport to
+bypass a stop. The historical source findings below remain evidence, not a new permission
+or a claim that acquisition or qualification is complete.
+
 ## 1. Run boundary
 
 [ADR-038](adr/ADR-038-selected-profile-reusable-production-state.md) makes the complete October 11

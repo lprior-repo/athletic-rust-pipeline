@@ -103,7 +103,6 @@ fn seed(cache: &std::path::Path, first: &[u8]) -> TestResult {
     let now = census_crawl::net::now_iso8601();
     let good = b"<p>School office <a href='mailto:office@school.org'>office@school.org</a></p>";
     for (path, body) in [
-        ("/robots.txt", b"User-agent: *\nAllow: /\n".as_slice()),
         ("/bad", first),
         ("/good", good.as_slice()),
         ("/athletics", b"<p>No contact listing</p>".as_slice()),

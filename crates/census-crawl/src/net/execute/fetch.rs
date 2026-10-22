@@ -28,19 +28,19 @@ impl Fetcher {
         timeout_secs: u64,
         session: &mut crate::net::acquisition::CaptureSession<'_>,
     ) -> Result<FetchOutcome, FetchError> {
-        self.fetch_with_admission(
+        self.fetch_with_scope(
             method,
             url,
             body,
             options,
             timeout_secs,
             session,
-            crate::net::robots::Admission::Unrestricted,
+            crate::net::public_http::TransportScope::Provider,
         )
         .await
     }
 
-    pub(in crate::net) async fn fetch_with_admission(
+    pub(in crate::net) async fn fetch_with_scope(
         &self,
         method: &str,
         url: &str,
@@ -48,9 +48,9 @@ impl Fetcher {
         options: &FetchOptions,
         timeout_secs: u64,
         session: &mut crate::net::acquisition::CaptureSession<'_>,
-        admission: crate::net::robots::Admission<'_>,
+        scope: crate::net::public_http::TransportScope<'_>,
     ) -> Result<FetchOutcome, FetchError> {
-        admission.check(url)?;
+        scope.check(url)?;
         self.destination.validate_url(url)?;
         let representation = representation::canonical_request(url, &options.headers)?;
         let extra = representation::cache_extra(body.as_ref(), &representation);
@@ -63,7 +63,7 @@ impl Fetcher {
         };
         if !session.is_adopted() {
             if let Some(outcome) = self.reuse_cached(&mut cached, options, &key).await? {
-                return admission.accept(outcome);
+                return scope.accept(outcome);
             }
         }
         if self.offline {
@@ -73,7 +73,7 @@ impl Fetcher {
         let host = self.admit_transport_host(url).await?;
         let gate = self.host_gate(&host).await;
         let plan = FetchPlan {
-            admission,
+            scope,
             method,
             url,
             payload: body.as_ref().map(|(_, payload)| payload),
@@ -91,7 +91,7 @@ impl Fetcher {
         let outcome = self
             .fetch_admitted_transport(gate, &plan, session)
             .await
-            .and_then(|outcome| admission.accept(outcome));
+            .and_then(|outcome| scope.accept(outcome));
         self.record_transport(started, &outcome).await;
         outcome
     }
@@ -119,12 +119,14 @@ impl Fetcher {
         plan: &FetchPlan<'_>,
         session: &mut crate::net::acquisition::CaptureSession<'_>,
     ) -> Result<FetchOutcome, FetchError> {
-        if matches!(plan.admission, crate::net::robots::Admission::Checked(_))
-            && crate::registry::transport_for_host(plan.host)
-                == Some(crate::registry::TransportKind::Browser)
+        if matches!(
+            plan.scope,
+            crate::net::public_http::TransportScope::PublicHttp(_)
+        ) && crate::registry::transport_for_host(plan.host)
+            == Some(crate::registry::TransportKind::Browser)
         {
             return Err(FetchError::Policy {
-                detail: "robots-gated school research requires the public HTTP lane".to_owned(),
+                detail: "public-source research requires the public HTTP lane".to_owned(),
             });
         }
         match crate::registry::transport_for_host(plan.host) {

@@ -82,6 +82,6 @@ async fn actual_owned_root_refuses_corrupt_proof_and_exhausted_original_grants_w
     corrupted(&held)?;
     exhausted(&original, &held)?;
     check!(eq; Witness::capture(&fixture.store)?, before);
-    check!(eq; fixture.fetcher.stats().await.physical_requests(), 3);
+    check!(eq; fixture.fetcher.stats().await.physical_requests(), 2);
     Ok(())
 }

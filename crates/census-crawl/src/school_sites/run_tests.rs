@@ -33,13 +33,6 @@ async fn redirected_hits_bind_exact_captured_url_without_cross_capture_aliasing(
         vec!["school.example".to_owned()],
     )?
     .with_offline(true);
-    cache(
-        &fetcher,
-        "https://school.example/robots.txt",
-        "https://school.example/robots.txt",
-        b"",
-        200,
-    )?;
     let first = b"<table><tr><th>Sport</th><th>Coach</th><th>E-mail</th></tr><tr><td>Cross Country - Girls</td><td>Mary Ann Lee</td><td>mlee@school.example</td></tr></table><a href=\"/coaches\">Coaches</a>";
     let second = b"<table><tr><th>Sport</th><th>Coach</th><th>E-mail</th></tr><tr><td>Track - Boys</td><td>John Smith</td><td>jsmith@school.example</td></tr></table>";
     cache(
@@ -110,7 +103,6 @@ async fn lakeview_shaped_navigation_excludes_unrelated_sports_with_spare_budget(
         200,
     )?;
     for path in [
-        "/robots.txt",
         "/cross-country",
         "/activities/athletics/track",
         "/staff-directory",
@@ -170,7 +162,6 @@ async fn lotus_root_reaches_athletics_before_generic_staff_exhausts_budget() -> 
     cache(&fetcher, root, root, home, 200)?;
     cache(&fetcher, director, director, body, 200)?;
     for path in [
-        "robots.txt",
         "staff-resources/",
         "contact/",
         "staff/mehmet-nalcaci/",
@@ -231,7 +222,7 @@ async fn fragment_aliases_share_budget_without_rewriting_evidence_or_queries() -
         <a href="/contact?view=all#office">Contact</a>
     </nav>"#;
     cache(&fetcher, root, root, home, 200)?;
-    for url in ["https://school.example/robots.txt", contact, query] {
+    for url in [contact, query] {
         cache(&fetcher, url, url, b"", 200)?;
     }
     let row = QueueRow {

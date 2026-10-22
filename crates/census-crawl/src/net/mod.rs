@@ -32,10 +32,10 @@ pub use durable_capture::durable_capture_context;
 mod execute;
 mod latency;
 mod origin_locks;
+mod public_http;
 mod representation;
 mod request;
 mod restoration;
-mod robots;
 mod time;
 
 #[cfg(test)]

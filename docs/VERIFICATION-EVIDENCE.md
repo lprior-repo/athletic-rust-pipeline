@@ -3991,3 +3991,64 @@ Downloads workbook remains byte-identical at SHA256
 `1d9387b5c5722ded4d24448e049cf1e96101da71cc1e4df3c8532d908a01aab4`.
 Foreign Beads/candidate files, live state, keys, receipts and artifacts remain
 preserved. The fully populated five-state workbook goal remains incomplete.
+
+## 2026-10-22 — Runtime robots removal and retained HTTP evidence (v50b)
+
+The user-directed removal deletes runtime robots fetching, parsing, directive
+enforcement, freshness checks and derived delay, plus the unused dependency.
+Public HTTP retains same-origin scheme/host/port and credential validation,
+destination/browser-lane checks, login/redirect refusals and configured pacing.
+Actual HTTP denial and source-stop handling remain in the shared acquisition
+plane. Historical robots declaration metadata, captured bytes and receipts remain
+unchanged; registered historical Robots work now refuses before inspection,
+reservation, arming, recovery or dispatch. AGENTS.md and the active specification
+and plan record the decision.
+
+The cloud draft did not exercise the native toolchain. Main added the historical
+work regression and common transport guard, corrected service fixtures to use an
+actual 403 response, and corrected the denial test's assumption that a retained
+nonreusable response must be a successful Replay. The denial regression acquires
+each 401/403/429 once, checks the original body, normalized hop and terminal
+receipt, closes/reopens its isolated Store, and reads the same evidence with no
+new attempt, HTTP request or Store mutation. It does not dispatch a second 429
+or claim the transport owns automatic retries.
+
+Executed with `env -u CI tools/moon-local`, pinned Moon on PATH, build jobs four
+and test threads four unless specified. Logs are in
+`/tmp/athletic-work-20261021/`:
+
+- **PASS:** dependency update 663, locked offline resolution removing only
+  unused robots/orphan dependencies. Cargo.lock SHA256 is
+  `5cdfaee3a9d8ba1e9233d0176313f339a1364ba09d04e9e7794a7e79faed7265`.
+- **NOT EXECUTED:** 664 refused duplicate test-thread CLI arguments before
+  test compilation; the corrected commands use `MOON_RUST_TEST_THREADS`.
+- **FAIL before repair:** historical Robots regression 665, 0/1,
+  Nextest `a8228b06-a18e-46ec-a4b5-a6ad23981439`. **PASS after repair:** 666,
+  1/1, Nextest `6df2e783-26e9-4c25-8a54-da8c0902e7c7`.
+- **FAIL retained:** broad adjacency 668, 2,233/2,316, 83 failed: 82 current
+  compiled-kernel identity refusals and the denial-test assumption above.
+- **PASS:** kernel/owned-roster/cold/frozen scope 671, 164/164, 23.337 s tests.
+- **PASS:** complete crawler plus service school-site, public-resource,
+  continuation and capture-cache adjacency 672, 2,316/2,316, 1,845 skipped;
+  Nextest `eec8c5a6-4e59-42a1-b7cb-778838da97b1`, 227.010 s tests.
+  The complete genuine attachment A/B/reopen case passed in 149.982 s.
+- **PASS:** format write 674. **PASS:** format/check/source lint 675, three
+  tasks, 67.396 s total. Existing forced arity advisories remain visible.
+- **ADVICE ONLY:** local RTX 3090 review 673 returned HTTP 200/PASS for the
+  supplied transport and regression sources. RTX 5090 draft 670 returned HTTP
+  200 but was rejected for incorrect retained-denial assumptions; it was not
+  applied. GPU replies are not execution or acceptance receipts.
+
+Only `net/mod.rs` changed inside the authenticated 210-file row-local source
+inventory. Its current expected digest is now
+`821d84c35a0d0b3d6b620294b1695a24a1a14429f8c3aaec0bd292cb57c1235a`.
+No historical kernel document, whole-document pin or context allowance changed.
+The changed dependency context has **NOT** been qualified for original-A native
+replay or deployment. The full release gate, a new optimized runtime, live
+handoff and new five-state publication are **NOT RUN** for this slice.
+
+The original MI591 invocation remains running under sole endpoint 590; no
+source work, keys, attempts, receipts, live Store or Downloads workbook were
+replaced. The isolated research-timestamp draft remains unapplied pending review.
+Passing these checks does not establish accepted five-state athletes or deliver
+the fully populated workbook. That goal remains incomplete.

@@ -74,7 +74,7 @@ fn absent_or_foreign_capture_never_supplies_candidate_provenance() -> TestResult
 fn partial_research_retains_supported_candidate_but_not_completion() -> TestResult {
     let mut outcome = outcome();
     outcome.errors = 1;
-    outcome.note = Some("robots policy unavailable".to_owned());
+    outcome.note = Some("staff directory access denied".to_owned());
     let (candidates, status) = research::project(&outcome)?;
     check!(eq; candidates.len(), 1);
     check!(eq; status, research::ResearchStatus::Incomplete);

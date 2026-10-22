@@ -49,7 +49,7 @@ impl Coordinates {
 
     fn plan<'a>(&'a self, method: &'a str) -> FetchPlan<'a> {
         FetchPlan {
-            admission: crate::net::robots::Admission::Unrestricted,
+            scope: crate::net::public_http::TransportScope::Provider,
             method,
             url: URL,
             payload: None,
