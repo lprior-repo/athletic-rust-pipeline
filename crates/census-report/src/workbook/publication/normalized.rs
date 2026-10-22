@@ -99,21 +99,30 @@ pub(in crate::workbook) fn write_outcome(
             )?,
         );
         if revision == super::selected::REPORTED_REVISION {
-            let admission = EventAdmission::of(dataset)?;
-            let projection = crate::workbook::reported::Projection::of(
-                dataset,
-                derivation,
-                &admission,
-                &outcome.selections,
-            )?
-            .ok_or_else(|| defect("revision 9 lacks Include reported projection"))?;
             counts.insert(
                 "reported_performances.csv".into(),
-                reported_performances::write(directory, &projection)?,
+                write_reported(directory, derivation, outcome)?,
             );
         }
     }
     Ok(counts)
+}
+
+fn write_reported(
+    directory: &Path,
+    derivation: &Derivation<'_>,
+    outcome: &crate::bests::SelectionOutcome,
+) -> ReportResult<u64> {
+    let dataset = derivation.dataset();
+    let admission = EventAdmission::of(dataset)?;
+    let projection = crate::workbook::reported::Projection::of(
+        dataset,
+        derivation,
+        &admission,
+        &outcome.selections,
+    )?
+    .ok_or_else(|| defect("reported revision lacks Include reported projection"))?;
+    reported_performances::write(directory, &projection)
 }
 
 fn write_rows(

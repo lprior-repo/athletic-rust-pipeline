@@ -26,6 +26,7 @@ pub(in crate::workbook::publication) const HEADER: &[&str] = &[
     "Source Key",
     "Performance Evidence",
     "Retained Conflicts",
+    "Reported Event Interpretation",
 ];
 
 pub(super) fn write(directory: &Path, projection: &Projection<'_>) -> ReportResult<u64> {
@@ -44,7 +45,7 @@ pub(super) fn write(directory: &Path, projection: &Projection<'_>) -> ReportResu
 fn record(
     projection: &Projection<'_>,
     performance: &CanonicalPerformance,
-) -> ReportResult<[String; 22]> {
+) -> ReportResult<[String; 23]> {
     let athlete =
         projection
             .athlete(&performance.athlete)
@@ -91,6 +92,10 @@ fn record(
         performance.source_key.clone(),
         json(&performance.evidence)?,
         json(&performance.retained_conflicts)?,
+        match projection.interpretation(performance)? {
+            Some(interpretation) => json(interpretation)?,
+            None => String::new(),
+        },
     ])
 }
 

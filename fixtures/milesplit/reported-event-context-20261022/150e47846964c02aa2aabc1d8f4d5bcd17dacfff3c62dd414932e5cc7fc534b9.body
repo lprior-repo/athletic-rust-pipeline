@@ -1,0 +1,2219 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:>
+<head>
+    <script src="https://cmp.osano.com/AzyWAQS5NWEEWkU9/eab0a836-8bac-45b1-8b3e-e92e57e669db/osano.js?language=en"></script>
+    <script src="https://www.flolive.tv/osano-flo.js" ></script>
+    <!-- MILE-235: measurement gap-fill flag — must be pushed before the GTM-M962P37 container loads -->
+    <script>window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({'measurementGapFill': false});</script>
+    <!-- Google Tag Manager -->
+    <script>(function (w, d, s, l, i) {
+            w[l] = w[l] || [];
+            w[l].push({
+                'gtm.start':
+                    new Date().getTime(), event: 'gtm.js'
+            });
+            var f = d.getElementsByTagName(s)[0],
+                j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+            j.async = true;
+            j.src =
+                'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+            f.parentNode.insertBefore(j, f);
+        })(window, document, 'script', 'dataLayer', 'GTM-M962P37');</script>
+    <!-- End Google Tag Manager -->
+    <title>USATF U20 Championships 2025 - Results (Raw)</title>
+
+    <!-- Meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <script>var _sf_startpt=(new Date()).getTime()</script>
+
+    <!-- Responsive -->
+    <meta name="application-name" content="Oregon Runners" />
+    <meta name="MobileOptimized" content="width" />
+    <meta name="HandheldFriendly" content="true" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-touch-fullscreen" content="YES" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,minimal-ui" />
+    <meta name="format-detection" content="telephone=no;address=no;email=no" />
+
+    <!-- Schema.org -->
+        <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "SportsEvent",
+            "name": "USATF U20 Championships",
+            "description": "MileSplits official Results raw results for the 2025 USATF U20 Championships, hosted by NSAF in Eugene OR.",
+            "startDate": "2025-06-19",
+            "endDate": "2025-06-20",
+            "homeTeam": "NSAF",
+            "sport": "Outdoor Track & Field",
+            "location": {
+                "@type": "Place",
+                "name": "Historic Hayward Field",
+                "address": {
+                  "@type": "PostalAddress",
+                  "addressLocality": "Eugene",
+                  "addressRegion": "OR"
+                }
+            },
+            "url": "https://or.milesplit.com/meets/696747-usatf-u20-championships-2025/results/1189674/raw"
+        }
+    </script>
+
+    <!-- Icons -->
+    <link href="https://assets.sp.milesplit.com/images/milesplit-favicon.png" rel="apple-touch-icon" />
+    <link href="https://assets.sp.milesplit.com/images/milesplit-favicon.png" rel="shortcut icon" />
+    <link rel="img_src" href="https://assets.sp.milesplit.com/images/milesplit-favicon.png" />
+
+    <!-- Styling -->
+    <link href="https://css.sp.milesplit.com/drivefaze/reset.css?build=20261021212452" rel="stylesheet" />
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css">
+    <link href="//fonts.googleapis.com/css?family=PT+Sans" rel="stylesheet" />
+    <link href="//fonts.googleapis.com/css?family=Roboto:400,700,900" rel="stylesheet" />
+    <link rel="stylesheet" href="https://css.sp.milesplit.com/milesplit/recaptcha.css?build=20261021212452"/>
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link href="https://css.sp.milesplit.com/drivefaze/default.css?build=20261021212452" rel="stylesheet" />
+    <link href="https://css.sp.milesplit.com/drivefaze/sites/or.css?build=20261021212452" rel="stylesheet" />
+
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        dataLayer.push ({
+            'siteId'  : '38',
+            'tld'     :  'com'
+        });
+    </script>
+
+        <!-- Segment -->
+    <script>
+        !function(){var analytics=window.analytics=window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error("Segment snippet included twice.");else{analytics.invoked=!0;analytics.methods=["trackSubmit","trackClick","trackLink","trackForm","pageview","identify","reset","group","track","ready","alias","debug","page","once","off","on","addSourceMiddleware","addIntegrationMiddleware","setAnonymousId","addDestinationMiddleware"];analytics.factory=function(e){return function(){var t=Array.prototype.slice.call(arguments);t.unshift(e);analytics.push(t);return analytics}};for(var e=0;e<analytics.methods.length;e++){var key=analytics.methods[e];analytics[key]=analytics.factory(key)}analytics.load=function(key,e){var t=document.createElement("script");t.type="text/javascript";t.async=!0;t.src="https://siop.flosports.tv/siop.js/v1/" + key + "/siop.min.js";;var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(t,n);analytics._loadOptions=e};analytics._writeKey="r90fhunU3ddJmMaXcBYXLtAi2vkJHc5g";analytics._cdn="https://siop.flosports.tv";analytics.SNIPPET_VERSION="5.2.0";
+            // MILE-242: skip Segment for bot timezones + declared crawlers, same lists as the twig
+            // layouts (WebRequest::BOT_TIMEZONES / getBotUaPattern). The server-side gate wrapping
+            // this block is late-bound — core/View::finalize() re-parses it per request even on
+            // cached HTML — so the UA half is belt-and-braces here; the timezone half is the part
+            // the server can never do, because the browser timezone is never sent to it. Without
+            // load() the queued identify/page never send. Fails open (tracks) on any error.
+            if ((function(){try{var t=(window.Intl&&Intl.DateTimeFormat)?Intl.DateTimeFormat().resolvedOptions().timeZone:'';return ["Asia/Jakarta","Asia/Shanghai","Etc/Unknown","UTC"].indexOf(t)===-1&&!(new RegExp('facebot|facebookexternalhit|linkedin|twitterbot|linkedinbot|flipboard|pinterest|facebookbot|googlebot|bingbot|msnbot|baiduspider|slurp|applebot|gigabot|holmes|ia_archiver|magpie|yahooseeker|teoma|jeeves|pingdom|semrushbot|ahrefsbot|dotbot|yandexbot|seznambot|petalbot|bytespider|gptbot|claudebot|ccbot|dataforseobot|screaming frog|amazonadbot|google-read-aloud|amazonbot|criteobot|aranet-searchbot|peer39_crawler|meta-webindexer|mediapartners-google|captify-crawler|leikibot|audigentadbot|perplexitybot|bitsightbot|assaybot|googleother|meta-externalagent|querit|scope3|duckduckbot|duckassistbot|exasearchbot|meta-externalads|storebot-google|adsbot-google|yandexmobilebot|yandexaccessibilitybot|naver.me|headlesschrome','i')).test(navigator.userAgent||'');}catch(e){return true;}})()) {
+                // MILE-717/719/779: never load() for logged-out desktop Linux; hold it for HOLD_TIMEZONES until a click/keypress/scroll (see theme/default/layout/base.twig).
+                // The logged-in check is evaluated per request (late-bound), so a cached page can never hold a signed-in visitor.
+                var segmentLoad = function(){ analytics.load("aNJHVzqtABqlCj8RMdLp4YsCVZ51nbs3"); };
+                try {
+                    var segmentAnon = true;
+                    // MILE-779: logged-out desktop Linux (non-touch) never loads Segment (the fleet scrolls and clicks past a hold).
+                    if (!(segmentAnon && new RegExp('^(?!.*(?:Android|Tizen|Web0S|SmartTV|Silk|OculusBrowser|SamsungBrowser)).*Linux', 'i').test(navigator.userAgent || '') && !(navigator.maxTouchPoints > 0))) {
+                        if (segmentAnon && (function(){try{return ["America/Bogota","America/Mexico_City","America/Sao_Paulo","Asia/Bangkok","Asia/Dubai","Asia/Ho_Chi_Minh","Asia/Hong_Kong","Asia/Kuala_Lumpur","Asia/Manila","Asia/Saigon","Asia/Seoul","Asia/Singapore","Asia/Tokyo","Europe/Amsterdam","Europe/Berlin","Europe/Paris"].indexOf(Intl.DateTimeFormat().resolvedOptions().timeZone)!==-1;}catch(e){return false;}})()) {
+                            var segmentOpen = function(){
+                                window.removeEventListener('click', segmentOpen, true);
+                                window.removeEventListener('keydown', segmentOpen, true);
+                                window.removeEventListener('scroll', segmentOpen);
+                                segmentLoad();
+                            };
+                            window.addEventListener('click', segmentOpen, {capture: true, passive: true});
+                            window.addEventListener('keydown', segmentOpen, {capture: true, passive: true});
+                            // Not capture: inner-element scrolls (carousels, tickers) don't bubble; the document's does.
+                            window.addEventListener('scroll', segmentOpen, {passive: true});
+                        } else {
+                            segmentLoad();
+                        }
+                    }
+                } catch (e) {
+                    segmentLoad();
+                }
+            }
+            const segmentResetToken = null;
+            if (segmentResetToken) {
+                try {
+                    const segmentResetStorageKey = 'milesplit_segment_reset_token';
+                    if (window.localStorage.getItem(segmentResetStorageKey) !== segmentResetToken) {
+                        analytics.reset();
+                        window.localStorage.setItem(segmentResetStorageKey, segmentResetToken);
+                    }
+                } catch (segmentResetError) {
+                    analytics.reset();
+                }
+            }
+            let userIdentity = null;
+
+            if (userIdentity) {
+                analytics.identify(
+                    '',
+                    userIdentity
+                );
+            }
+            // do page call. Called explicitly because the segment custom-property syntax is
+            // registered WITHOUT noCache (Shared\Lib\MS05::init), unlike its auth neighbour above,
+            // so it resolves once and bakes into the cached meet page — and this payload is
+            // per-visitor: Structure\Segment\Page carries browser/device off the request UA plus a
+            // paywall_present off the viewer's subscription. Don't name that syntax in a comment;
+            // Template::parseToPhp rewrites the tags anywhere in the file, comments included.
+            let args = JSON.parse('["Meet - Raw Results",{"browser":"unknown","browser_version":"unknown","component":"App Component","device":"Desktop","device_brand":"unknown","node_id":696747,"node_type":"Meet","page_category":"Meet","subpage_category":"Raw Results","paywall_present":0,"vertical":"MileSplit","site_id":15,"milesplit_site_id":"38","milesplit_site_code":"or"}]');
+            if (args.length > 1) {
+                analytics.page(
+                    args[0],
+                    args[1]
+                );
+            }
+            else {
+                analytics.page();
+            }
+        }}();
+    </script>
+    
+    <!-- Framework -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="https://www.recaptcha.net/recaptcha/enterprise.js?render={{ config('google:recaptcha') }}"></script>
+    <script src="https://js.sp.milesplit.com/drivefaze/prereq.js?build=20261021212452"></script>
+    <script src="https://js.sp.milesplit.com/drivefaze/core.js?build=20261021212452"></script>
+    <script src="https://js.sp.milesplit.com/drivefaze/api.js?build=20261021212452"></script>
+    <script src="https://js.sp.milesplit.com/3rdparty/twbs/3.3.7/bootstrap.min.js?build=20261021212452"></script>
+
+    <!-- MILE-410: These are device-detection libraries, not tracking. Load them even when
+         Segment tracking is suppressed so common-ms05.js can initialize mobile adhesion. -->
+    <script src="https://js.sp.milesplit.com/3rdparty/platform.js?build=20261021212452"></script>
+    <script src="https://js.sp.milesplit.com/drivefaze/segment.js?build=20261021212452"></script>
+
+    <script>
+        var ads = {
+            'ga': {
+                'send': {
+                    'hitType'         : 'event',
+                    'eventCategory'   : 'dfp',
+                    'eventAction'     : 'Initializing',
+                    'eventLabel'      : 'Hi',
+                    'eventValue'      : 'Hi',
+                    'hitCallBack'     : function() {
+                        _DF_.log('DFP Callback');
+                    }
+                }
+            },
+            'page': {
+                'subdomain' : 'or',
+                'module'    : 'meets',
+                'moduleId'  : '696747',
+                'keywords'  : '',
+                'account'   : '0'
+            },
+            'rules': {
+                'id'                      : '',
+                'cached'                  : '',
+                'skin'                    : '',
+                    'interstitial'            : '',
+            'mobileInterstitial'      : '',
+            'leaderboard'             : ''
+            
+        }
+        }
+        window.adData = ads;
+        // ADS-244: copy of default/includes/ads/mwebTopLowerArm.twig; keep them identical.
+                        if (window.matchMedia && window.matchMedia('(max-width: 767px)').matches) {
+            window.msAdExperiments = window.msAdExperiments || {};
+            window.msAdExperiments.mweb_top_lower = 'control';
+                    }
+                // Defer loading
+        $(function(){
+            Prereq
+                .require({ 'layout'     : 'https://js.sp.milesplit.com/drivefaze/layout.js?build=20261021212452' });
+                //.require({ 'api'        : 'https://js.sp.milesplit.com/drivefaze/api.js?build=20261021212452' })
+                //.require({ 'twbs'       : 'https://js.sp.milesplit.com/3rdparty/twbs/3.3.7/bootstrap.min.js?build=20261021212452' })
+            // Touch devices
+            if (!!('ontouchstart' in window)) {
+                Prereq.require(
+                    'https://js.sp.milesplit.com/3rdparty/doubletaptogo/d2g.js?build=20261021212452',
+                    function() {
+                        $('#navbar li:has(ul)').doubleTapToGo();
+                    }
+                );
+            }
+        });
+    </script>
+
+    <!-- Verification -->
+    <meta name="inmobi-site-verification" content="d3ac33f46ed8e33a0b3afa297531f596" />
+
+    <!-- SEO -->
+    <link rel="canonical" href="https://or.milesplit.com/meets/696747-usatf-u20-championships-2025/results/1189674/raw" />
+                <meta name="description" content="MileSplits official Results raw results for the 2025 USATF U20 Championships, hosted by NSAF in Eugene OR." />
+                <meta name="keywords" content="USATF U20 Championships,Eugene,OR,USA" />
+        
+    <!-- Social/Sharing -->
+    <link rel="publisher" href="//plus.google.com/106335681194473166154" />
+
+    <!-- Facebook/OpenGraph -->
+    <meta property="fb:admins" content="506280686,508214191" />
+    <meta property="fb:app_id" content="261198561567" />
+    <meta property="fb:page_id" content="104136371855" />
+    <meta property="og:site_name" content="Oregon Runners" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" name="twitter:title" content="USATF U20 Championships 2025 - Results (Raw)" />
+            <meta property="og:description" name="twitter:description" content="MileSplits official Results raw results for the 2025 USATF U20 Championships, hosted by NSAF in Eugene OR." />
+                <meta property="og:image" name="twitter:image:src" content="https://assets.sp.milesplit.com/meet_logos/696747?v=1750384115" />
+                    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@milesplit">
+
+    <script src="https://js.sp.milesplit.com/drivefaze/pro/paywall.js?build=20261021212452"></script>
+
+    
+    
+<link href="https://css.sp.milesplit.com/drivefaze/meets/results.css?build=20261021212452" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.7.7/handlebars.runtime.min.js" integrity="sha512-1JsLHOJ3aKKxY96SA64yDTGQXo46wjivsGj6LiZGQaz0V6cGpGjfFOm1fnH9WkNwf8FFaIU8jVrvAjSESKESww==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script type="text/javascript" src="https://js.sp.milesplit.com/3rdparty/moment/moment.2.26.0.min.js?build=20261021212452"></script>
+<link href="https://css.sp.milesplit.com/drivefaze/personalization/onboardingCTA.css?build=20261021212452" rel="stylesheet"/>
+<link href="https://css.sp.milesplit.com/drivefaze/personalization/sidebarWidget.css?build=20261021212452" rel="stylesheet"/>
+<script src="https://js.sp.milesplit.com/drivefaze/personalization/handlebarTemplates.js?build=20261021212452"></script>
+<script type="text/javascript" src="https://js.sp.milesplit.com/drivefaze/personalization/articlesWidget.js?build=20261021212452"></script>
+
+
+    <!-- Initialize site settings -->
+    <script type="text/javascript">
+        _DF_.init({
+            subDomain: 'or',
+            rootDomain: 'milesplit.com',
+            userName: '',
+            userToken:'',
+            userID: '',
+            appName: 'MileSplit',
+            appHash: '662c42f704fe3fb9511bbf52a9459977',
+            siteId: '38',
+            accounts: JSON.parse('{\"domain\":\"https:\\/\\/accounts.milesplit.com\",\"apiDomain\":\"https:\\/\\/api30.milesplit.com\",\"signup\":\"\\/signup\",\"join\":\"\\/join\",\"login\":\"\\/login\",\"loginSuper\":\"\\/login\\/super\",\"forgot\":\"\\/login\\/forgot\",\"logout\":\"\\/logout\",\"register\":\"\\/register\",\"account\":\"\\/account\\/information\",\"editAccount\":\"\\/settings\\/edit\",\"subscription\":\"\\/account\\/subscriptions\"}')
+        });
+    </script>
+
+</head>
+<body class="drivefaze redesign2015 or meets">
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M962P37"
+                  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+<!-- Facebook -->
+<script>
+    window.fbAsyncInit = function() {
+        FB.init({
+            appId            : '261198561567',
+            autoLogAppEvents : false,
+            xfbml            : true,
+            version          : 'v3.0'
+        });
+    };
+</script>
+<script async defer src="https://connect.facebook.net/en_US/sdk.js"></script>
+<!-- End Facebook -->
+
+<!-- AJAX Loader -->
+<div id="loader">
+    <div class="loaderMsgContainer">
+        <div class="loaderMsg">
+            <span>
+                <i class="fa fa-spinner fa-spin"></i>
+                <span class="loaderText">Loading</span>
+            </span>
+        </div>
+    </div>
+</div>
+<!-- End AJAX Loader -->
+
+<div id="page">
+    <header role="banner" id="masthead">
+        <div>
+
+            <div id="logo">
+                <a class="header" href="/">
+                    <span class="title">Oregon Runners</span>
+                </a>
+            </div>
+
+            <nav role="navigation" id="navbar">
+                <div class="button">
+                    <i class="fa fa-bars"></i>
+                    <i class="fa fa-remove"></i>
+                </div>
+                <div class="menu">
+                    <ul>
+                                                <li class="upgrade-pill">
+                            <a href="/join">
+                                <button class="btn btn-primary btn-block btn-md">Upgrade</button>
+                            </a>
+                        </li>
+                                                <li class="results">
+                            <a href="/results">Results</a>
+                            <ul>
+                                <li class="resultLinkShoveLeft">
+                                    <a href="/results">Meet Results</a>
+                                </li>
+                                <li class="resultLinkShoveLeft">
+                                    <a href="http://milesplit.live/overall">Live Results</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="rankings">
+                            <a href="/rankings/leaders/high-school-boys/cross-country">Rankings</a>
+                            <ul>
+                                                                <li>
+                                    <a href="/rankings/flo50/?year=2026&category=track">COROS MileSplit50</a>
+                                </li>
+                                                                <li>
+                                    <a href="/rankings/leaders/high-school-boys/cross-country">XC Lists</a>
+                                </li>
+                                <li>
+                                    <a href="/rankings/leaders/high-school-boys/indoor-track-and-field">Indoor Lists</a>
+                                </li>
+                                <li>
+                                    <a href="/rankings/leaders/high-school-boys/outdoor-track-and-field">Outdoor Lists</a>
+                                </li>
+                                <li>
+                                    <a href="/virtual-meets">Virtual Meets</a>
+                                </li>
+                                <li>
+                                    <a href="/teamscores">XC Team Scores</a>
+                                </li>
+                                <li>
+                                    <a href="/athletes/compare">Compare Athletes</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="calendar">
+                            <a href="/calendar">Calendar</a>
+                        </li>
+                        <li id="navAthletes" class="athletes">
+                            <a href="/athletes">Athletes</a>
+                        </li>
+                                                <li class="teams">
+                            <a href="/teams">Teams</a>
+                        </li>
+                                                <li class="coverage">
+                            <a href="#">Coverage</a>
+                            <ul>
+                                <li>
+                                    <a href="/photos">Photos</a>
+                                </li>
+                                <li>
+                                    <a href="/videos/meets">Videos</a>
+                                </li>
+                                <li>
+                                    <a href="/articles">Articles Archive</a>
+                                </li>
+                                <li>
+                                    <a href="/signings">College Commitments</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="discussion">
+                            <a href="/training">Training</a>
+                        </li>
+                        <li class="registration">
+                            <a href="/meet-creation">Registration</a>
+                            <ul>
+                                <li>
+                                    <a href="/articles/213974">About</a>
+                                </li>
+                                <li>
+                                    <a href="/meet-creation">Setup Meet</a>
+                                </li>
+                                                                <li>
+                                    <a href="https://support.milesplit.com/">FAQ/Help</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="more">
+                            <a href="/more">More</a>
+                            <ul>
+                                <li>
+                                    <a href="https://www.boulderbibs.com/collections/milesplit" target="_blank" >Bibs</a>
+                                </li>
+                                                                <li>
+                                    <a href="/timing">Timing Companies</a>
+                                </li>
+                                                                <li>
+                                    <a href="/calc">Conversion Calculator</a>
+                                </li>
+                                <li>
+                                    <a href="https://tfmeetpro.com" target="_blank" rel="noopener">MeetPro</a>
+                                </li>
+                                <li class="network">
+                                    <a href="/network">MileSplit Network</a>
+                                </li>
+                                <li>
+
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+                        <nav id="navbarUpgradePill">
+                <div class="button">
+                    <center>
+                        <a href="/join">
+                            <button class="btn btn-primary btn-block btn-md">Upgrade</button>
+                        </a>
+                    </center>
+                </div>
+            </nav>
+            
+            <nav id="social">
+                <div class="button">
+                    <a href="#" class="facebook">
+                        <i class="fa fa-facebook-official"></i>
+                    </a>
+                    <a href="#" class="twitter">
+                        <i class="fa fa-twitter"></i>
+                    </a>
+                    <span>Follow Us</span>
+                </div>
+            </nav>
+
+            <nav id="search" role="search">
+                <div class="button">
+                    <a href="/search">
+                        <i class="fa fa-search" style="display:block"></i>
+                        <span>Search</span>
+                    </a>
+                </div>
+            </nav>
+
+            <nav id="account">
+                <div class="button">
+                    <a href="#account">
+                        <i class="fa fa-user"></i>
+                        <i class="fa fa-remove"></i>
+                                                <span>Login</span>
+                                            </a>
+                </div>
+                <div class="menu">
+                    
+                    <section>
+                        <header>
+                            <strong class="notLoggedIn">
+                                Not logged in
+                            </strong>
+                        </header>
+
+                        <ul>
+                            <li>
+                                <a href="/login?next=https%3A%2F%2For.milesplit.com%2Fmeets%2F696747-usatf-u20-championships-2025%2Fresults%2F1189674%2Fraw&ref=navbar">
+                                    Login
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/register?next=https%3A%2F%2For.milesplit.com%2Fmeets%2F696747-usatf-u20-championships-2025%2Fresults%2F1189674%2Fraw&ref=navbar">
+                                    Sign Up
+                                </a>
+                            </li>
+                        </ul>
+
+                    </section>
+
+                                    </div>
+            </nav>
+
+        </div>
+    </header>
+    <div id="skin"></div>
+    <div class="leaderboard">
+        <div id="leaderboard_atf"></div>
+        <div id="leaderboard_promo"></div>
+        <div id="pushdown"></div>
+    </div>
+    <main role="main">
+
+        <div id="subheader">
+            
+
+    
+<script src="https://js.sp.milesplit.com/drivefaze/meets/meets.js?build=20261021212452"></script>
+<script src="https://js.sp.milesplit.com/drivefaze/front/liveEvents.js?build=20261021212452"></script>
+<link href="https://css.sp.milesplit.com/drivefaze/dropdown.css?build=20261021212452" rel="stylesheet" />
+<link href="https://css.sp.milesplit.com/drivefaze/meets/default.css?build=20261021212452" rel="stylesheet" />
+<link href="https://css.sp.milesplit.com/drivefaze/live-event-status.css?build=20261021212452" rel="stylesheet" />
+
+<header class="meet">
+
+        <figure class="logo">
+        <a href="https://or.milesplit.com/meets/696747-usatf-u20-championships-2025/info">
+                        <img src="https://assets.sp.milesplit.com/meet_logos/696747?v=1750384115" />
+                    </a>
+            </figure>
+    
+        <h1 class="meetName">
+            USATF U20 Championships 2025        </h1>
+
+
+    <div class="basicInfo">
+        <div class="date">
+            <time>
+                Jun 19, 2025            </time>
+                        <time>
+                Jun 20, 2025            </time>
+                    </div>
+
+        <div class="venueName">
+            <a href="https://or.milesplit.com/venues/30892/historic-hayward-field">Historic Hayward Field</a>
+        </div>
+
+        <div class="venueCity">
+            Eugene, OR        </div>
+
+    </div>
+    <!-- ADS-244: copy of default/includes/ads/mwebTopLowerAnchor.twig; keep them identical. -->
+    <div id="mweb_top_lower_anchor" class="mweb-top-lower-anchor"></div>
+    <script>
+        (function () {
+            try {
+                if (!/(^|\s)mweb-top-lower(\s|$)/.test(document.documentElement.className)) { return; }
+                var ad = document.getElementById('leaderboard_atf');
+                var anchor = document.getElementById('mweb_top_lower_anchor');
+                if (ad && anchor) { anchor.appendChild(ad); }
+            } catch (e) {}
+        })();
+    </script>
+
+    <div class="extendedInfo">
+
+                <div class="hostedBy">
+            <span>Hosted by</span>
+            <a href="https://nc.milesplit.com/teams/3116-nsaf">
+                NSAF            </a>
+        </div>
+        
+        
+
+                <div class="officialMeetWebsite">
+            <a href="https://www.usatf.org/events/2024/2024-usatf-u20-championships" target="_blank">Official Meet Website</a>
+        </div>
+        
+        <div class="countdown">
+                    </div>
+    </div>
+
+    <div class="registration">
+
+        
+        
+        
+        
+
+
+    </div>
+
+    <div class="dropdownMenus">
+
+        <div class="meetHistory">
+            <a href="#">Meet History</a>
+            <div class="dropdown">
+                                <div class="recordCategories">
+                    <strong>Records</strong>
+                    <ul class="categories">
+                        <li>
+                            <a href="#meet">Meet</a>
+                        </li>
+                        <li>
+                            <a href="#venue">Venue</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="meet records">
+                    <strong>Meet Records</strong>
+                    <ul>
+                        <li class="back">
+                            <a href="#back">Back</a>
+                        </li>
+                                                <li class="overall male meet">
+                            <a href="https://www.milesplit.com/rankings/leaders/senior-men/outdoor-track-and-field?year=all&meet=116955">
+                                Overall Men
+                            </a>
+                        </li>
+                        <li class="overall female meet">
+                            <a href="https://www.milesplit.com/rankings/leaders/senior-women/outdoor-track-and-field?year=all&meet=116955">
+                                Overall Women
+                            </a>
+                        </li>
+                                                                        <li class="hs male meet">
+                            <a href="https://www.milesplit.com/rankings/leaders/high-school-boys/outdoor-track-and-field?year=all&meet=116955">
+                                High School Boys
+                            </a>
+                        </li>
+                        <li class="hs female meet">
+                            <a href="https://www.milesplit.com/rankings/leaders/high-school-girls/outdoor-track-and-field?year=all&meet=116955">
+                                High School Girls
+                            </a>
+                        </li>
+                                                                                                <li class="college male meet">
+                            <a href="https://www.milesplit.com/rankings/leaders/college-men/outdoor-track-and-field?year=all&meet=116955">
+                                College Men
+                            </a>
+                        </li>
+                        <li class="college female meet">
+                            <a href="https://www.milesplit.com/rankings/leaders/college-women/outdoor-track-and-field?year=all&meet=116955">
+                                College Women
+                            </a>
+                        </li>
+                                            </ul>
+                </div>
+                                <div class="venue records">
+                    <strong>Venue Records</strong>
+                    <ul>
+                                                <li class="back">
+                            <a href="#back">Back</a>
+                        </li>
+                                                                        <li class="overall male venue">
+                            <a href="https://www.milesplit.com/rankings/leaders/senior-men/outdoor-track-and-field?year=all&venue=30892">
+                                Overall Men
+                            </a>
+                        </li>
+                        <li class="overall female venue">
+                            <a href="https://www.milesplit.com/rankings/leaders/senior-women/outdoor-track-and-field?year=all&venue=30892">
+                                Overall Women
+                            </a>
+                        </li>
+                                                                        <li class="hs male venue">
+                            <a href="https://www.milesplit.com/rankings/leaders/high-school-boys/outdoor-track-and-field?year=all&venue=30892">
+                                High School Boys
+                            </a>
+                        </li>
+                        <li class="hs female venue">
+                            <a href="https://www.milesplit.com/rankings/leaders/high-school-girls/outdoor-track-and-field?year=all&venue=30892">
+                                High School Girls
+                            </a>
+                        </li>
+                                                                                                <li class="college male venue">
+                            <a href="https://www.milesplit.com/rankings/leaders/college-men/outdoor-track-and-field?year=all&venue=30892">
+                                College Men
+                            </a>
+                        </li>
+                        <li class="college female venue">
+                            <a href="https://www.milesplit.com/rankings/leaders/college-women/outdoor-track-and-field?year=all&venue=30892">
+                                College Women
+                            </a>
+                        </li>
+                                            </ul>
+                </div>
+                                <div class="pastMeets">
+                    <strong>Past Meets</strong>
+                                        <ul class="meets">
+                                                                        <li data-decade="2020">
+                            <a href="https://or.milesplit.com/meets/767934-usatf-u20-championships-2026">2026-06-18</a>
+                                                    </li>
+                                                <li data-decade="2020">
+                            <a href="https://or.milesplit.com/meets/623914-usatf-u20-championships-2024">2024-06-12</a>
+                                                    </li>
+                                            </ul>
+                </div>
+                            </div>
+        </div>
+
+        
+        
+    </div>
+
+    <nav class="meetHeaderNav">
+
+        <a href="https://or.milesplit.com/meets/696747-usatf-u20-championships-2025/coverage">
+            Home
+        </a>
+
+        <a href="https://or.milesplit.com/meets/696747-usatf-u20-championships-2025/results" class="selected">
+            Results
+        </a>
+
+                    <a href="https://or.milesplit.com/meets/696747-usatf-u20-championships-2025/reports">
+                Reports <span class="navNewBadge">New</span>
+            </a>
+        
+                    <a href="https://or.milesplit.com/meets/696747-usatf-u20-championships-2025/videos">
+                Videos
+            </a>
+        
+        
+                    <a href="https://or.milesplit.com/meets/696747-usatf-u20-championships-2025/articles">
+                Articles
+            </a>
+        
+                    <a href="https://or.milesplit.com/meets/696747-usatf-u20-championships-2025/teams">
+                Teams
+            </a>
+        
+        
+        
+        <div class="addthis_toolbox addthis_default_style addthis_24x24_style social">
+            <a class="addthis_button_facebook"></a>
+            <a class="addthis_button_twitter"></a>
+            <a class="addthis_button_pinterest_share"></a>
+            <a class="addthis_button_tumblr"></a>
+            <a class="addthis_button_google_plusone_share"></a>
+            <a class="addthis_button_compact"></a>
+        </div>
+
+        <script type="text/javascript">var addthis_config = {'data_track_addressbar':true,'data_ga_tracker':'UA-381648-1'};</script>
+        <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-51d30fae08c5dc5c"></script>
+    </nav>
+</header>
+
+<script type="text/javascript">
+    $(document).ready(function(){
+        var cur = new Date();
+        var close = new Date('');
+        var one_day = 1000 * 60 * 60 * 24;
+        var distance = close.getTime() - cur.getTime();
+        var daysLeft = distance/ one_day;
+        if(daysLeft > 1){
+            $('#countdownMain').text(`Registration Closes in ${ Math.floor(daysLeft) } days`)
+        } else {
+            $('#countdownMain').text('Time left to register');
+            var x = setInterval(function() {
+                var now = new Date();
+                var distance = close.getTime() - now.getTime();
+                var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                $('#countdownClock').text(`${hours} Hours ${minutes} Minutes ${seconds} Seconds`)
+                if (distance < 0) {
+                    clearInterval(x);
+                    $('#countdownMain').text('')
+                    $('#countdownClock').text('')
+                }
+            }, 1000);
+        }
+    })
+</script>
+
+
+
+                    </div>
+
+        
+        <div id="content" class="content">
+            <div>
+                
+
+<article>
+
+    <header>
+        <h2>Results</h2>
+        <form id="frmMeetResultsDetailFilter" autocomplete="off">
+                        <div class="field dropdown">
+                <label>View Mode</label>
+                <div class="input">
+                    <i class="fa fa-chevron-down"></i>
+                    <select id="ddResultsView">
+                        <option value="https://or.milesplit.com/meets/696747-usatf-u20-championships-2025/results/1189674?type=formatted">
+                            Formatted
+                        </option>
+                        <option value="https://or.milesplit.com/meets/696747-usatf-u20-championships-2025/results/1189674?type=raw" selected>
+                            Completed
+                        </option>
+                    </select>
+                </div>
+            </div>
+                                                <div class="field link">
+                <div>
+                    <i class="fa fa-trophy"></i>
+                    <a href="https://or.milesplit.com/meets/696747-usatf-u20-championships-2025/elites">
+                        Elite Performances
+                        (222)
+                    </a>
+                </div>
+            </div>
+                                </form>
+    </header>
+
+        <div id="meetResultsBody" >
+        <pre>
+Boys U-20 100 Meters Finals
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Brayden Dashun Williams   12 Athletic Performance (AP) Ranch        10.24a               0.5
+   2 Dillon Mitchell            9 Track Houston Youth Track              10.28a               0.5
+   3 Justin Stewart            12 Athletic Performance (AP) Ranch        10.31a               0.5
+   4 Nicholas Altheimer        12 Kitsap Fliers Track and Field          10.35a               0.5
+   5 Kyler Brown               12 Oklahoma Cheetah Track Club Inc.       10.38a               0.5
+   6 Ian Johnson               Fr Unattached                             10.40a               0.5
+   7 Ayodele Ojo               Fr Unattached                             10.44a               0.5
+   8 Jordan Urrutia             - Unattached                             10.51a               0.5
+  -- Jayden Deon Finley        12 Athletic Performance (AP) Ranch           DNS                  
+
+Boys U-20 100 Meters Prelims
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Brayden Dashun Williams   12 Athletic Performance (AP) Ranch        10.20a               2.2
+   2 Justin Stewart            12 Athletic Performance (AP) Ranch        10.34a               0.5
+   3 Kyler Brown               12 Oklahoma Cheetah Track Club Inc.       10.35a               2.2
+   4 Jayden Deon Finley        12 Athletic Performance (AP) Ranch        10.40a               2.2
+   5 Jordan Urrutia             - Unattached                             10.43a               2.2
+   6 Dillon Mitchell            9 Track Houston Youth Track              10.46a               0.3
+   7 Ayodele Ojo               Fr Unattached                             10.48a               2.2
+   8 Nicholas Altheimer        12 Kitsap Fliers Track and Field          10.49a               0.5
+   9 Ian Johnson               Fr Unattached                             10.52a               0.3
+  10 Samuel Vargas              - Unattached                             10.54a               0.5
+  11 Brody Anderson            12 Unattached                             10.59a               2.2
+  12 Maxim Rychkov             Fr Unattached                             10.66a               0.3
+  13 Aaron Merritt             Fr Unattached                             10.67a               0.5
+  14 Daniel Chase              Fr Unattached                             10.71a               0.5
+  15 Ty'Shaun Lloyd            12 Athletic Performance (AP) Ranch        10.71a               0.5
+  16 Grant Valley              12 Unattached                             10.76a               0.3
+  17 Dylan Bennett             Fr Unattached                             10.80a               0.5
+  18 Landon Smith              Fr Unattached                             10.80a               2.2
+  19 Duan Ruff                 11 Innate Speed                           10.90a               0.3
+  20 Ryan Elsen                12 Unattached                             10.97a               0.3
+  -- Konrad Clark               - Unattached                                DNS                  
+  -- Maurice Gleaton Jr.       12 Nike Elite                                DNS                  
+  -- Cordial Vann              12 Major Impact TX                           DNS                  
+  -- Jeffrey Missouri          Fr Unattached                                DNS                  
+  -- Jordan Miller             12 Auburn Elite                              DNS                  
+
+Boys U-20 100 Meters MultiEvent
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Oliver Duffy               - Unattached                             10.79a               0.3
+   2 Matthew Malmstrom         Fr Unattached                             11.14a               0.3
+   3 Joshua Haven              11 Unattached                             11.19a               0.3
+   4 Jaden Marlow              11 Unattached                             11.27a               0.3
+   5 Reed McFadden             Fr Unattached                             11.33a               0.3
+   6 Aithan Bezanson           Fr Unattached                             11.34a               0.3
+   7 Nicholas Backman           - Unattached                             11.48a               0.3
+   8 William Feddeler           - Unattached                             11.61a               0.3
+   9 Colm Matheney             Fr Unattached                             11.66a               0.3
+  10 Luke Johnson               - Unattached                             11.71a               0.3
+  11 Hudson Shaver             Fr Unattached                             11.79a               0.3
+  -- Holden Van Poppel         Fr Unattached                                DNS                  
+  -- Oak Sullivan              Fr Unattached                                DNS                  
+
+Boys U-20 200 Meters Finals
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Jalen Johnson             Fr Unattached                             20.43a               0.6
+   2 Justin Stewart            12 Athletic Performance (AP) Ranch        20.68a               0.6
+   3 Jordan Urrutia             - Unattached                             20.98a               0.6
+   4 Brody Anderson            12 Unattached                             21.48a               0.6
+   5 Konrad Clark               - Unattached                             21.55a               0.6
+   6 Christian Hallums          - Unattached                             21.59a               0.6
+   7 Marques Guzman            Fr Unattached                             21.78a               0.6
+   8 Dwyne Smith Jr.           Fr Unattached                             21.88a               0.6
+  -- Ayodele Ojo               Fr Unattached                                DNS                  
+
+Boys U-20 200 Meters Prelims
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Jalen Johnson             Fr Unattached                             20.62a                  
+   2 Justin Stewart            12 Athletic Performance (AP) Ranch        20.91a               0.6
+   3 Jordan Urrutia             - Unattached                             21.12a               0.6
+   4 Dwyne Smith Jr.           Fr Unattached                             21.35a                  
+   5 Brody Anderson            12 Unattached                             21.47a                  
+   6 Ayodele Ojo               Fr Unattached                             21.62a                  
+   7 Konrad Clark               - Unattached                             21.64a               0.6
+   8 Christian Hallums          - Unattached                             21.64a                  
+   9 Marques Guzman            Fr Unattached                             21.66a                  
+  10 Maxim Rychkov             Fr Unattached                             21.67a                  
+  11 Nicholas Altheimer        12 Kitsap Fliers Track and Field          21.71a               0.6
+  12 Dylan Bennett             Fr Unattached                             21.78a                  
+  13 Landon Smith              Fr Unattached                             22.14a               0.6
+  14 Desmond Chapa             Fr Unattached                             22.18a               0.6
+  -- Keiltorian Buchanan        - Unattached                                 DQ                  
+  -- Maurice Gleaton Jr.       12 Nike Elite                                DNS                  
+  -- Grant Valley              12 Unattached                                DNS                  
+  -- Jayden Boyles             Fr Unattached                                DNS                  
+  -- Jeffrey Missouri          Fr Unattached                                DNS                  
+  -- Jonathan Simms            12 Athletic Performance (AP) Ranch           DNS                  
+
+Boys U-20 400 Meters Finals
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Jonathan Simms            12 Athletic Performance (AP) Ranch        45.44a                  
+   2 Ronald Kendrick           Fr Unattached                             45.81a                  
+   3 Josiah Wrice              Fr Unattached                             45.82a                  
+   4 Dwyne Smith Jr.           Fr Unattached                             46.51a                  
+   5 Xai Ricks                  - Unattached                             46.83a                  
+   6 Eugene Bynum               - Unattached                             46.96a                  
+   7 Justin Warner             Fr Unattached                             47.18a                  
+   8 Logan Montgomery          Jr Unattached                             47.40a                  
+   9 Andrew Arnold              - Unattached                             48.14a                  
+
+Boys U-20 400 Meters Prelims
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Jonathan Simms            12 Athletic Performance (AP) Ranch        45.75a                  
+   2 Ronald Kendrick           Fr Unattached                             46.11a                  
+   3 Josiah Wrice              Fr Unattached                             46.27a                  
+   4 Xai Ricks                  - Unattached                             46.46a                  
+   5 Eugene Bynum               - Unattached                             46.50a                  
+   6 Dwyne Smith Jr.           Fr Unattached                             47.02a                  
+   7 Justin Warner             Fr Unattached                             47.22a                  
+   8 Logan Montgomery          Jr Unattached                             47.38a                  
+   9 Andrew Arnold              - Unattached                             47.49a                  
+  10 Elijah Thomas             Fr Unattached                             47.64a                  
+  11 Harry Economon            12 Unattached                             47.73a                  
+  12 Abram Reagan              11 Unattached                             47.98a                  
+  13 Eddie Bruner Jr.          11 Kitsap Fliers Track and Field          48.01a                  
+  14 Keith Griffin Iii          - Unattached                             48.24a                  
+  -- Devan Crumpton            Fr Unattached                                 DQ                  
+  -- Aden Price                12 Fast Forward Track Club                    DQ                  
+  -- Konrad Clark               - Unattached                                 DQ                  
+  -- Cooper Rodgers            Fr Unattached                                DNS                  
+  -- Joshua Shelton            11 Unattached                                DNS                  
+
+Boys U-20 400 Meters MultiEvent
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Matthew Malmstrom         Fr Unattached                             50.00a                  
+   2 Reed McFadden             Fr Unattached                             51.58a                  
+   3 Joshua Haven              11 Unattached                             52.01a                  
+   4 Jaden Marlow              11 Unattached                             52.82a                  
+   5 Hudson Shaver             Fr Unattached                             53.20a                  
+   6 Nicholas Backman           - Unattached                             54.23a                  
+   7 Luke Johnson               - Unattached                             56.64a                  
+   8 Aithan Bezanson           Fr Unattached                             57.89a                  
+  -- Oliver Duffy               - Unattached                                 DQ                  
+  -- William Feddeler           - Unattached                                 DQ                  
+  -- Colm Matheney             Fr Unattached                                DNS                  
+  -- Holden Van Poppel         Fr Unattached                                DNS                  
+  -- Oak Sullivan              Fr Unattached                                DNS                  
+
+Boys U-20 800 Meters Finals
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Camerin Williams          12 Unattached                           1:46.81a                  
+   2 Lucien Bone IV            12 Born to Run                          1:46.87a                  
+   3 Mason Page                Fr Unattached                           1:48.88a                  
+   4 Bryson Nielsen            12 Unattached                           1:49.38a                  
+   5 Devin Jones                - Unattached                           1:49.89a                  
+   6 Noah Nielson               - Unattached                           1:49.92a                  
+   7 Jade Kitching              - Unattached                           1:51.60a                  
+   8 Jayden Curry              12 Unattached                           1:56.91a                  
+  -- Aidan Norris               - Unattached                                 DQ                  
+
+Boys U-20 800 Meters Prelims
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Lucien Bone IV            12 Born to Run                          1:49.80a                  
+   2 Jade Kitching              - Unattached                           1:50.18a                  
+   3 Bryson Nielsen            12 Unattached                           1:50.33a                  
+   4 Camerin Williams          12 Unattached                           1:50.59a                  
+   5 Mason Page                Fr Unattached                           1:50.66a                  
+   6 Devin Jones                - Unattached                           1:50.70a                  
+   7 Jayden Curry              12 Unattached                           1:50.70a                  
+   8 Aidan Norris               - Unattached                           1:50.87a                  
+   9 Noah Nielson               - Unattached                           1:51.01a                  
+  10 Colby Huntress            11 Born to Run                          1:51.54a                  
+  11 Palmer O'Connor            - Unattached                           1:53.67a                  
+  12 Brett Jacobs              Fr Unattached                           1:53.97a                  
+  13 Chase McCallum            Fr Unattached                           1:54.53a                  
+  14 Cole Stehly                9 Unattached                           1:56.48a                  
+  -- Boden Genovese             - Unattached                                DNS                  
+
+Boys U-20 1500 Meters Finals
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Brendan Herger            Fr Unattached                           3:48.77a                  
+   2 Colin Eckerman            Fr Unattached                           3:50.55a                  
+   3 Ryan Eddington            Fr Unattached                           3:52.56a                  
+   4 Bryant Young               - Unattached                           3:55.31a                  
+   5 Luke Stockett             Fr Unattached                           3:55.59a                  
+   6 Tate Shore                 - Unattached                           3:55.86a                  
+   7 Palmer O'Connor            - Unattached                           4:06.32a                  
+  -- James Wischusen           Fr Unattached                                DNS                  
+  -- Oliver Zimmerman           9 Unattached                                DNS                  
+  -- Boden Genovese             - Unattached                                DNS                  
+
+Boys U-20 1500 Meters MultiEvent
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Reed McFadden             Fr Unattached                           4:28.57a                  
+   2 Aithan Bezanson           Fr Unattached                           4:36.96a                  
+   3 Hudson Shaver             Fr Unattached                           4:37.03a                  
+   4 Matthew Malmstrom         Fr Unattached                           4:44.10a                  
+   5 Jaden Marlow              11 Unattached                           4:44.84a                  
+   6 Joshua Haven              11 Unattached                           4:50.35a                  
+   7 Luke Johnson               - Unattached                           4:52.18a                  
+   8 Nicholas Backman           - Unattached                           4:55.98a                  
+   9 William Feddeler           - Unattached                           5:00.60a                  
+  10 Oliver Duffy               - Unattached                           5:01.89a                  
+  -- Holden Van Poppel         Fr Unattached                                DNS                  
+  -- Colm Matheney             Fr Unattached                                DNS                  
+  -- Oak Sullivan              Fr Unattached                                DNS                  
+
+Boys U-20 3000 Meters Finals
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Brennan McEwen            12 Unattached                           8:22.98a                  
+   2 James Wischusen           Fr Unattached                           8:23.60a                  
+   3 Ryan Smith                 - Unattached                           8:24.10a                  
+   4 Henry Stark               Fr Unattached                           8:30.53a                  
+   5 Memphis Rich              Fr Unattached                           8:32.46a                  
+  -- Oliver Zimmerman           9 Unattached                                DNS                  
+
+Boys U-20 5000 Meters Finals
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Colin Eckerman            Fr Unattached                          14:37.71a                  
+   2 Samuel Franco              - Unattached                          14:40.81a                  
+   3 Ryan Smith                 - Unattached                          14:43.04a                  
+   4 Jacob Esser               Fr Unattached                          15:01.38a                  
+   5 Noah Selvaraj             Fr Unattached                          15:06.65a                  
+   6 Sebastian Ramirez          - Unattached                          15:14.83a                  
+   7 Blake Wohler              Fr Unattached                          15:17.32a                  
+  -- Henry Stark               Fr Unattached                                DNS                  
+
+Boys U-20 10,000 Meters Racewalk Finals
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Jonny Jurchen             Fr Unattached                          48:43.04a                  
+   2 Rowan McDonald            12 Maine Race Walkers                  49:59.42a                  
+   3 David Dorantes             - Elgin Sharks Track                  50:14.78a                  
+   4 Matthew Wombacker         11 Unattached                          54:41.65a                  
+   5 Ansh Patel                 8 Elgin Sharks Track                  56:53.82a                  
+
+Boys U-20 110m Hurdles Finals
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Ja'Shaun Lloyd            12 Athletic Performance (AP) Ranch        13.31a               0.3
+   2 Joshua-Kai Smith          11 Unattached                             13.32a               0.3
+   3 Jamir Brown                - Unattached                             13.35a               0.3
+   4 Jasir Fontenot             9 Mercury San Diego                      13.39a               0.3
+   5 Sutton Flint              11 GLS Speed TC                           13.60a               0.3
+   6 Ewan Curtis               12 NTX Warriors Track Club                13.65a               0.3
+   7 Malik White               Fr Unattached                             13.78a               0.3
+  -- Tyrone Jackson             - Unattached                                 DQ                  
+  -- Le'ezra Brown             12 Unattached                                DNS                  
+
+Boys U-20 110m Hurdles Prelims
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Ja'Shaun Lloyd            12 Athletic Performance (AP) Ranch        13.48a               0.3
+   2 Jamir Brown                - Unattached                             13.50a               0.3
+   3 Jasir Fontenot             9 Mercury San Diego                      13.56a                  
+   4 Sutton Flint              11 GLS Speed TC                           13.59a                  
+   5 Joshua-Kai Smith          11 Unattached                             13.59a               0.3
+   6 Malik White               Fr Unattached                             13.63a               0.3
+   7 Le'ezra Brown             12 Unattached                             13.63a                  
+   8 Tyrone Jackson             - Unattached                             13.65a               0.3
+   9 Ewan Curtis               12 NTX Warriors Track Club                13.68a                  
+  10 Jayden Keys               Fr Unattached                             13.68a                  
+  11 Andrew Jones              11 Unattached                             13.69a               0.3
+  12 Davian Burke              Fr Unattached                             13.83a                  
+  13 Cameron High              11 Unattached                             14.01a               0.3
+  14 Marcus Acheampong         Fr Unattached                             14.06a                  
+  15 Trey Knoke                 - Team NoDak                             14.33a               0.3
+  16 Aaron Merritt             Fr Unattached                             14.59a                  
+
+Boys U-20 110m Hurdles MultiEvent
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Matthew Malmstrom         Fr Unattached                             14.35a               0.3
+   2 Jaden Marlow              11 Unattached                             14.68a               0.3
+   3 Joshua Haven              11 Unattached                             14.73a               0.3
+   4 Reed McFadden             Fr Unattached                             14.84a               0.3
+   5 Nicholas Backman           - Unattached                             14.99a               0.3
+   6 Oliver Duffy               - Unattached                             15.19a               0.3
+   7 Hudson Shaver             Fr Unattached                             15.61a               0.3
+   8 Luke Johnson               - Unattached                             16.05a               0.3
+   9 Aithan Bezanson           Fr Unattached                             16.57a               0.3
+  10 William Feddeler           - Unattached                             16.62a               0.3
+  -- Holden Van Poppel         Fr Unattached                                DNS                  
+  -- Colm Matheney             Fr Unattached                                DNS                  
+  -- Oak Sullivan              Fr Unattached                                DNS                  
+
+Boys U-20 400m Hurdles Finals
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Kendrick Joshua           11 Coastal Georgia Track Team             50.53a                  
+   2 Andrew Jones              11 Unattached                             50.85a                  
+   3 James Coleman             Fr Unattached                             50.85a                  
+   4 Vincent Atilano           Fr Unattached                             51.64a                  
+   5 James Ledbetter           Fr Unattached                             51.91a                  
+   6 Neil Howard               Fr Unattached                             52.42a                  
+   7 Nash Coley                 - Unattached                             52.84a                  
+   8 Hunter Vaughn             Fr Unattached                             53.24a                  
+   9 Ewan Curtis               12 NTX Warriors Track Club                54.31a                  
+
+Boys U-20 400m Hurdles Prelims
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Kendrick Joshua           11 Coastal Georgia Track Team             51.01a                  
+   2 Andrew Jones              11 Unattached                             51.88a                  
+   3 James Coleman             Fr Unattached                             52.34a                  
+   4 Ewan Curtis               12 NTX Warriors Track Club                52.43a                  
+   5 Vincent Atilano           Fr Unattached                             52.49a                  
+   6 James Ledbetter           Fr Unattached                             52.50a                  
+   7 Neil Howard               Fr Unattached                             52.64a                  
+   8 Hunter Vaughn             Fr Unattached                             52.76a                  
+   9 Nash Coley                 - Unattached                             53.06a                  
+  10 Caleb Washington          11 Michigan Racers                        54.44a                  
+  11 Joshua Beil               12 Team NoDak                             54.44a                  
+  -- Kenyon Andrews            11 GLS Speed TC                              DNS                  
+  -- Ja'Shaun Lloyd            12 Athletic Performance (AP) Ranch           DNS                  
+  -- Ambodai Ligons            Fr Unattached                                DNS                  
+  -- Edward Bocock              - Jump Lander                               DNS                  
+
+Boys U-20 3k Steeplechase Finals
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Elijah Gentry             Fr Unattached                           9:05.40a                  
+   2 Tyler Rader                - Unattached                           9:07.48a                  
+   3 Parker Campbell           12 Unattached                           9:09.23a                  
+   4 Noah McMahan              RS Unattached                           9:10.56a                  
+   5 Gavin Rossi               Fr Unattached                           9:12.15a                  
+   6 Jack Sindt                Fr Unattached                           9:13.01a                  
+   7 Collin Stafford           Fr Unattached                           9:17.90a                  
+   8 Thomas Wlazlowski          - Unattached                           9:18.80a                  
+   9 Elijah Poore               - Unattached                           9:23.95a                  
+  10 Kipruto Koech             Fr Unattached                           9:24.68a                  
+  11 Juan Flores                - Unattached                           9:26.44a                  
+  12 Grayson Peterson           - Unattached                           9:33.43a                  
+  13 Logan Schaeffler          Fr Unattached                           9:42.48a                  
+  14 Ryan Whittlesey            - Unattached                           9:46.85a                  
+
+Boys U-20 Shot Put Finals
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#
+==================================================================================================
+   1 Jackson Cantwell          11 Unattached                             21.23m           
+   2 Ethan Thomas              Fr Unattached                             20.92m           
+   3 Benjamin Smith            RS Unattached                             20.39m           
+   4 Ashton Hearn              12 Unattached                             19.63m           
+   5 Jake Todden               Fr Unattached                             19.17m           
+   6 Alex Henry                Fr Unattached                             19.10m           
+   7 Seamus Malaski             - Unattached                             18.96m           
+   8 Aiden Corbett              - Unattached                             18.82m           
+   9 Kaden Garland             Fr Unattached                             18.08m           
+  10 Bryce Ruland              Fr Unattached                             18.02m           
+  11 Kai Twaddle-Dunham         - Unattached                             17.82m           
+  12 McKay Madsen              12 Unattached                             17.81m           
+  13 Trevor Hill                - Unattached                             17.76m           
+  14 Brandon Schirck           Fr All American Throwers                  17.66m           
+  15 Landon Prince             12 Unattached                             17.66m           
+  16 Anthony Gash              Fr Unattached                             17.30m           
+  17 Junior Payton-Kimble      Fr Unattached                             17.25m           
+  18 Bowen Fleming             12 Momentum Throws                        17.20m           
+  19 Joseph Miraya             12 Unattached                             17.17m           
+  20 Eliot Traxler             12 Unattached                             16.70m           
+  -- Joseph Goodenow           Sr Unattached                               FOUL           
+
+Boys U-20 Shot Put MultiEvent
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#
+==================================================================================================
+   1 Hudson Shaver             Fr Unattached                             15.49m           
+   2 Matthew Malmstrom         Fr Unattached                             14.10m           
+   3 Joshua Haven              11 Unattached                             13.96m           
+   4 William Feddeler           - Unattached                             13.52m           
+   5 Jaden Marlow              11 Unattached                             12.76m           
+   6 Aithan Bezanson           Fr Unattached                             12.52m           
+   7 Oliver Duffy               - Unattached                             11.45m           
+   8 Nicholas Backman           - Unattached                             11.39m           
+   9 Reed McFadden             Fr Unattached                             11.25m           
+  10 Luke Johnson               - Unattached                             10.77m           
+  -- Colm Matheney             Fr Unattached                               FOUL           
+  -- Holden Van Poppel         Fr Unattached                                DNS           
+  -- Oak Sullivan              Fr Unattached                                DNS           
+
+Boys U-20 Discus Finals
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#
+==================================================================================================
+   1 Reece Ihenacho             9 Unattached                             62.23m           
+   2 Kai Twaddle-Dunham        Fr Unattached                             61.80m           
+   3 Ashton Hearn              12 Unattached                             61.66m           
+   4 Simon Rosselli             - Unattached                             59.84m           
+   5 Ben Smith                  - Unattached                             58.93m           
+   6 Thomas Hinton              - Unattached                             58.37m           
+   7 McKay Madsen              12 Unattached                             58.00m           
+   8 Thomas McConnelee         Fr Unattached                             57.62m           
+   9 Derek Smith                - Unattached                             57.23m           
+  10 Rickey Robbins            Fr Unattached                             55.14m           
+  11 Mosese Hala'ufia          Fr Unattached                             54.44m           
+  12 Benjamin Lingenfelter     12 Unattached                             54.37m           
+  13 Oluwatimilehin Williams    - Unattached                             54.13m           
+  14 Junior Payton-Kimble      Fr Unattached                             54.05m           
+  15 Jarrett Schmidt           Fr Unattached                             54.03m           
+  16 Jarrius Ward              12 Hustle Track Club                      54.00m           
+  17 Joshua Sterling            - Unattached                             52.21m           
+  18 Anthony Gash              Fr Unattached                             52.05m           
+  19 Bryce Ruland              Fr Unattached                             51.99m           
+  20 Seamus Malaski            Fr Unattached                             49.44m           
+  -- Ethan Thomas               - Unattached                               FOUL           
+
+Boys U-20 Discus MultiEvent
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#
+==================================================================================================
+   1 Oliver Duffy               - Unattached                             44.39m           
+   2 Matthew Malmstrom         Fr Unattached                             38.16m           
+   3 Jaden Marlow              11 Unattached                             36.91m           
+   4 Aithan Bezanson           Fr Unattached                             36.17m           
+   5 William Feddeler           - Unattached                             35.12m           
+   6 Luke Johnson               - Unattached                             34.66m           
+   7 Nicholas Backman           - Unattached                             31.60m           
+   8 Joshua Haven              11 Unattached                             30.99m           
+   9 Reed McFadden             Fr Unattached                             30.91m           
+  -- Hudson Shaver             Fr Unattached                               FOUL           
+  -- Oak Sullivan              Fr Unattached                                DNS           
+  -- Holden Van Poppel         Fr Unattached                                DNS           
+  -- Colm Matheney             Fr Unattached                                DNS           
+
+Boys U-20 Javelin Finals
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#
+==================================================================================================
+   1 Preston Kuznof            Fr Unattached                             65.18m           
+   2 Jeffrey King               - Unattached                             63.10m           
+   3 Louis Liberatore           - Unattached                             61.84m           
+   4 Chandler Mitzo             - Unattached                             59.23m           
+   5 Isaac Moyle               11 Unattached                             59.17m           
+   6 Harrison Keen              - Unattached                             58.69m           
+   7 John Teachman              - Unattached                             58.31m           
+   8 Jett Winger               11 Unattached                             56.52m           
+   9 Levi Bengelink             - Unattached                             54.87m           
+  10 Grant Weighall            12 Tribe Elite Athletics                  53.37m           
+  11 Max Clark                  - Unattached                             53.30m           
+  12 Kodie Bogle                - Unattached                             52.46m           
+  13 Robert Conley             12 Unattached                             51.08m           
+  14 Kiyan Vrell               12 Amity Track                            50.59m           
+  15 Gavin Wang                 - Unattached                             44.48m           
+  -- Nicholas Reynolds          - Unattached                                DNS           
+  -- Tristan Hiller             9 Unattached                                DNS           
+
+Boys U-20 Javelin MultiEvent
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#
+==================================================================================================
+   1 Hudson Shaver             Fr Unattached                             59.45m           
+   2 Aithan Bezanson           Fr Unattached                             52.87m           
+   3 Luke Johnson               - Unattached                             49.21m           
+   4 Joshua Haven              11 Unattached                             45.41m           
+   5 Jaden Marlow              11 Unattached                             42.24m           
+   6 Reed McFadden             Fr Unattached                             42.13m           
+   7 Oliver Duffy               - Unattached                             39.92m           
+   8 William Feddeler           - Unattached                             39.60m           
+   9 Matthew Malmstrom         Fr Unattached                             38.41m           
+  10 Nicholas Backman           - Unattached                             32.87m           
+  -- Holden Van Poppel         Fr Unattached                                DNS           
+  -- Colm Matheney             Fr Unattached                                DNS           
+  -- Oak Sullivan              Fr Unattached                                DNS           
+
+Boys U-20 High Jump Finals
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+==================================================================================================
+   1 Etoro Bassey              12 Unattached                              2.17m                 
+   2 Geron White               12 Federal Way Track                       2.12m                 
+   3 Micah Lockett             11 Unattached                              2.12m                 
+   4 Desire Tonye Nyemeck      Fr Unattached                              2.07m                 
+   4 Kenneth Owen              12 Unattached                              2.07m                 
+   4 Landon Freeman            12 Kangaroo Track Club                     2.07m                 
+   7 Jordan Randall            11 Unattached                              2.07m                 
+   8 William Nohren             - Unattached                              2.07m                 
+   9 Justin (Alan) Hanna       12 Unattached                              2.02m                 
+   9 Khalil Antoine            Fr Unattached                              2.02m                 
+  11 Sam Snitker                - Unattached                              2.02m                 
+  11 Cole Smither              12 Unattached                              2.02m                 
+  11 Kenyatta Bennett          Fr Unattached                              2.02m                 
+  -- Tyson Seeser               - Unattached                                 NH                 
+  -- Graham Murphy              - Unattached                                 NH                 
+  -- Brady Ripp                12 Unattached                                 NH                 
+  -- Ryan Janak                11 Unattached                                 NH                 
+
+Boys U-20 High Jump MultiEvent
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+==================================================================================================
+   1 Joshua Haven              11 Unattached                              2.00m                 
+   2 Hudson Shaver             Fr Unattached                              1.85m                 
+   2 Reed McFadden             Fr Unattached                              1.85m                 
+   2 Matthew Malmstrom         Fr Unattached                              1.85m                 
+   2 Oliver Duffy               - Unattached                              1.85m                 
+   6 Aithan Bezanson           Fr Unattached                              1.82m                 
+   6 Jaden Marlow              11 Unattached                              1.82m                 
+   6 Luke Johnson               - Unattached                              1.82m                 
+   9 William Feddeler           - Unattached                              1.70m                 
+  10 Nicholas Backman           - Unattached                              1.67m                 
+  -- Oak Sullivan              Fr Unattached                                DNS                 
+  -- Holden Van Poppel         Fr Unattached                                DNS                 
+  -- Colm Matheney             Fr Unattached                                DNS                 
+
+Boys U-20 Pole Vault Finals
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+==================================================================================================
+   1 Victor Olesen             11 Xtreme Heights LLC                      5.49m                 
+   2 Caelan Harland            12 Unattached                              5.31m                 
+   3 Khaliq Muhammad           12 Mission Valley Track & Field            5.31m                 
+   4 Isaiah Whitaker           11 Unattached                              5.31m                 
+   5 Dyson Wicker               - Unattached                              5.21m                 
+   6 Eric Rose                 10 Austin Pole Vault & Throws              5.21m                 
+   7 Chase McGee               12 Unattached                              5.21m                 
+   8 Sam Novak                 12 Unattached                              5.06m                 
+   9 max Garvin                 - Unattached                              5.06m                 
+   9 Taylor Waters             12 Drift Motion Athletics Club             5.06m                 
+  11 Benjamin Feyrer            - Unattached                              5.06m                 
+  12 Jason Deem                Fr Unattached                              4.91m                 
+  13 Dash Wasson               11 Unattached                              4.91m                 
+  13 Isaac Roman               10 Unattached                              4.91m                 
+  -- Kadyn Hysong               9 Unattached                                 NH                 
+  -- Gavin Schaer              Fr Unattached                                 NH                 
+  -- Kage Hefner                - Unattached                                 NH                 
+
+Boys U-20 Pole Vault MultiEvent
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+==================================================================================================
+   1 Jaden Marlow              11 Unattached                              4.60m                 
+   2 Reed McFadden             Fr Unattached                              4.40m                 
+   2 Oliver Duffy               - Unattached                              4.40m                 
+   4 Joshua Haven              11 Unattached                              4.00m                 
+   4 William Feddeler           - Unattached                              4.00m                 
+   6 Matthew Malmstrom         Fr Unattached                              3.80m                 
+   7 Hudson Shaver             Fr Unattached                              3.60m                 
+   7 Luke Johnson               - Unattached                              3.60m                 
+   9 Nicholas Backman           - Unattached                              3.50m                 
+  10 Aithan Bezanson           Fr Unattached                              3.10m                 
+  -- Oak Sullivan              Fr Unattached                                DNS                 
+  -- Holden Van Poppel         Fr Unattached                                DNS                 
+  -- Colm Matheney             Fr Unattached                                DNS                 
+
+Boys U-20 Long Jump Finals
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+==================================================================================================
+   1 Jayden Keys                - Unattached                              7.92m                 
+   2 Jayden Burris             Fr Unattached                              7.40m                 
+   3 Quincy Isaac              12 Dearborn Track Club                     7.28m                 
+   4 Tyler Holmes              12 Unattached                              7.25m                 
+   5 Anthony Buford            Fr Unattached                              7.14m                 
+   6 Lincoln Begin              - Unattached                              6.98m                 
+   7 Zack Mountain              9 Unattached                              6.86m                 
+   8 Croix DaCunha             Fr Unattached                              6.74m                 
+   9 Cheikh M'Baye             RS Unattached                              6.72m                 
+  10 Tyler Craft               Fr Unattached                              6.57m                 
+  11 Justin Temple Sr.          - Team Blackout Elite Track               6.33m                 
+  -- Cordial Vann              12 Major Impact TX                           DNS                 
+
+Boys U-20 Long Jump MultiEvent
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+==================================================================================================
+   1 Oliver Duffy               - Unattached                              7.08m                 
+   2 Jaden Marlow              11 Unattached                              6.85m                 
+   3 Matthew Malmstrom         Fr Unattached                              6.55m                 
+   4 Aithan Bezanson           Fr Unattached                              6.51m                 
+   4 Nicholas Backman           - Unattached                              6.51m                 
+   6 Hudson Shaver             Fr Unattached                              6.42m                 
+   7 Joshua Haven              11 Unattached                              6.35m                 
+   8 Luke Johnson               - Unattached                              5.90m                 
+   9 William Feddeler           - Unattached                              5.89m                 
+  10 Colm Matheney             Fr Unattached                              5.88m                 
+  11 Reed McFadden             Fr Unattached                              5.71m                 
+  -- Oak Sullivan              Fr Unattached                                DNS                 
+  -- Holden Van Poppel         Fr Unattached                                DNS                 
+
+Boys U-20 Triple Jump Finals
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+==================================================================================================
+   1 Xavier Drumgoole           - Unattached                             15.97m                 
+   2 Jaylen Burris             Fr Unattached                             15.83m                 
+   3 Jayden Burris             Fr Unattached                             15.60m                 
+   4 Jayden Thrower            12 Unattached                             14.90m                 
+   5 Brandyn Wetherspoon       Fr Unattached                             14.84m                 
+   6 Caleb Holman              Fr Unattached                             14.75m                 
+   7 Jayden Gordon             Fr Unattached                             14.69m                 
+   8 Andrew Robinson           RS Leap Squad Track                       14.63m                 
+   9 Avery McKinnon            Fr Unattached                             14.58m                 
+  10 Camren Smith              12 Unattached                             14.46m                 
+  11 Gage Brooks               12 Unattached                             14.25m                 
+  12 Charles Crowder            - Unattached                             14.23m                 
+  13 Tyler Craft                - Unattached                             14.20m                 
+  14 James Beckett             Fr Unattached                             13.90m                 
+  -- Enoch Appiah-Kubi         Fr Unattached                               FOUL                 
+  -- Justin Temple Sr.          - Team Blackout Elite Track                FOUL                 
+  -- Jaydon Shield             Fr Unattached                                DNS                 
+
+Boys U-20 Hammer Finals
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#
+==================================================================================================
+   1 Aidan Ifkovits            Fr Unattached                             70.78m           
+   2 Charles LaFore            Fr Unattached                             70.29m           
+   3 Gannon Traymore            - Unattached                             68.40m           
+   4 Seamus Malaski             - Unattached                             66.52m           
+   5 Thomas McConnelee          - Unattached                             65.26m           
+   6 Miles Clark               Fr Unattached                             61.91m           
+   7 Alex Henry                 - Unattached                             61.70m           
+   8 Braiden Pulver            Fr Unattached                             59.50m           
+   9 Magnus Heckel              - Unattached                             59.13m           
+  10 Devyn Steingisser          - Unattached                             59.00m           
+  11 Adam Beaudry              Fr Unattached                             58.00m           
+  12 Kaden Garland              - Unattached                             57.55m           
+  13 Brandon Schirck           Fr All American Throwers                  57.26m           
+  14 Aidan Kerr                12 Sycamore Farm Throwing Club            56.43m           
+  -- Fin Essley                Fr Unattached                               FOUL           
+  -- Jake Todden                - Unattached                               FOUL           
+  -- Zane Commins               - GLS Speed TC                             FOUL           
+
+Boys U-20 Decathlon Score MultiEvent
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#
+==================================================================================================
+   1 Jaden Marlow              11 Unattached                               6971           
+   2 Matthew Malmstrom         Fr Unattached                               6951           
+   3 Joshua Haven              11 Unattached                               6857           
+   4 Reed McFadden             Fr Unattached                               6597           
+   5 Oliver Duffy               - Unattached                               6286           
+   6 Hudson Shaver             Fr Unattached                               6250           
+   7 Aithan Bezanson           Fr Unattached                               6225           
+   8 Luke Johnson               - Unattached                               5961           
+   9 Nicholas Backman           - Unattached                               5928           
+  10 William Feddeler           - Unattached                               5376           
+     Colm Matheney             Fr Unattached                                DNF           
+     Holden Van Poppel         Fr Unattached                                DNF           
+     Oak Sullivan              Fr Unattached                                DNF           
+
+Girls U-20 100 Meters Finals
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Dana Wilson               12 Unattached                             11.14a                  
+   2 Mia Maxwell               11 Unattached                             11.21a                  
+   3 Mariah Maxwell            11 Unattached                             11.40a                  
+   4 Naiaja Sizemore           11 Unattached                             11.45a                  
+   5 Ava Kitchings             11 ATL Zoom Athletics                     11.51a                  
+   6 Skylar Cunningham         10 ATL Zoom Athletics                     11.54a                  
+   7 Hannah Lowe               Fr Unattached                             11.61a                  
+   8 Ryan Jennings             12 Unattached                             11.65a                  
+   9 Samiyah Roberson           - Unattached                             11.68a                  
+
+Girls U-20 100 Meters Prelims
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Dana Wilson               12 Unattached                             11.29a                  
+   2 Mia Maxwell               11 Unattached                             11.39a                  
+   3 Naiaja Sizemore           11 Unattached                             11.41a                  
+   4 Mariah Maxwell            11 Unattached                             11.55a               0.6
+   5 Ava Kitchings             11 ATL Zoom Athletics                     11.59a                  
+   6 Hannah Lowe               Fr Unattached                             11.62a                  
+   7 Skylar Cunningham         10 ATL Zoom Athletics                     11.62a                  
+   8 Ryan Jennings             12 Unattached                             11.63a               0.6
+   9 Samiyah Roberson           - Unattached                             11.63a               0.6
+  10 Madeline Cooper           12 Unattached                             11.66a                  
+  11 Kylah Woods               12 Unattached                             11.68a               0.6
+  12 Kymora-Lee Williams       12 Unattached                             11.69a                  
+  13 London Jackson Bray       12 Track Houston Youth Track              11.71a                  
+  14 Sade Gray                  - Unattached                             11.73a               0.6
+  15 Ellie Mccuskey-Hay        11 Marin Waves Track & Field              11.80a                  
+  16 Laura Fiegel              11 Unattached                             11.81a                  
+  17 Aliyah Johnson            Fr Unattached                             11.83a                  
+  18 Journey Cole              12 GLS Speed TC                           11.85a               0.6
+  19 Caitlyn Cavitt            11 Athletic Performance (AP) Ranch        11.96a                  
+  20 Aria Pearce               10 Unattached                             11.99a               0.6
+  21 Camryn Wilson             11 Unattached                             12.05a                  
+  22 Quiana Williams           Fr Unattached                             12.07a               0.6
+
+Girls U-20 200 Meters Finals
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Mia Maxwell               11 Unattached                             23.10a               0.2
+   2 Mariah Maxwell            11 Unattached                             23.36a               0.2
+   3 Skylar Cunningham         10 ATL Zoom Athletics                     23.58a               0.2
+   4 Sade Gray                  - Unattached                             23.80a               0.2
+   5 Naiaja Sizemore           11 Unattached                             23.95a               0.2
+   6 Kymora-Lee Williams       12 Unattached                             24.18a               0.2
+   7 Jaden Small               11 Unattached                             24.40a               0.2
+   8 Paige Renschler            - Unattached                             24.43a               0.2
+  -- Dana Wilson               12 Unattached                                DNS                  
+
+Girls U-20 200 Meters Prelims
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Dana Wilson               12 Unattached                             22.86a                  
+   2 Mariah Maxwell            11 Unattached                             23.21a               0.3
+   3 Mia Maxwell               11 Unattached                             23.22a                  
+   4 Naiaja Sizemore           11 Unattached                             23.56a               0.3
+   5 Skylar Cunningham         10 ATL Zoom Athletics                     23.57a               0.3
+   6 Kymora-Lee Williams       12 Unattached                             24.01a               0.3
+   7 Sade Gray                  - Unattached                             24.24a                  
+   8 Paige Renschler            - Unattached                             24.25a               0.3
+   9 Jaden Small               11 Unattached                             24.39a               0.3
+  10 Jizzale Davis             Fr Unattached                             24.43a               0.3
+  11 Ryan Jennings             12 Unattached                             24.45a                  
+  12 Alexandra Lea              - Byrd Sports Performance track Clu      24.83a                  
+  -- Faith Kibbe               Fr Unattached                                DNS                  
+  -- Payton Smith              Fr Unattached                                DNS                  
+  -- Delaney Brinker           12 TRIBE                                     DNS                  
+  -- Skylar Brazzell           12 Athletic Performance (AP) Ranch           DNS                  
+  -- Nia Trammell              12 Athletic Performance (AP) Ranch           DNS                  
+  -- Caitlyn Cavitt            11 Athletic Performance (AP) Ranch           DNS                  
+
+Girls U-20 200 Meters MultiEvent
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Meagan Humphries          Fr Unattached                             23.71a                  
+   2 Valerie Jirak              - Unattached                             23.95a                  
+   3 Devyn Parham               9 Unattached                             24.14a                  
+   4 Sierra Thompson            - Unattached                             24.62a                  
+   5 Destiny Look              11 Spartan Track Club Hawaii              24.96a                  
+   6 Mercy Freeman             Fr Unattached                             25.43a                  
+  -- Kaitlyn Pearson           Fr Unattached                                DNS                  
+  -- Ella Meyerkorth           11 Unattached                                DNS                  
+  -- Cate Bryant               10 Texas Elite Track and Field               DNS                  
+
+Girls U-20 400 Meters Finals
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Braelyn Baker             Fr Unattached                             51.78a                  
+   2 Olivia Harris             10 Jackrabbit Track Georgia               52.34a                  
+   3 Sophia Castaneda           - Unattached                             53.16a                  
+   4 Payton Smith              Fr Unattached                             53.17a                  
+   5 Kelsie Belquist            - Unattached                             53.55a                  
+   6 Delaney Brinker           12 TRIBE                                  53.70a                  
+   7 Taylin Segree              - Unattached                             54.18a                  
+   8 Mia Shepard               Fr Unattached                             55.16a                  
+  -- Tristian Campbell          - Unattached                                DNS                  
+
+Girls U-20 400 Meters Prelims
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Braelyn Baker             Fr Unattached                             52.74a                  
+   2 Olivia Harris             10 Jackrabbit Track Georgia               52.94a                  
+   3 Delaney Brinker           12 TRIBE                                  53.47a                  
+   4 Kelsie Belquist            - Unattached                             53.62a                  
+   5 Payton Smith              Fr Unattached                             53.69a                  
+   6 Sophia Castaneda           - Unattached                             53.98a                  
+   7 Tristian Campbell          - Unattached                             54.61a                  
+   8 Taylin Segree              - Unattached                             54.76a                  
+   9 Mia Shepard               Fr Unattached                             54.77a                  
+  10 Lillian Larosa            11 TruSpeed Athletics                     54.87a                  
+  11 Alexandra Lea              - Byrd Sports Performance track Clu      55.00a                  
+  12 Gabriella Taylor          12 Arizona Flames Track Club              55.26a                  
+  13 Nia Trammell              12 Athletic Performance (AP) Ranch        55.83a                  
+  14 Faith Kibbe               Fr Unattached                             57.00a                  
+  15 Lillian Hurd              Fr Unattached                             58.31a                  
+  -- Tyler Lowe                 - Unattached                                DNS                  
+
+Girls U-20 800 Meters Finals
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Makenna Herbst            12 ProCaliber Sports Track Club         2:02.48a                  
+   2 Addyson Abner             11 Unattached                           2:07.46a                  
+   3 Coraline Haggarty          - Unattached                           2:08.06a                  
+   4 Berkeley Engelland        Fr Unattached                           2:09.48a                  
+   5 Rachael Hoover             - Unattached                           2:09.74a                  
+   6 Tiffany Mugubi             - Unattached                           2:11.12a                  
+   7 Charlotte Cullen          Fr Unattached                           2:13.55a                  
+   8 Addison Washler           So Unattached                           2:15.84a                  
+  -- Charlize-Trinity McKenzie 11 Unattached                                DNS                  
+
+Girls U-20 800 Meters MultiEvent
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Meagan Humphries          Fr Unattached                           2:16.78a                  
+   2 Valerie Jirak              - Unattached                           2:18.82a                  
+   3 Mercy Freeman             Fr Unattached                           2:24.09a                  
+   4 Destiny Look              11 Spartan Track Club Hawaii            2:24.66a                  
+   5 Sierra Thompson            - Unattached                           2:24.71a                  
+  -- Devyn Parham               9 Unattached                                DNS                  
+  -- Kaitlyn Pearson           Fr Unattached                                DNS                  
+  -- Ella Meyerkorth           11 Unattached                                DNS                  
+  -- Cate Bryant               10 Texas Elite Track and Field               DNS                  
+
+Girls U-20 1500 Meters Finals
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Zariel Macchia             - Unattached                           4:21.53a                  
+   2 Jaelyn Williams           11 Unattached                           4:22.32a                  
+   3 Lily Kriegel              Fr Unattached                           4:26.92a                  
+   4 Charlize-Trinity McKenzie 11 Unattached                           4:28.79a                  
+   5 Charlotte Cullen          Fr Unattached                           4:30.80a                  
+   6 Delaney Ulrich            RS Unattached                           4:41.86a                  
+  -- Lucy McLean               12  New England Elite Track Club             DNS                  
+
+Girls U-20 3000 Meters Finals
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Ella White                Fr Unattached                           9:19.94a                  
+   2 Gentry Turner             Fr Unattached                           9:21.44a                  
+   3 Zariel Macchia             - Unattached                           9:34.09a                  
+   4 Jaelyn Williams           11 Unattached                           9:36.11a                  
+   5 Liliah Gordon             12 Shore Athletic                       9:44.32a                  
+   6 Autumn Michalski          Fr Unattached                           9:52.79a                  
+  -- Cailey Bracken            Fr Unattached                                DNS                  
+
+Girls U-20 5000 Meters Finals
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Lily Kriegel              Fr Unattached                          16:18.36a                  
+   2 Ella White                Fr Unattached                          16:20.24a                  
+   3 Zariel Macchia             - Unattached                          16:30.91a                  
+   4 Gentry Turner             Fr Unattached                          16:36.88a                  
+   5 Liliah Gordon             12 Shore Athletic                      16:38.54a                  
+   6 Sophie Farley              - Unattached                          16:44.95a                  
+   7 Autumn Michalski          Fr Unattached                          16:48.01a                  
+   8 Sophie Cloutier            - Unattached                          16:51.89a                  
+   9 Peyton Smith              Fr Unattached                          16:52.17a                  
+  10 Olivia Pauly               - Unattached                          17:10.89a                  
+  11 Arizona Blankenship        - Unattached                          17:20.22a                  
+  12 Cailey Bracken            Fr Unattached                          17:21.93a                  
+  13 Eleanor Droege            Fr Unattached                          17:34.30a                  
+  -- Kelseigh O'Neil            - Unattached                                DNS                  
+  -- Jaelyn Williams           11 Unattached                                DNS                  
+
+Girls U-20 10,000 Meters Racewalk Finals
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Talia Green                - Unattached                          52:25.62a                  
+   2 Kayleia Lindsey            8 Elgin Sharks Track                  57:07.92a                  
+   3 Natalie Grant             10 Maine Race Walkers                  58:04.65a                  
+
+Girls U-20 100m Hurdles Finals
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Joslyn Hamilton           Fr Unattached                             13.36a                  
+   2 Anisa Bowen-Fontenot      12 Mercury San Diego                      13.36a                  
+   3 Chelsi Williams           12 Unattached                             13.40a                  
+   4 Destiny Coleman           11 Windsor Elite Track Club               13.42a                  
+   5 Madeline Cooper           12 Unattached                             13.45a                  
+   6 Rebekah-Jhade Garrett     11 EPA Track Club (Explosive Perform      13.50a                  
+   7 Makenna Barnett           12 Unattached                             13.97a                  
+   8 Arianna Garcia            11 Unattached                             14.10a                  
+   9 Aurora Wessel             Fr Unattached                             14.21a                  
+
+Girls U-20 100m Hurdles Prelims
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Anisa Bowen-Fontenot      12 Mercury San Diego                      13.40a                  
+   2 Destiny Coleman           11 Windsor Elite Track Club               13.40a                  
+   3 Joslyn Hamilton           Fr Unattached                             13.51a                  
+   4 Madeline Cooper           12 Unattached                             13.58a                  
+   5 Chelsi Williams           12 Unattached                             13.61a                  
+   6 Rebekah-Jhade Garrett     11 EPA Track Club (Explosive Perform      13.81a                  
+   7 Arianna Garcia            11 Unattached                             13.83a                  
+   8 Makenna Barnett           12 Unattached                             13.95a                  
+   9 Aurora Wessel             Fr Unattached                             14.05a                  
+  10 Kayvon Nubine             Fr Unattached                             14.28a                  
+  11 Natalie Brown              - Unattached                             15.66a                  
+  12 Ashlyn Barrett            10 A3 Bakersfield                         15.96a                  
+  -- Annaleise Taylor           - Unattached                                DNS                  
+  -- Kaitlyn Pearson           Fr Unattached                                DNS                  
+
+Girls U-20 100m Hurdles MultiEvent
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Devyn Parham               9 Unattached                             13.58a               0.5
+   2 Meagan Humphries          Fr Unattached                             13.90a               0.5
+   3 Valerie Jirak              - Unattached                             14.09a               0.5
+   4 Destiny Look              11 Spartan Track Club Hawaii              14.30a               0.5
+   5 Sierra Thompson            - Unattached                             14.46a               0.5
+   6 Mercy Freeman             Fr Unattached                             14.86a               0.5
+  -- Kaitlyn Pearson           Fr Unattached                                DNS                  
+  -- Ella Meyerkorth           11 Unattached                                DNS                  
+  -- Cate Bryant               10 Texas Elite Track and Field               DNF                  
+
+Girls U-20 400m Hurdles Finals
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Morgan Herbst             12 ProCaliber Sports Track Club           55.78a                  
+   2 Jasmine Robinson          11 The Heat Track                         57.49a                  
+   3 Cenaiya Billups           Fr Unattached                             57.50a                  
+   4 Reese Kasper               - Unattached                             59.35a                  
+   5 Eboselulu Omofoma         Fr Unattached                             59.69a                  
+   6 Anna Schneidler           10 GLS Speed TC                         1:00.09a                  
+   7 Laila Smith               Fr Unattached                           1:00.39a                  
+   8 Kalen Goodman             Fr Unattached                           1:00.56a                  
+   9 Annaleise Taylor           - Unattached                           1:01.12a                  
+
+Girls U-20 400m Hurdles Prelims
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Morgan Herbst             12 ProCaliber Sports Track Club           55.89a                  
+   2 Cenaiya Billups           Fr Unattached                             56.90a                  
+   3 Jasmine Robinson          11 The Heat Track                         57.96a                  
+   4 Reese Kasper               - Unattached                             58.82a                  
+   5 Eboselulu Omofoma         Fr Unattached                             59.31a                  
+   6 Laila Smith               Fr Unattached                             59.44a                  
+   7 Anna Schneidler           10 GLS Speed TC                           59.67a                  
+   8 Annaleise Taylor           - Unattached                           1:00.05a                  
+   9 Kalen Goodman             Fr Unattached                           1:00.06a                  
+  10 Laila Payne               12 Unattached                           1:00.19a                  
+  11 Olivia Walker             Fr Unattached                           1:00.24a                  
+  12 Arianna Garcia            11 Unattached                           1:00.29a                  
+  13 Aaliyah Murphy            12 Unattached                           1:01.13a                  
+  14 Lena Carder                - Unattached                           1:01.19a                  
+  15 Nyla Jones                Fr Unattached                           1:02.76a                  
+  16 Linnea Neureuther         Fr Unattached                           1:02.91a                  
+  17 Reese Nicolosi            Fr Unattached                           1:04.87a                  
+  18 Sofia Lena Lopes           - Unattached                           1:06.75a                  
+
+Girls U-20 3k Steeplechase Finals
+=================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+=================================================================================================
+   1 Sara Morefield             - Unattached                          10:38.86a                  
+   2 Delaney Ulrich            RS Unattached                          10:47.19a                  
+   3 Anne Reilly                - Unattached                          10:47.62a                  
+   4 Mia Murray                Fr Unattached                          10:51.45a                  
+   5 Natalie Mello              - Unattached                          11:02.49a                  
+   6 Mariah Belmont             - Unattached                          11:03.14a                  
+   7 Kristen Sarnicola         Fr Unattached                          11:11.63a                  
+   8 Allison Kinlaw            12 Unattached                          11:15.71a                  
+   9 Mariah Fenske              - Unattached                          11:22.35a                  
+  10 Gnister Grant              - Unattached                          11:22.52a                  
+  11 Jana Barron                - Unattached                          11:25.45a                  
+  12 Ava Kurczewski            Fr Unattached                          11:27.09a                  
+  13 Ryann Strawn               - Unattached                          11:27.28a                  
+  14 Ellia Agar                Fr Unattached                          11:39.02a                  
+  15 Miah Johnson              Fr Unattached                          11:46.52a                  
+
+Girls U-20 Shot Put Finals
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#
+==================================================================================================
+   1 Abigail Russell           Fr Unattached                             16.07m           
+   2 Madeleine Fey              - Unattached                             15.67m           
+   3 Emarie Jackson            Fr Unattached                             15.10m           
+   4 Lorelai Zielinski         10 Unattached                             14.88m           
+   5 Addyson Stiverson         10 Unattached                             14.86m           
+   6 Jaslene Massey            12 Unattached                             14.72m           
+   7 Lauren Kirby              12 Unattached                             14.69m           
+   8 Taylor Wiseman            12 Seal Throwing                          14.10m           
+   9 Jessica Polkinghorn       Fr Unattached                             13.79m           
+  10 Madison Fowler            Fr Unattached                             13.74m           
+  11 Olivia Marshall           Fr Unattached                             13.61m           
+  12 Sophia Zagorski            - Unattached                              6.12m           
+  -- Donna Douglas             Fr Unattached                                DNS           
+
+Girls U-20 Shot Put MultiEvent
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#
+==================================================================================================
+   1 Meagan Humphries          Fr Unattached                             11.57m           
+   2 Devyn Parham              Fr Unattached                             11.25m           
+   2 Valerie Jirak             Fr Unattached                             11.25m           
+   4 Mercy Freeman              - Unattached                             11.19m           
+   5 Destiny Look              11 Spartan Track Club Hawaii               9.78m           
+   6 Sierra Thompson           Fr Unattached                              9.57m           
+  -- Kaitlyn Pearson            - Unattached                                DNS           
+  -- Ella Meyerkorth           11 Unattached                                DNS           
+  -- Cate Bryant               10 Texas Elite Track and Field               DNS           
+
+Girls U-20 Discus Finals
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#
+==================================================================================================
+   1 Madeleine Fey             Fr Unattached                             53.22m           
+   2 Olamide Ayeni             Fr Unattached                             52.93m           
+   3 Abigail Russell            - Unattached                             52.92m           
+   4 Taylor Wiseman            12 Seal Throwing                          50.93m           
+   5 Hannah Alexander           - Unattached                             50.80m           
+   6 Lorelai Zielinski         10 Unattached                             48.47m           
+   7 Grace Degarimore          Fr Unattached                             47.02m           
+   8 Emma Yoder                 - Unattached                             47.01m           
+   9 Layla Giordano             - Unattached                             46.54m           
+  10 Chloe Barber              11 Momentum Throws                        46.41m           
+  11 Jaslene Massey            12 Unattached                             45.22m           
+  12 Burklie Burton            12 Unattached                             45.22m           
+  13 Olivia Chamizo            12 The Throwing Factory                   42.88m           
+  14 Tirea Reed                Fr Unattached                             42.32m           
+  15 Lexi Boss                 12 Unattached                             41.58m           
+  16 Su'Riah Williams          12 Unattached                             41.48m           
+  17 Jillian Scully            12 Unattached                             40.77m           
+  -- Andreese Ortiz            Fr Unattached                               FOUL           
+  -- Donna Douglas             Fr Unattached                                DNS           
+
+Girls U-20 Javelin Finals
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#
+==================================================================================================
+   1 Jenessa Ruder             Fr Unattached                             46.31m           
+   2 Addison Throckmorton       - Unattached                             45.65m           
+   3 Hayden Williams-Downing   12 SuperThrowerTrackClub                  45.16m           
+   4 Sophia Scott              12 Unattached                             44.15m           
+   5 Baylee Wroble              - Unattached                             44.11m           
+   6 Julia Pinter               - Unattached                             41.35m           
+   7 McKenna Lay               11 Unattached                             41.12m           
+   8 Anna Millikan             11 Unattached                             40.08m           
+
+Girls U-20 Javelin MultiEvent
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#
+==================================================================================================
+   1 Valerie Jirak              - Unattached                             39.49m           
+   2 Meagan Humphries          Fr Unattached                             36.12m           
+   3 Destiny Look              11 Spartan Track Club Hawaii              34.25m           
+   4 Sierra Thompson            - Unattached                             32.92m           
+   5 Mercy Freeman             Fr Unattached                             27.26m           
+   6 Devyn Parham               9 Unattached                             23.79m           
+  -- Cate Bryant               10 Texas Elite Track and Field               DNS           
+  -- Kaitlyn Pearson           Fr Unattached                                DNS           
+  -- Ella Meyerkorth           11 Unattached                                DNS           
+
+Girls U-20 High Jump Finals
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+==================================================================================================
+   1 Zoey Brinker              12 TRIBE                                   1.76m                 
+   2 Hannah Riolo              Fr Unattached                              1.76m                 
+   2 Nia Harrison              11 Major Impact TX                         1.76m                 
+   4 Valentina Fakrogha         - Unattached                              1.76m                 
+   5 Milena Chevallier         Fr Unattached                              1.76m                 
+   6 Karsyn Leeling            Fr Unattached                              1.76m                 
+   7 Kira Smith                 - Unattached                              1.71m                 
+   8 Josie Page                Fr Unattached                              1.71m                 
+   9 Kendall Ward              So Unattached                              1.71m                 
+  10 Kyana Williams            11 Tha Truth Track Tribe                   1.71m                 
+  11 Presley Gray              Fr Unattached                              1.66m                 
+  11 Braelyn Bailey            11 Unattached                              1.66m                 
+  11 Cali Bryant               12 Texas Elite Track and Field             1.66m                 
+  14 Cortnie Barker            Fr Unattached                              1.66m                 
+  15 Akuot Kuany               Fr Unattached                              1.66m                 
+  -- Brianna Rivers            12 Texas Elite Track and Field               DNS                 
+
+Girls U-20 High Jump MultiEvent
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+==================================================================================================
+   1 Meagan Humphries          Fr Unattached                              1.70m                 
+   2 Destiny Look              11 Spartan Track Club Hawaii               1.64m                 
+   3 Devyn Parham              Fr Unattached                              1.61m                 
+   3 Valerie Jirak             Fr Unattached                              1.61m                 
+   5 Sierra Thompson           Fr Unattached                              1.58m                 
+   5 Mercy Freeman              - Unattached                              1.58m                 
+  -- Kaitlyn Pearson            - Unattached                                DNS                 
+  -- Ella Meyerkorth           11 Unattached                                DNS                 
+  -- Cate Bryant               10 Texas Elite Track and Field               DNS                 
+
+Girls U-20 Pole Vault Finals
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+==================================================================================================
+   1 Anna Willis               Fr Unattached                              4.35m                 
+   2 Jathiyah Muhammad         Fr Unattached                              4.30m                 
+   3 Addison Kleinke           11 Unattached                              4.25m                 
+   4 Jaicee Jasmer             12 Unattached                              4.15m                 
+   5 Brooke Bowers             Fr Unattached                              4.15m                 
+   6 Alexa Anderson            12 Unattached                              4.00m                 
+   7 Elise Schroeder           11 Unattached                              4.00m                 
+   7 Emily Romano              Fr Unattached                              4.00m                 
+   7 Lily Beattie              Fr Unattached                              4.00m                 
+  10 Kira Bowman               11 Texas Express TFC                       4.00m                 
+  11 Kourtney Rathke            - Unattached                              3.85m                 
+  12 Abbie Scott               Fr Unattached                              3.85m                 
+  13 Brooklyn Nalley           11 Unattached                              3.85m                 
+  -- Madison Snody             Fr Unattached                                 NH                 
+  -- Katie McFarland           Fr Unattached                                 NH                 
+  -- Elizabeth Dowdy           12 Unattached                                 NH                 
+  -- Amelia Smith              10 Pole Vault Elite                           NH                 
+
+Girls U-20 Long Jump Finals
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+==================================================================================================
+   1 Ava Kitchings             11 ATL Zoom Athletics                      6.10m                 
+   2 Kassidi Watkins           12 Unattached                              6.08m                 
+   3 Abigail Mecklenburg       11 Jumper Athletics                        5.93m                 
+   4 Jasmine Ross              12 Unattached                              5.92m                 
+   5 Mariama Hunt              Fr Unattached                              5.91m                 
+   6 Aiya Webb                 12 ATL Zoom Athletics                      5.80m                 
+   7 Laine McKenzie            11 GLS Speed TC                            5.75m                 
+   8 Indya Dotson              Fr Unattached                              5.73m                 
+   9 Sierra Thompson            - Unattached                              5.70m                 
+  10 Caitlyn Cavitt            11 Athletic Performance (AP) Ranch         5.60m                 
+  11 Alana Braxton             12 Unattached                              5.55m                 
+  12 Kelly MacBride            12 Unattached                              5.25m                 
+  13 Nia Thompson              Fr Unattached                              5.23m                 
+  -- Loren Webster             12 Unattached                                DNS                 
+  -- Samantha Ennin             - Unattached                                DNS                 
+
+Girls U-20 Long Jump MultiEvent
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+==================================================================================================
+   1 Meagan Humphries          Fr Unattached                              5.97m                 
+   2 Valerie Jirak              - Unattached                              5.76m                 
+   3 Sierra Thompson            - Unattached                              5.50m                 
+   4 Mercy Freeman             Fr Unattached                              5.34m                 
+   5 Destiny Look              11 Spartan Track Club Hawaii               5.24m                 
+  -- Kaitlyn Pearson           Fr Unattached                                DNS                 
+  -- Devyn Parham               9 Unattached                               FOUL                 
+  -- Cate Bryant               10 Texas Elite Track and Field               DNS                 
+  -- Ella Meyerkorth           11 Unattached                                DNS                 
+
+Girls U-20 Triple Jump Finals
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#    Wind
+==================================================================================================
+   1 Destini Smith             12 Unattached                             12.99m                 
+   2 Danah Nembhard            Fr Unattached                             12.76m                 
+   3 Maleigha Canaday-Elliott  RS Unattached                             12.64m                 
+   4 Endia Smith               12 Unattached                             12.54m                 
+   5 Gabrielle Pierre          12 MetroCobras TC                         12.51m                 
+   6 Iyanna Webb               Fr Unattached                             12.48m                 
+   7 Mariama Hunt              Fr Unattached                             12.43m                 
+   8 Alana Braxton             12 Unattached                             12.24m                 
+   9 Lily Muzzy                12 Unattached                             12.16m                 
+  10 Roxanne Meyer              - Leap Squad Track                       11.85m                 
+  11 Laine McKenzie            11 GLS Speed TC                           11.77m                 
+  12 Whitney Robinson          12 Cedar Hill Blaze Track                 11.69m                 
+  13 Rose Kuchera               - Unattached                             11.66m                 
+  -- Sarai Sealy                - Unattached                               FOUL                 
+  -- Ashlynn Wimberly          12 Unattached                               FOUL                 
+  -- Mia Maxwell               11 Unattached                                DNS                 
+
+Girls U-20 Hammer Finals
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#
+==================================================================================================
+   1 Hannah Alexander           - Unattached                             59.80m           
+   2 Kimberly Beard            11 Nike Elite                             57.96m           
+   3 Adelaide Caron            12 Ocean State Hammerheads                55.31m           
+   4 Mary Ella Brooks           - Unattached                             54.53m           
+   5 Burklie Burton            12 Unattached                             54.23m           
+   6 Madison Fowler            Fr Unattached                             53.28m           
+   7 Isabella Piette           12 Ocean State Hammerheads                53.10m           
+   8 Emma Yoder                 - Unattached                             52.89m           
+   9 Josephine Flynt           12 Unattached                             51.50m           
+  10 Chloe Barber              11 Momentum Throws                        50.73m           
+  11 Kathryn Chapin             - Unattached                             49.33m           
+  12 Kamari Brown               - Unattached                             48.83m           
+  13 Giana DeCesare            Fr Unattached                             48.05m           
+  14 Marcela Trevino            - Unattached                             45.89m           
+  15 Grace Degarimore          Fr Unattached                             43.87m           
+  -- Hasely Schulz              - Unattached                               FOUL           
+
+Girls U-20 Heptathlon Score MultiEvent
+==================================================================================================
+     Athlete                   Yr Team                                     Mark        H#
+==================================================================================================
+   1 Meagan Humphries          Fr Unattached                               5791           
+   2 Valerie Jirak              - Unattached                               5586           
+   3 Destiny Look              11 Spartan Track Club Hawaii                5068           
+   4 Sierra Thompson            - Unattached                               5042           
+   5 Mercy Freeman             Fr Unattached                               4876           
+     Devyn Parham               9 Unattached                                DNF           
+     Cate Bryant               10 Texas Elite Track and Field               DNF           
+     Kaitlyn Pearson           Fr Unattached                                DNF           
+     Ella Meyerkorth           11 Unattached                                DNF           
+</pre>
+
+
+
+
+    </div>
+
+
+</article>
+
+
+            </div>
+        </div>
+
+        <aside id="side" role="complementary">
+            <div>
+                
+
+
+
+<a href="/join?ref=meet-696747-tab-results&next=https%3A%2F%2For.milesplit.com%2Fmeets%2F696747-usatf-u20-championships-2025%2Fresults%2F1189674%2Fraw&" class="joinPro">
+    <div>
+        <header>
+            MileSplit PRO
+        </header>
+        <p>
+            To get the full depth of our meet coverage, become PRO!
+        </p>
+        <div class="button callToAction">
+            Join Now
+        </div>
+    </div>
+</a>
+
+
+
+<div id="rectangle_btf_mobile"  class="mobileAd" data-name="rectangle btf mobile"></div>
+<div id="rectangle_atf" class="rectangleSideAd"></div>
+
+<div id="rectangle_btf" class="rectangleSideAd"></div>
+
+
+            </div>
+        </aside>
+
+    </main>
+
+    <div id="interstitial"></div>
+    <!--div class="leaderboard btf" id="leaderboard_btf" data-name="leaderboard btf"></div-->
+
+    <footer id="footer" role="contentinfo">
+        <div>
+            <p class="copyright">
+                &copy; 2026 <a href="/support/copyright">Copyright</a>
+                <a href="https://www.flosports.tv" target="_blank">FloSports, Inc.</a>
+            </p>
+                        <p class="editor">
+                MileSplit Oregon Editor:
+                , <a href="mailto:"></a>
+            </p>
+                        <p class="links">
+                <a href="https://support.milesplit.com">Contact Us</a>
+                <a href="https://www.flosports.tv/privacy-policy/">Privacy Policy</a>
+                <a href="https://www.flosports.tv/terms-of-service/">Terms of Use</a>
+                <a href="#" id="cookiePref" onclick="">Cookie Preferences / Do Not Sell or Share My Personal Information</a>
+            </p>
+            <p class="speed" data-cacheKey="{meet:696747}:/meets/696747-usatf-u20-championships-2025/results/1189674/raw:::or" data-environment="Production">
+                Generated by 10.1.2.251                fresh                in 275 milliseconds
+            </p>
+        </div>
+    </footer>
+
+</div>
+
+
+<script type="text/javascript">
+    var disableCopy = 1;
+    /* Disable copy
+    $(document).on("keydown", function(e) {
+        if (disableCopy && e.keyCode == 67 && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    // Disable context menu
+    window.oncontextmenu = function () {
+        if (disableCopy) {
+            return false;
+        }
+    };*/
+    // set clipboard data with plain text (no tabs or newlines)
+    if (disableCopy) {
+        document.addEventListener('copy', function(e) {
+            e.preventDefault();
+            // table html is converted to tabs and newlines
+            var text = window.getSelection()
+                .toString();
+            // remove all tabs and newlines with spaces
+            while (text.match(/\t|[ ]{2,}/)) {
+                text = text.replace(/\t|[ ]{2,}/, ' ');
+            }
+            // set clipboard data with plain text
+            e.clipboardData.setData('text/plain', text);
+        });
+    }
+</script>
+
+
+
+
+<script src="https://js.sp.milesplit.com/drivefaze/common-ms05.js?build=20261021212452"></script>
+
+<script type="text/javascript">
+    segmentNavTopLevelCategories    = $('#navbar .menu > ul > li > a');
+    segmentNavSubCategories         = $('#navbar .menu > ul > li > ul > li > a');
+    segmentNavTopLevelCategories.on('click', function(e){
+        segmentNavTrack('Go To ' + $(this).text());
+    });
+    segmentNavSubCategories.on('click', function(e){
+        segmentNavTrack('SubNav ' + $(this).text());
+    });
+    var segmentNavTrack = function(event_fired) {
+        segment.track({
+            event_fired: event_fired,
+            url: window.location.href
+        }, {
+            integrations: {
+                'All': true,
+                'Google Analytics': false,
+                'Facebook Pixel': false,
+                'Meta Pixel': false
+            }
+        });
+    }
+</script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $(document).on("click", '#cookiePref', function (e) {
+            e.preventDefault();
+            Osano.cm.showDrawer('osano-cm-dom-info-dialog-open')
+        })
+    })
+</script>
+
+<script type="text/javascript">
+</script>
+
+
+
+<script type="text/javascript">
+    var disableCopy = 1;
+    /* Disable copy
+    $(document).on("keydown", function(e) {
+        if (disableCopy && e.keyCode == 67 && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    // Disable context menu
+    window.oncontextmenu = function () {
+        if (disableCopy) {
+            return false;
+        }
+    };*/
+    // set clipboard data with plain text (no tabs or newlines)
+    if (disableCopy) {
+        document.addEventListener('copy', function(e) {
+            e.preventDefault();
+            // table html is converted to tabs and newlines
+            var text = window.getSelection()
+                .toString();
+            // remove all tabs and newlines with spaces
+            while (text.match(/\t|[ ]{2,}/)) {
+                text = text.replace(/\t|[ ]{2,}/, ' ');
+            }
+            // set clipboard data with plain text
+            e.clipboardData.setData('text/plain', text);
+        });
+    }
+</script>
+
+
+
+
+</body>
+</html>

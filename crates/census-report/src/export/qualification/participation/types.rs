@@ -27,6 +27,8 @@ pub(crate) struct PinnedParticipationRow {
     pub(super) reasons: ParticipationReasons,
     pub(super) references: Vec<String>,
     pub(super) diagnostics: Vec<ParticipationDiagnostic>,
+    pub(in crate::export::qualification) reported_event:
+        Option<super::super::ReportedEventInterpretation>,
 }
 
 impl PinnedParticipationRow {

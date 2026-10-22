@@ -152,6 +152,11 @@ impl<V: RetainedJournalView> Resolver<'_, V> {
             };
         self.contexts
             .retain_source(performance, &source, notes, &metadata.0)?;
+        result
+            .reported_event
+            .retain(super::super::ReportedEventInterpretation::from_verified(
+                &source,
+            ));
         let (outcome, reasons, references) = assessment.into_parts();
         result.accept(outcome, reasons, references);
         Ok(())
@@ -183,6 +188,7 @@ struct Accumulated {
     reasons: ParticipationReasons,
     references: BTreeSet<String>,
     gaps: BTreeSet<Gap>,
+    reported_event: super::super::reported_event::Interpretations,
 }
 
 impl Accumulated {
@@ -225,6 +231,7 @@ impl Accumulated {
             reasons: self.reasons,
             references: self.references.into_iter().collect(),
             diagnostics: self.gaps.into_iter().collect(),
+            reported_event: self.reported_event.finish(),
         })
     }
 }

@@ -1,4 +1,5 @@
 mod reported;
+mod review;
 
 use super::super::cells::Cell;
 use crate::bests::{Conflict, SharedSelection};
@@ -84,6 +85,9 @@ pub(super) fn rows_with_reported<'a>(
                 .map(|(index, row)| reported::verified(row, index == 0))
                 .chain(projection.bests.iter().map(move |reported| {
                     reported::row(reported, projection, view.is_some(), schools.is_some())
+                }))
+                .chain(projection.reviews.iter().map(move |row| {
+                    review::row(row, projection, view.is_some(), schools.is_some())
                 })),
         ),
     }

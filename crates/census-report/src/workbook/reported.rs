@@ -14,6 +14,7 @@ pub(super) struct Projection<'a> {
     pub(super) athletes: Vec<&'a CanonicalAthlete>,
     pub(super) performances: Vec<&'a CanonicalPerformance>,
     pub(super) bests: Vec<ReportedBest<'a>>,
+    pub(super) reviews: Vec<ReportedReview<'a>>,
     parents: Parents<'a>,
     by_performance: HashMap<&'a str, &'a CanonicalPerformance>,
     by_athlete: HashMap<&'a str, Vec<&'a CanonicalPerformance>>,
@@ -24,6 +25,11 @@ pub(super) struct ReportedBest<'a> {
     pub(super) group: crate::bests::ReportedBestGroup,
     pub(super) performance: Option<&'a CanonicalPerformance>,
     pub(super) athlete: Option<&'a CanonicalAthlete>,
+}
+
+pub(super) struct ReportedReview<'a> {
+    pub(super) performance: &'a CanonicalPerformance,
+    pub(super) interpretation: &'a crate::export::ReportedEventInterpretation,
 }
 
 impl<'a> Projection<'a> {
@@ -43,7 +49,7 @@ impl<'a> Projection<'a> {
         }
         if derivation.grad_year().is_none() {
             return Err(ReportError::Invariant {
-                detail: "revision-9 projection requires the selected cohort".into(),
+                detail: "reported projection requires the selected cohort".into(),
             });
         }
         admission.ensure_dataset(dataset)?;
@@ -66,12 +72,14 @@ impl<'a> Projection<'a> {
             athletes,
             performances,
             bests: Vec::new(),
+            reviews: Vec::new(),
             parents,
             by_performance,
             by_athlete,
             by_best: HashMap::new(),
         };
         projection.assemble_bests(admission, verified_selections)?;
+        projection.assemble_reviews(admission)?;
         Ok(Some(projection))
     }
 
@@ -148,5 +156,40 @@ impl<'a> Projection<'a> {
             .into_iter()
             .flatten()
             .filter_map(|index| self.bests.get(*index))
+    }
+
+    fn assemble_reviews(&mut self, admission: &EventAdmission<'_>) -> ReportResult<()> {
+        let participation = self.source.verified_participation()?;
+        self.reviews = self
+            .performances
+            .iter()
+            .filter(|row| {
+                matches!(
+                    admission.disposition(&row.event),
+                    Some(census_domain::model::EventDisposition::Unresolved(_))
+                )
+            })
+            .filter_map(|performance| {
+                participation
+                    .assessment(&performance.id)?
+                    .reported_event()
+                    .map(|interpretation| ReportedReview {
+                        performance,
+                        interpretation,
+                    })
+            })
+            .collect();
+        self.reviews.sort_by_key(|row| &row.performance.id);
+        Ok(())
+    }
+    pub(super) fn interpretation(
+        &self,
+        performance: &CanonicalPerformance,
+    ) -> ReportResult<Option<&crate::export::ReportedEventInterpretation>> {
+        Ok(self
+            .source
+            .verified_participation()?
+            .assessment(&performance.id)
+            .and_then(|row| row.reported_event()))
     }
 }

@@ -19,7 +19,7 @@ pub(super) fn verify(
         &expectations.admission,
         &expectations.bests,
     )?
-    .ok_or_else(|| invalid("revision 9 verification lacks Include source projection"))?;
+    .ok_or_else(|| invalid("reported verification lacks Include source projection"))?;
     athletes::verify(book, expectations, &projection, findings)?;
     prs::verify(book, expectations, &projection, findings)
 }

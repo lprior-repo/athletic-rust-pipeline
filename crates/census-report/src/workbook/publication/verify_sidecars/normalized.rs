@@ -63,7 +63,9 @@ pub(super) fn verify_outcome(
             &inputs.admission,
             bests,
         )?
-        .ok_or_else(|| super::defect("revision 9 lacks Include reported projection".into()))?;
+        .ok_or_else(|| {
+            super::defect("reported revision lacks Include reported projection".into())
+        })?;
         counts.insert(
             "reported_performances.csv".into(),
             reported_performances::verify(directory, &projection)?,
@@ -155,7 +157,7 @@ pub(in crate::workbook) fn visit_athletes(
 ) -> ReportResult<u64> {
     let additional = match artifact_revision {
         1..=6 => None,
-        7..=9 => Some(["canonical_candidate_id", "identity_resolution"]),
+        7 | 8 | 10 => Some(["canonical_candidate_id", "identity_resolution"]),
         _ => {
             return Err(super::defect(format!(
                 "unsupported comparison artifact revision {artifact_revision}"

@@ -40,6 +40,7 @@ impl DocumentaryParticipationRow {
             athlete,
             outcome,
             assessment: ParticipationAssessment {
+                reported_event: None,
                 outcome: mapped,
                 reasons,
                 evidence_refs,

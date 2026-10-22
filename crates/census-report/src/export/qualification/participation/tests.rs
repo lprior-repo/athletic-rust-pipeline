@@ -12,6 +12,7 @@ mod historical;
 mod missing_facts;
 mod profile;
 mod refusals;
+mod reported_events;
 use fixture::Fixture;
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 

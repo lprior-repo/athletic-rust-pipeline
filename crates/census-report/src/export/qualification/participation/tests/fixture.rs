@@ -16,6 +16,8 @@ use std::future::Future;
 use std::pin::Pin;
 
 mod cache;
+mod reported;
+pub(super) use reported::CapturedCase;
 
 use census_crawl::milesplit::troy_fixture::{BODY as TROY, FEMALE_RAW as RAW};
 

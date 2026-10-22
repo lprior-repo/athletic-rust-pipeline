@@ -58,6 +58,7 @@ pub(super) fn insert(
             reasons: assessed.1,
             references,
             diagnostics: Vec::new(),
+            reported_event: None,
         },
     );
     Ok(())

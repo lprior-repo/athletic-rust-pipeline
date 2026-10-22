@@ -24,6 +24,15 @@ fn verify_row(
     projection: &Projection<'_>,
     performance: &CanonicalPerformance,
 ) -> ReportResult<()> {
+    verify_identity(row, projection, performance)?;
+    verify_result(row, projection, performance)
+}
+
+fn verify_identity(
+    row: &rows::Row<'_>,
+    projection: &Projection<'_>,
+    performance: &CanonicalPerformance,
+) -> ReportResult<()> {
     let athlete =
         projection
             .athlete(&performance.athlete)
@@ -32,8 +41,6 @@ fn verify_row(
             })?;
     let team = projection.source.teams.get(&performance.team);
     let school = team.and_then(|team| projection.source.schools.get(&team.school));
-    let event = projection.event(&performance.event);
-    let meet = projection.meet(&performance.meet);
     row.literals(&[
         ("Record Basis", "source_reported"),
         ("Verification Status", "reported_unverified_needs_review"),
@@ -49,12 +56,6 @@ fn verify_row(
                 .and_then(|school| school.state)
                 .map_or("", |state| state.code()),
         ),
-        ("Performance ID", performance.id.as_str()),
-        ("Event ID", performance.event.as_str()),
-        ("Meet ID", performance.meet.as_str()),
-        ("Meet", meet.map_or("", |meet| meet.name.as_str())),
-        ("Date", &performance.date),
-        ("Source Key", &performance.source_key),
     ])?;
     row.json(
         "Source Person IDs",
@@ -67,7 +68,24 @@ fn verify_row(
         "Graduation Year (canonical record)",
         athlete.grad_year.get(),
     )?;
-    row.json("Source Team IDs", &team.map(|team| &team.source_identities))?;
+    row.json("Source Team IDs", &team.map(|team| &team.source_identities))
+}
+
+fn verify_result(
+    row: &rows::Row<'_>,
+    projection: &Projection<'_>,
+    performance: &CanonicalPerformance,
+) -> ReportResult<()> {
+    let event = projection.event(&performance.event);
+    let meet = projection.meet(&performance.meet);
+    row.literals(&[
+        ("Performance ID", performance.id.as_str()),
+        ("Event ID", performance.event.as_str()),
+        ("Meet ID", performance.meet.as_str()),
+        ("Meet", meet.map_or("", |meet| meet.name.as_str())),
+        ("Date", &performance.date),
+        ("Source Key", &performance.source_key),
+    ])?;
     row.text(
         "Event",
         event.map_or_else(String::new, |event| event.kind.stable_key().into_owned()),
@@ -90,5 +108,9 @@ fn verify_row(
             .map_or_else(String::new, |place| place.to_string()),
     )?;
     row.json("Performance Evidence", &performance.evidence)?;
-    row.json("Retained Conflicts", &performance.retained_conflicts)
+    row.json("Retained Conflicts", &performance.retained_conflicts)?;
+    match projection.interpretation(performance)? {
+        Some(interpretation) => row.json("Reported Event Interpretation", interpretation),
+        None => row.text("Reported Event Interpretation", ""),
+    }
 }

@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:>
+<head>
+    <script src="https://cmp.osano.com/AzyWAQS5NWEEWkU9/eab0a836-8bac-45b1-8b3e-e92e57e669db/osano.js?language=en"></script>
+    <script src="https://www.flolive.tv/osano-flo.js" ></script>
+    <!-- MILE-235: measurement gap-fill flag — must be pushed before the GTM-M962P37 container loads -->
+    <script>window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({'measurementGapFill': false});</script>
+    <!-- Google Tag Manager -->
+    <script>(function (w, d, s, l, i) {
+            w[l] = w[l] || [];
+            w[l].push({
+                'gtm.start':
+                    new Date().getTime(), event: 'gtm.js'
+            });
+            var f = d.getElementsByTagName(s)[0],
+                j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+            j.async = true;
+            j.src =
+                'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+            f.parentNode.insertBefore(j, f);
+        })(window, document, 'script', 'dataLayer', 'GTM-M962P37');</script>
+    <!-- End Google Tag Manager -->
+    <title>Jim Boughton XC 2023 - JV Girls (Raw)</title>
+
+    <!-- Meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <script>var _sf_startpt=(new Date()).getTime()</script>
+
+    <!-- Responsive -->
+    <meta name="application-name" content="MileSplit Iowa" />
+    <meta name="MobileOptimized" content="width" />
+    <meta name="HandheldFriendly" content="true" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-touch-fullscreen" content="YES" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,minimal-ui" />
+    <meta name="format-detection" content="telephone=no;address=no;email=no" />
+
+    <!-- Schema.org -->
+        <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "SportsEvent",
+            "name": "Jim Boughton XC",
+            "description": "MileSplits official JV Girls raw results for the 2023 Jim Boughton XC in Dubuque IA.",
+            "startDate": "2023-09-21",
+            "endDate": "2023-09-21",
+            "homeTeam": "",
+            "sport": "Cross Country",
+            "location": {
+                "@type": "Place",
+                "name": "Dubuque Soccer Complex",
+                "address": {
+                  "@type": "PostalAddress",
+                  "addressLocality": "Dubuque",
+                  "addressRegion": "IA"
+                }
+            },
+            "url": "https://ia.milesplit.com/meets/571515-jim-boughton-xc-2023/results/962541/raw"
+        }
+    </script>
+
+    <!-- Icons -->
+    <link href="https://assets.sp.milesplit.com/images/milesplit-favicon.png" rel="apple-touch-icon" />
+    <link href="https://assets.sp.milesplit.com/images/milesplit-favicon.png" rel="shortcut icon" />
+    <link rel="img_src" href="https://assets.sp.milesplit.com/images/milesplit-favicon.png" />
+
+    <!-- Styling -->
+    <link href="https://css.sp.milesplit.com/drivefaze/reset.css?build=20261021212452" rel="stylesheet" />
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css">
+    <link href="//fonts.googleapis.com/css?family=PT+Sans" rel="stylesheet" />
+    <link href="//fonts.googleapis.com/css?family=Roboto:400,700,900" rel="stylesheet" />
+    <link rel="stylesheet" href="https://css.sp.milesplit.com/milesplit/recaptcha.css?build=20261021212452"/>
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link href="https://css.sp.milesplit.com/drivefaze/default.css?build=20261021212452" rel="stylesheet" />
+    <link href="https://css.sp.milesplit.com/drivefaze/sites/ia.css?build=20261021212452" rel="stylesheet" />
+
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        dataLayer.push ({
+            'siteId'  : '16',
+            'tld'     :  'com'
+        });
+    </script>
+
+        <!-- Segment -->
+    <script>
+        !function(){var analytics=window.analytics=window.analytics||[];if(!analytics.initialize)if(analytics.invoked)window.console&&console.error&&console.error("Segment snippet included twice.");else{analytics.invoked=!0;analytics.methods=["trackSubmit","trackClick","trackLink","trackForm","pageview","identify","reset","group","track","ready","alias","debug","page","once","off","on","addSourceMiddleware","addIntegrationMiddleware","setAnonymousId","addDestinationMiddleware"];analytics.factory=function(e){return function(){var t=Array.prototype.slice.call(arguments);t.unshift(e);analytics.push(t);return analytics}};for(var e=0;e<analytics.methods.length;e++){var key=analytics.methods[e];analytics[key]=analytics.factory(key)}analytics.load=function(key,e){var t=document.createElement("script");t.type="text/javascript";t.async=!0;t.src="https://siop.flosports.tv/siop.js/v1/" + key + "/siop.min.js";;var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(t,n);analytics._loadOptions=e};analytics._writeKey="r90fhunU3ddJmMaXcBYXLtAi2vkJHc5g";analytics._cdn="https://siop.flosports.tv";analytics.SNIPPET_VERSION="5.2.0";
+            // MILE-242: skip Segment for bot timezones + declared crawlers, same lists as the twig
+            // layouts (WebRequest::BOT_TIMEZONES / getBotUaPattern). The server-side gate wrapping
+            // this block is late-bound — core/View::finalize() re-parses it per request even on
+            // cached HTML — so the UA half is belt-and-braces here; the timezone half is the part
+            // the server can never do, because the browser timezone is never sent to it. Without
+            // load() the queued identify/page never send. Fails open (tracks) on any error.
+            if ((function(){try{var t=(window.Intl&&Intl.DateTimeFormat)?Intl.DateTimeFormat().resolvedOptions().timeZone:'';return ["Asia/Jakarta","Asia/Shanghai","Etc/Unknown","UTC"].indexOf(t)===-1&&!(new RegExp('facebot|facebookexternalhit|linkedin|twitterbot|linkedinbot|flipboard|pinterest|facebookbot|googlebot|bingbot|msnbot|baiduspider|slurp|applebot|gigabot|holmes|ia_archiver|magpie|yahooseeker|teoma|jeeves|pingdom|semrushbot|ahrefsbot|dotbot|yandexbot|seznambot|petalbot|bytespider|gptbot|claudebot|ccbot|dataforseobot|screaming frog|amazonadbot|google-read-aloud|amazonbot|criteobot|aranet-searchbot|peer39_crawler|meta-webindexer|mediapartners-google|captify-crawler|leikibot|audigentadbot|perplexitybot|bitsightbot|assaybot|googleother|meta-externalagent|querit|scope3|duckduckbot|duckassistbot|exasearchbot|meta-externalads|storebot-google|adsbot-google|yandexmobilebot|yandexaccessibilitybot|naver.me|headlesschrome','i')).test(navigator.userAgent||'');}catch(e){return true;}})()) {
+                // MILE-717/719/779: never load() for logged-out desktop Linux; hold it for HOLD_TIMEZONES until a click/keypress/scroll (see theme/default/layout/base.twig).
+                // The logged-in check is evaluated per request (late-bound), so a cached page can never hold a signed-in visitor.
+                var segmentLoad = function(){ analytics.load("aNJHVzqtABqlCj8RMdLp4YsCVZ51nbs3"); };
+                try {
+                    var segmentAnon = true;
+                    // MILE-779: logged-out desktop Linux (non-touch) never loads Segment (the fleet scrolls and clicks past a hold).
+                    if (!(segmentAnon && new RegExp('^(?!.*(?:Android|Tizen|Web0S|SmartTV|Silk|OculusBrowser|SamsungBrowser)).*Linux', 'i').test(navigator.userAgent || '') && !(navigator.maxTouchPoints > 0))) {
+                        if (segmentAnon && (function(){try{return ["America/Bogota","America/Mexico_City","America/Sao_Paulo","Asia/Bangkok","Asia/Dubai","Asia/Ho_Chi_Minh","Asia/Hong_Kong","Asia/Kuala_Lumpur","Asia/Manila","Asia/Saigon","Asia/Seoul","Asia/Singapore","Asia/Tokyo","Europe/Amsterdam","Europe/Berlin","Europe/Paris"].indexOf(Intl.DateTimeFormat().resolvedOptions().timeZone)!==-1;}catch(e){return false;}})()) {
+                            var segmentOpen = function(){
+                                window.removeEventListener('click', segmentOpen, true);
+                                window.removeEventListener('keydown', segmentOpen, true);
+                                window.removeEventListener('scroll', segmentOpen);
+                                segmentLoad();
+                            };
+                            window.addEventListener('click', segmentOpen, {capture: true, passive: true});
+                            window.addEventListener('keydown', segmentOpen, {capture: true, passive: true});
+                            // Not capture: inner-element scrolls (carousels, tickers) don't bubble; the document's does.
+                            window.addEventListener('scroll', segmentOpen, {passive: true});
+                        } else {
+                            segmentLoad();
+                        }
+                    }
+                } catch (e) {
+                    segmentLoad();
+                }
+            }
+            const segmentResetToken = null;
+            if (segmentResetToken) {
+                try {
+                    const segmentResetStorageKey = 'milesplit_segment_reset_token';
+                    if (window.localStorage.getItem(segmentResetStorageKey) !== segmentResetToken) {
+                        analytics.reset();
+                        window.localStorage.setItem(segmentResetStorageKey, segmentResetToken);
+                    }
+                } catch (segmentResetError) {
+                    analytics.reset();
+                }
+            }
+            let userIdentity = null;
+
+            if (userIdentity) {
+                analytics.identify(
+                    '',
+                    userIdentity
+                );
+            }
+            // do page call. Called explicitly because the segment custom-property syntax is
+            // registered WITHOUT noCache (Shared\Lib\MS05::init), unlike its auth neighbour above,
+            // so it resolves once and bakes into the cached meet page — and this payload is
+            // per-visitor: Structure\Segment\Page carries browser/device off the request UA plus a
+            // paywall_present off the viewer's subscription. Don't name that syntax in a comment;
+            // Template::parseToPhp rewrites the tags anywhere in the file, comments included.
+            let args = JSON.parse('["Meet - Raw Results",{"browser":"unknown","browser_version":"unknown","component":"App Component","device":"Desktop","device_brand":"unknown","node_id":571515,"node_type":"Meet","page_category":"Meet","subpage_category":"Raw Results","paywall_present":0,"vertical":"MileSplit","site_id":15,"milesplit_site_id":"16","milesplit_site_code":"ia"}]');
+            if (args.length > 1) {
+                analytics.page(
+                    args[0],
+                    args[1]
+                );
+            }
+            else {
+                analytics.page();
+            }
+        }}();
+    </script>
+    
+    <!-- Framework -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="https://www.recaptcha.net/recaptcha/enterprise.js?render={{ config('google:recaptcha') }}"></script>
+    <script src="https://js.sp.milesplit.com/drivefaze/prereq.js?build=20261021212452"></script>
+    <script src="https://js.sp.milesplit.com/drivefaze/core.js?build=20261021212452"></script>
+    <script src="https://js.sp.milesplit.com/drivefaze/api.js?build=20261021212452"></script>
+    <script src="https://js.sp.milesplit.com/3rdparty/twbs/3.3.7/bootstrap.min.js?build=20261021212452"></script>
+
+    <!-- MILE-410: These are device-detection libraries, not tracking. Load them even when
+         Segment tracking is suppressed so common-ms05.js can initialize mobile adhesion. -->
+    <script src="https://js.sp.milesplit.com/3rdparty/platform.js?build=20261021212452"></script>
+    <script src="https://js.sp.milesplit.com/drivefaze/segment.js?build=20261021212452"></script>
+
+    <script>
+        var ads = {
+            'ga': {
+                'send': {
+                    'hitType'         : 'event',
+                    'eventCategory'   : 'dfp',
+                    'eventAction'     : 'Initializing',
+                    'eventLabel'      : 'Hi',
+                    'eventValue'      : 'Hi',
+                    'hitCallBack'     : function() {
+                        _DF_.log('DFP Callback');
+                    }
+                }
+            },
+            'page': {
+                'subdomain' : 'ia',
+                'module'    : 'meets',
+                'moduleId'  : '571515',
+                'keywords'  : '',
+                'account'   : '0'
+            },
+            'rules': {
+                'id'                      : '',
+                'cached'                  : '',
+                'skin'                    : '',
+                    'interstitial'            : '',
+            'mobileInterstitial'      : '',
+            'leaderboard'             : ''
+            
+        }
+        }
+        window.adData = ads;
+        // ADS-244: copy of default/includes/ads/mwebTopLowerArm.twig; keep them identical.
+                        if (window.matchMedia && window.matchMedia('(max-width: 767px)').matches) {
+            window.msAdExperiments = window.msAdExperiments || {};
+            window.msAdExperiments.mweb_top_lower = 'control';
+                    }
+                // Defer loading
+        $(function(){
+            Prereq
+                .require({ 'layout'     : 'https://js.sp.milesplit.com/drivefaze/layout.js?build=20261021212452' });
+                //.require({ 'api'        : 'https://js.sp.milesplit.com/drivefaze/api.js?build=20261021212452' })
+                //.require({ 'twbs'       : 'https://js.sp.milesplit.com/3rdparty/twbs/3.3.7/bootstrap.min.js?build=20261021212452' })
+            // Touch devices
+            if (!!('ontouchstart' in window)) {
+                Prereq.require(
+                    'https://js.sp.milesplit.com/3rdparty/doubletaptogo/d2g.js?build=20261021212452',
+                    function() {
+                        $('#navbar li:has(ul)').doubleTapToGo();
+                    }
+                );
+            }
+        });
+    </script>
+
+    <!-- Verification -->
+    <meta name="inmobi-site-verification" content="d3ac33f46ed8e33a0b3afa297531f596" />
+
+    <!-- SEO -->
+    <link rel="canonical" href="https://ia.milesplit.com/meets/571515-jim-boughton-xc-2023/results/962541/raw" />
+                <meta name="description" content="MileSplits official JV Girls raw results for the 2023 Jim Boughton XC in Dubuque IA." />
+                <meta name="keywords" content="Jim Boughton XC,Dubuque,IA,USA" />
+        
+    <!-- Social/Sharing -->
+    <link rel="publisher" href="//plus.google.com/106335681194473166154" />
+
+    <!-- Facebook/OpenGraph -->
+    <meta property="fb:admins" content="506280686,508214191" />
+    <meta property="fb:app_id" content="261198561567" />
+    <meta property="fb:page_id" content="104136371855" />
+    <meta property="og:site_name" content="MileSplit Iowa" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" name="twitter:title" content="Jim Boughton XC 2023 - JV Girls (Raw)" />
+            <meta property="og:description" name="twitter:description" content="MileSplits official JV Girls raw results for the 2023 Jim Boughton XC in Dubuque IA." />
+                <meta property="og:image" name="twitter:image:src" content="https://ia.milesplit.com" />
+                    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@milesplit">
+
+    <script src="https://js.sp.milesplit.com/drivefaze/pro/paywall.js?build=20261021212452"></script>
+
+    
+    
+<link href="https://css.sp.milesplit.com/drivefaze/meets/results.css?build=20261021212452" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.7.7/handlebars.runtime.min.js" integrity="sha512-1JsLHOJ3aKKxY96SA64yDTGQXo46wjivsGj6LiZGQaz0V6cGpGjfFOm1fnH9WkNwf8FFaIU8jVrvAjSESKESww==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script type="text/javascript" src="https://js.sp.milesplit.com/3rdparty/moment/moment.2.26.0.min.js?build=20261021212452"></script>
+<link href="https://css.sp.milesplit.com/drivefaze/personalization/onboardingCTA.css?build=20261021212452" rel="stylesheet"/>
+<link href="https://css.sp.milesplit.com/drivefaze/personalization/sidebarWidget.css?build=20261021212452" rel="stylesheet"/>
+<script src="https://js.sp.milesplit.com/drivefaze/personalization/handlebarTemplates.js?build=20261021212452"></script>
+<script type="text/javascript" src="https://js.sp.milesplit.com/drivefaze/personalization/articlesWidget.js?build=20261021212452"></script>
+
+
+    <!-- Initialize site settings -->
+    <script type="text/javascript">
+        _DF_.init({
+            subDomain: 'ia',
+            rootDomain: 'milesplit.com',
+            userName: '',
+            userToken:'',
+            userID: '',
+            appName: 'MileSplit',
+            appHash: '7b262363c8401207491ad9e12c333f1d',
+            siteId: '16',
+            accounts: JSON.parse('{\"domain\":\"https:\\/\\/accounts.milesplit.com\",\"apiDomain\":\"https:\\/\\/api30.milesplit.com\",\"signup\":\"\\/signup\",\"join\":\"\\/join\",\"login\":\"\\/login\",\"loginSuper\":\"\\/login\\/super\",\"forgot\":\"\\/login\\/forgot\",\"logout\":\"\\/logout\",\"register\":\"\\/register\",\"account\":\"\\/account\\/information\",\"editAccount\":\"\\/settings\\/edit\",\"subscription\":\"\\/account\\/subscriptions\"}')
+        });
+    </script>
+
+</head>
+<body class="drivefaze redesign2015 ia meets">
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M962P37"
+                  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+<!-- Facebook -->
+<script>
+    window.fbAsyncInit = function() {
+        FB.init({
+            appId            : '261198561567',
+            autoLogAppEvents : false,
+            xfbml            : true,
+            version          : 'v3.0'
+        });
+    };
+</script>
+<script async defer src="https://connect.facebook.net/en_US/sdk.js"></script>
+<!-- End Facebook -->
+
+<!-- AJAX Loader -->
+<div id="loader">
+    <div class="loaderMsgContainer">
+        <div class="loaderMsg">
+            <span>
+                <i class="fa fa-spinner fa-spin"></i>
+                <span class="loaderText">Loading</span>
+            </span>
+        </div>
+    </div>
+</div>
+<!-- End AJAX Loader -->
+
+<div id="page">
+    <header role="banner" id="masthead">
+        <div>
+
+            <div id="logo">
+                <a class="header" href="/">
+                    <span class="title">MileSplit Iowa</span>
+                </a>
+            </div>
+
+            <nav role="navigation" id="navbar">
+                <div class="button">
+                    <i class="fa fa-bars"></i>
+                    <i class="fa fa-remove"></i>
+                </div>
+                <div class="menu">
+                    <ul>
+                                                <li class="upgrade-pill">
+                            <a href="/join">
+                                <button class="btn btn-primary btn-block btn-md">Upgrade</button>
+                            </a>
+                        </li>
+                                                <li class="results">
+                            <a href="/results">Results</a>
+                            <ul>
+                                <li class="resultLinkShoveLeft">
+                                    <a href="/results">Meet Results</a>
+                                </li>
+                                <li class="resultLinkShoveLeft">
+                                    <a href="http://milesplit.live/overall">Live Results</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="rankings">
+                            <a href="/rankings/leaders/high-school-boys/cross-country">Rankings</a>
+                            <ul>
+                                                                <li>
+                                    <a href="/rankings/flo50/?year=2026&category=track">COROS MileSplit50</a>
+                                </li>
+                                                                <li>
+                                    <a href="/rankings/leaders/high-school-boys/cross-country">XC Lists</a>
+                                </li>
+                                <li>
+                                    <a href="/rankings/leaders/high-school-boys/indoor-track-and-field">Indoor Lists</a>
+                                </li>
+                                <li>
+                                    <a href="/rankings/leaders/high-school-boys/outdoor-track-and-field">Outdoor Lists</a>
+                                </li>
+                                <li>
+                                    <a href="/virtual-meets">Virtual Meets</a>
+                                </li>
+                                <li>
+                                    <a href="/teamscores">XC Team Scores</a>
+                                </li>
+                                <li>
+                                    <a href="/athletes/compare">Compare Athletes</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="calendar">
+                            <a href="/calendar">Calendar</a>
+                        </li>
+                        <li id="navAthletes" class="athletes">
+                            <a href="/athletes">Athletes</a>
+                        </li>
+                                                <li class="teams">
+                            <a href="/teams">Teams</a>
+                        </li>
+                                                <li class="coverage">
+                            <a href="#">Coverage</a>
+                            <ul>
+                                <li>
+                                    <a href="/photos">Photos</a>
+                                </li>
+                                <li>
+                                    <a href="/videos/meets">Videos</a>
+                                </li>
+                                <li>
+                                    <a href="/articles">Articles Archive</a>
+                                </li>
+                                <li>
+                                    <a href="/signings">College Commitments</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="discussion">
+                            <a href="/training">Training</a>
+                        </li>
+                        <li class="registration">
+                            <a href="/meet-creation">Registration</a>
+                            <ul>
+                                <li>
+                                    <a href="/articles/213974">About</a>
+                                </li>
+                                <li>
+                                    <a href="/meet-creation">Setup Meet</a>
+                                </li>
+                                                                <li>
+                                    <a href="https://support.milesplit.com/">FAQ/Help</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="more">
+                            <a href="/more">More</a>
+                            <ul>
+                                <li>
+                                    <a href="https://www.boulderbibs.com/collections/milesplit" target="_blank" >Bibs</a>
+                                </li>
+                                                                <li>
+                                    <a href="/timing">Timing Companies</a>
+                                </li>
+                                                                <li>
+                                    <a href="/calc">Conversion Calculator</a>
+                                </li>
+                                <li>
+                                    <a href="https://tfmeetpro.com" target="_blank" rel="noopener">MeetPro</a>
+                                </li>
+                                <li class="network">
+                                    <a href="/network">MileSplit Network</a>
+                                </li>
+                                <li>
+
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+                        <nav id="navbarUpgradePill">
+                <div class="button">
+                    <center>
+                        <a href="/join">
+                            <button class="btn btn-primary btn-block btn-md">Upgrade</button>
+                        </a>
+                    </center>
+                </div>
+            </nav>
+            
+            <nav id="social">
+                <div class="button">
+                    <a href="#" class="facebook">
+                        <i class="fa fa-facebook-official"></i>
+                    </a>
+                    <a href="#" class="twitter">
+                        <i class="fa fa-twitter"></i>
+                    </a>
+                    <span>Follow Us</span>
+                </div>
+            </nav>
+
+            <nav id="search" role="search">
+                <div class="button">
+                    <a href="/search">
+                        <i class="fa fa-search" style="display:block"></i>
+                        <span>Search</span>
+                    </a>
+                </div>
+            </nav>
+
+            <nav id="account">
+                <div class="button">
+                    <a href="#account">
+                        <i class="fa fa-user"></i>
+                        <i class="fa fa-remove"></i>
+                                                <span>Login</span>
+                                            </a>
+                </div>
+                <div class="menu">
+                    
+                    <section>
+                        <header>
+                            <strong class="notLoggedIn">
+                                Not logged in
+                            </strong>
+                        </header>
+
+                        <ul>
+                            <li>
+                                <a href="/login?next=https%3A%2F%2Fia.milesplit.com%2Fmeets%2F571515-jim-boughton-xc-2023%2Fresults%2F962541%2Fraw&ref=navbar">
+                                    Login
+                                </a>
+                            </li>
+                            <li>
+                                <a href="/register?next=https%3A%2F%2Fia.milesplit.com%2Fmeets%2F571515-jim-boughton-xc-2023%2Fresults%2F962541%2Fraw&ref=navbar">
+                                    Sign Up
+                                </a>
+                            </li>
+                        </ul>
+
+                    </section>
+
+                                    </div>
+            </nav>
+
+        </div>
+    </header>
+    <div id="skin"></div>
+    <div class="leaderboard">
+        <div id="leaderboard_atf"></div>
+        <div id="leaderboard_promo"></div>
+        <div id="pushdown"></div>
+    </div>
+    <main role="main">
+
+        <div id="subheader">
+            
+
+    
+<script src="https://js.sp.milesplit.com/drivefaze/meets/meets.js?build=20261021212452"></script>
+<script src="https://js.sp.milesplit.com/drivefaze/front/liveEvents.js?build=20261021212452"></script>
+<link href="https://css.sp.milesplit.com/drivefaze/dropdown.css?build=20261021212452" rel="stylesheet" />
+<link href="https://css.sp.milesplit.com/drivefaze/meets/default.css?build=20261021212452" rel="stylesheet" />
+<link href="https://css.sp.milesplit.com/drivefaze/live-event-status.css?build=20261021212452" rel="stylesheet" />
+
+<header class="meet noLogo">
+
+    
+        <h1 class="meetName">
+            Jim Boughton XC 2023        </h1>
+
+
+    <div class="basicInfo">
+        <div class="date">
+            <time>
+                Sep 21, 2023            </time>
+                    </div>
+
+        <div class="venueName">
+            <a href="https://ia.milesplit.com/venues/11838/dubuque-soccer-complex">Dubuque Soccer Complex</a>
+        </div>
+
+        <div class="venueCity">
+            Dubuque, IA        </div>
+
+    </div>
+    <!-- ADS-244: copy of default/includes/ads/mwebTopLowerAnchor.twig; keep them identical. -->
+    <div id="mweb_top_lower_anchor" class="mweb-top-lower-anchor"></div>
+    <script>
+        (function () {
+            try {
+                if (!/(^|\s)mweb-top-lower(\s|$)/.test(document.documentElement.className)) { return; }
+                var ad = document.getElementById('leaderboard_atf');
+                var anchor = document.getElementById('mweb_top_lower_anchor');
+                if (ad && anchor) { anchor.appendChild(ad); }
+            } catch (e) {}
+        })();
+    </script>
+
+    <div class="extendedInfo">
+
+        
+        
+
+        
+        <div class="countdown">
+                    </div>
+    </div>
+
+    <div class="registration">
+
+        
+        
+        
+        
+
+
+    </div>
+
+    <div class="dropdownMenus">
+
+        <div class="meetHistory">
+            <a href="#">Meet History</a>
+            <div class="dropdown">
+                                <div class="recordCategories">
+                    <strong>Records</strong>
+                    <ul class="categories">
+                        <li>
+                            <a href="#meet">Meet</a>
+                        </li>
+                        <li>
+                            <a href="#venue">Venue</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="meet records">
+                    <strong>Meet Records</strong>
+                    <ul>
+                        <li class="back">
+                            <a href="#back">Back</a>
+                        </li>
+                                                                        <li class="hs male meet">
+                            <a href="https://www.milesplit.com/rankings/leaders/high-school-boys/cross-country?year=all&meet=73102">
+                                High School Boys
+                            </a>
+                        </li>
+                        <li class="hs female meet">
+                            <a href="https://www.milesplit.com/rankings/leaders/high-school-girls/cross-country?year=all&meet=73102">
+                                High School Girls
+                            </a>
+                        </li>
+                                                                                            </ul>
+                </div>
+                                <div class="venue records">
+                    <strong>Venue Records</strong>
+                    <ul>
+                                                <li class="back">
+                            <a href="#back">Back</a>
+                        </li>
+                                                                                                <li class="hs male venue">
+                            <a href="https://www.milesplit.com/rankings/leaders/high-school-boys/cross-country?year=all&venue=11838">
+                                High School Boys
+                            </a>
+                        </li>
+                        <li class="hs female venue">
+                            <a href="https://www.milesplit.com/rankings/leaders/high-school-girls/cross-country?year=all&venue=11838">
+                                High School Girls
+                            </a>
+                        </li>
+                                                                                            </ul>
+                </div>
+                                <div class="pastMeets">
+                    <strong>Past Meets</strong>
+                                        <ul class="meets">
+                                                                        <li data-decade="2020">
+                            <a href="https://ia.milesplit.com/meets/776900-jim-boughton-xc-invitational-2026">2026-09-24</a>
+                                                            <a href="https://ia.milesplit.com/meets/571515-jim-boughton-xc-2023/compare/776900">Compare</a>
+                                                    </li>
+                                                <li data-decade="2020">
+                            <a href="https://ia.milesplit.com/meets/700284-jim-boughton-cross-country-invitational-2025">2025-09-25</a>
+                                                            <a href="https://ia.milesplit.com/meets/571515-jim-boughton-xc-2023/compare/700284">Compare</a>
+                                                    </li>
+                                                <li data-decade="2020">
+                            <a href="https://ia.milesplit.com/meets/631105-jim-boughton-xc-2024">2024-09-26</a>
+                                                            <a href="https://ia.milesplit.com/meets/571515-jim-boughton-xc-2023/compare/631105">Compare</a>
+                                                    </li>
+                                                <li data-decade="2020">
+                            <a href="https://ia.milesplit.com/meets/501002-jim-boughton-invitational-2022">2022-09-22</a>
+                                                            <a href="https://ia.milesplit.com/meets/571515-jim-boughton-xc-2023/compare/501002">Compare</a>
+                                                    </li>
+                                                <li data-decade="2020">
+                            <a href="https://ia.milesplit.com/meets/397181-jim-boughton-invitational-2020">2020-09-24</a>
+                                                            <a href="https://ia.milesplit.com/meets/571515-jim-boughton-xc-2023/compare/397181">Compare</a>
+                                                    </li>
+                                                <li data-decade="2010">
+                            <a href="https://ia.milesplit.com/meets/370096-jim-boughton-invitational-2019">2019-09-26</a>
+                                                            <a href="https://ia.milesplit.com/meets/571515-jim-boughton-xc-2023/compare/370096">Compare</a>
+                                                    </li>
+                                            </ul>
+                </div>
+                            </div>
+        </div>
+
+        
+        
+    </div>
+
+    <nav class="meetHeaderNav">
+
+        <a href="https://ia.milesplit.com/meets/571515-jim-boughton-xc-2023/info">
+            Home
+        </a>
+
+        <a href="https://ia.milesplit.com/meets/571515-jim-boughton-xc-2023/results" class="selected">
+            Results
+        </a>
+
+                    <a href="https://ia.milesplit.com/meets/571515-jim-boughton-xc-2023/reports">
+                Reports <span class="navNewBadge">New</span>
+            </a>
+        
+        
+        
+        
+                    <a href="https://ia.milesplit.com/meets/571515-jim-boughton-xc-2023/teams">
+                Teams
+            </a>
+        
+        
+        
+        <div class="addthis_toolbox addthis_default_style addthis_24x24_style social">
+            <a class="addthis_button_facebook"></a>
+            <a class="addthis_button_twitter"></a>
+            <a class="addthis_button_pinterest_share"></a>
+            <a class="addthis_button_tumblr"></a>
+            <a class="addthis_button_google_plusone_share"></a>
+            <a class="addthis_button_compact"></a>
+        </div>
+
+        <script type="text/javascript">var addthis_config = {'data_track_addressbar':true,'data_ga_tracker':'UA-381648-1'};</script>
+        <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-51d30fae08c5dc5c"></script>
+    </nav>
+</header>
+
+<script type="text/javascript">
+    $(document).ready(function(){
+        var cur = new Date();
+        var close = new Date('');
+        var one_day = 1000 * 60 * 60 * 24;
+        var distance = close.getTime() - cur.getTime();
+        var daysLeft = distance/ one_day;
+        if(daysLeft > 1){
+            $('#countdownMain').text(`Registration Closes in ${ Math.floor(daysLeft) } days`)
+        } else {
+            $('#countdownMain').text('Time left to register');
+            var x = setInterval(function() {
+                var now = new Date();
+                var distance = close.getTime() - now.getTime();
+                var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                $('#countdownClock').text(`${hours} Hours ${minutes} Minutes ${seconds} Seconds`)
+                if (distance < 0) {
+                    clearInterval(x);
+                    $('#countdownMain').text('')
+                    $('#countdownClock').text('')
+                }
+            }, 1000);
+        }
+    })
+</script>
+
+
+
+                    </div>
+
+        
+        <div id="content" class="content">
+            <div>
+                
+
+<article>
+
+    <header>
+        <h2>JV Girls</h2>
+        <form id="frmMeetResultsDetailFilter" autocomplete="off">
+                        <div class="field dropdown">
+                <label>View Mode</label>
+                <div class="input">
+                    <i class="fa fa-chevron-down"></i>
+                    <select id="ddResultsView">
+                        <option value="https://ia.milesplit.com/meets/571515-jim-boughton-xc-2023/results/962541?type=formatted">
+                            Formatted
+                        </option>
+                        <option value="https://ia.milesplit.com/meets/571515-jim-boughton-xc-2023/results/962541?type=raw" selected>
+                            Completed
+                        </option>
+                    </select>
+                </div>
+            </div>
+                                    <div class="field dropdown">
+                <label>More Results</label>
+                <div class="input">
+                    <i class="fa fa-chevron-down"></i>
+                    <select id="ddResultsPage">
+                        <option value="https://ia.milesplit.com/meets/571515-jim-boughton-xc-2023/results">All</option>
+                                                <option value="https://ia.milesplit.com/meets/571515-jim-boughton-xc-2023/results/962540?type=formatted" >
+                            Freshman/Sophomore Boys                        </option>
+                                                <option value="https://ia.milesplit.com/meets/571515-jim-boughton-xc-2023/results/962539?type=formatted" >
+                            Freshman/Sophomore Girls                        </option>
+                                                <option value="https://ia.milesplit.com/meets/571515-jim-boughton-xc-2023/results/962542?type=formatted" >
+                            JV Boys                        </option>
+                                                <option value="https://ia.milesplit.com/meets/571515-jim-boughton-xc-2023/results/962541?type=formatted" selected>
+                            JV Girls                        </option>
+                                                <option value="https://ia.milesplit.com/meets/571515-jim-boughton-xc-2023/results/962544?type=formatted" >
+                            Varsity Boys                        </option>
+                                                <option value="https://ia.milesplit.com/meets/571515-jim-boughton-xc-2023/results/962543?type=formatted" >
+                            Varsity Girls                        </option>
+                                            </select>
+                </div>
+            </div>
+                    </form>
+    </header>
+
+        <div id="meetResultsBody" >
+        <pre>
+Womens 5,000 Meters JV Girls Results
+=====================================================================
+  Pl Athlete                   Yr Team                           Time
+=====================================================================
+   1 Frankie Gotto             FR Pleasant Valley             20:15.6 
+   2 Nina Peterson             JR Iowa City City High         20:44.5 
+   3 Sophia Foad               JR Pleasant Valley             21:01.1 
+   4 Josie Case                SR Pleasant Valley             21:04.4 
+   5 Caitlin Reiter            SR Pleasant Valley             21:11.7 
+   6 Ellie Hermiston           SR Dubuque Hempstead           21:18.8 
+   7 Nina Kuhlmann             JR Iowa City City High         21:28.2 
+   8 Sophia Romero             SR Iowa City City High         21:31.5 
+   9 Elim Michael              JR Iowa City City High         21:32.1 
+  10 Mya Curry                 SR Dubuque Hempstead           21:34.0 
+  11 Allison Schafer           JR Pleasant Valley             21:37.4 
+  12 Auggie Christensen        SR Dubuque Senior              21:50.0 
+  13 Ella Welch                JR Pleasant Valley             21:54.5 
+  14 Roz Hoefflin              SR Dubuque Senior              21:58.4 
+  15 Jillian Maiers            JR Dubuque Hempstead           22:05.8 
+  16 Audrey Kilgore            JR Dubuque Senior              22:16.2 
+  17 Kourtney Berns            SR Dubuque Hempstead           22:34.0 
+  18 Ellie Anton               JR Cedar Falls                 22:39.5 
+  19 Ashley Bentler            SR Iowa City City High         22:48.3 
+  20 Natalie Blake             JR Cedar Falls                 22:49.1 
+  21 Hannah McFadden           JR Dubuque Hempstead           22:49.6 
+  22 Nevaeh Hendon             JR Cedar Falls                 22:52.7 
+  23 Jacie Wessels             JR Cedar Falls                 22:53.7 
+  24 Ella Jorgenson            JR Dubuque Senior              23:07.0 
+  25 Catherine Dierks          JR Cedar Falls                 23:14.0 
+  26 Adali Borglum             SO Waverly-Shell Rock          23:19.2 
+  27 Ella Donovan              SR Dubuque Senior              23:22.0 
+  28 Genevieve Orr             JR Epworth Western Dubuque     23:22.9 
+  29 Nina Torkelson            SR Iowa City City High         23:29.5 
+  30 Ayla Osterkamp            JR Dubuque Hempstead           23:38.6 
+  31 Maddie Cappaert           FR Pleasant Valley             23:44.0 
+  32 Matiana Edmonds           SR Dubuque Senior              23:45.9 
+  33 Rachel Richter            SR Dubuque Hempstead           23:47.4 
+  34 Maryl Meeboer             FR Pleasant Valley             23:59.3 
+  35 Alisa Pajazetovic         SO Waterloo West               24:01.6 
+  36 Amelia Bryant             SR Cedar Falls                 24:10.8 
+  37 Alison Munshower          SR Wahlert Dubuque             24:12.6 
+  38 Claire McGrane            SR Epworth Western Dubuque     24:17.7 
+  39 Paige Mook                JR Bettendorf                  24:19.3 
+  41 Alli Cook                 SR Dubuque Senior              24:29.8 
+  42 Rylee Hansen              JR Cedar Falls                 24:30.6 
+  43 Joelle Haas               SR Iowa City City High         24:34.9 
+  44 Grace Wethal              JR Wahlert Dubuque             24:34.9 
+  45 Sylvia Tank               SR Bettendorf                  24:35.7 
+  46 Nora Ziehr                JR Iowa City City High         24:37.8 
+  47 Kahlan Kearns             JR Cedar Falls                 24:38.7 
+  48 Lynnea Groezinger         SR East Dubuque                24:40.4 
+  49 Mollie Hunzelman          SO Waverly-Shell Rock          24:46.8 
+  50 Tori Rheingans            SR Central DeWitt              24:50.6 
+  51 Jenna DeNike              FR Pleasant Valley             24:57.7 
+  52 Emme Jerome               FR Waverly-Shell Rock          24:59.2 
+  53 Anna Dehn                 SR Wahlert Dubuque             24:59.7 
+  54 Joyce Bittinger           FR Waverly-Shell Rock          25:01.6 
+  55 Emma Halvorsen            SR Cedar Falls                 25:02.1 
+  56 Adelia Good               JR Bettendorf                  25:04.5 
+  57 Kilee Gutierrez           SO Bettendorf                  25:05.3 
+  58 Delaney Barber            JR Central DeWitt              25:08.6 
+  59 Rachel Matel              JR Iowa City City High         25:12.2 
+  60 Sophie Bitter             SR Wahlert Dubuque             25:30.7 
+  61 Delaney Carber            SR Dubuque Senior              25:33.5 
+  62 Rylie Dunne               JR Central DeWitt              25:33.7 
+  63 Emma Reif                 FR North Scott Eldridge        25:34.0 
+  64 Anna Gerdes               JR Cedar Falls                 25:34.7 
+  65 Olive Khoury              JR North Scott Eldridge        25:35.9 
+  66 Maddie Leeser             SR Dubuque Hempstead           25:37.4 
+  67 Hannah Highberger         SO Pleasant Valley             25:37.6 
+  68 Paris Mickelson           JR Dubuque Hempstead           25:39.2 
+  69 Tiffany Ku                SO Pleasant Valley             25:39.8 
+  70 Anna Tryon                JR Bettendorf                  25:40.0 
+  71 Allie Johnson             JR Pleasant Valley             25:41.4 
+  72 Cecilia Smith             JR Epworth Western Dubuque     25:41.5 
+  73 Grace Marlin              JR Waterloo West               25:45.0 
+  74 Avery Lehman              JR Pleasant Valley             25:56.7 
+  75 Hailey Allen              JR Waterloo East               26:09.0 
+  76 Hannah Schnell            SO Waverly-Shell Rock          26:13.9 
+  77 Julia Adamson             JR Epworth Western Dubuque     26:19.7 
+  78 Pazleigh Crawford         SO North Scott Eldridge        26:22.1 
+  79 Addy Kramer               FR Pleasant Valley             26:24.8 
+  80 Laura Azuela              JR North Scott Eldridge        26:26.8 
+  81 Ava Brewer                SR Iowa City City High         26:27.3 
+  82 Emily Smith               SR Bettendorf                  26:30.6 
+  83 Ellie Linehan             JR Davenport Central           26:36.3 
+  84 Callie Kirchmann          SO Waterloo East               26:39.3 
+  85 Katelyn Peck              FR North Scott Eldridge        26:41.8 
+  86 Kendall Housley           FR Pleasant Valley             26:45.8 
+  87 Madison Gilroy            SR Central DeWitt              26:48.0 
+  88 Grace Morley              JR Dubuque Hempstead           26:51.7 
+  89 Dafne Sapia               SR Pleasant Valley             27:01.2 
+  90 Abby Dallal               JR Dubuque Hempstead           27:02.0 
+  91 Grace Zhang               SR Wahlert Dubuque             27:05.1 
+  92 Brianna Dotzler           SR Cedar Falls                 27:06.8 
+  93 Reagan Alexander          SR Waverly-Shell Rock          27:08.1 
+  94 Lindee Rohne              SR Waverly-Shell Rock          27:09.0 
+  95 Ada Gilchrist             SR Iowa City City High         27:28.5 
+  96 Tessa Gempler             FR East Dubuque                27:36.3 
+  97 Melina Brandon            SR Dubuque Hempstead           27:38.7 
+  98 Addie Trees               FR Pleasant Valley             27:45.4 
+  99 Maya Hoffman              JR Iowa City City High         27:45.6 
+ 100 Anna Tyler                SR Dubuque Hempstead           27:56.1 
+ 101 Eloise Van Howe           SO Davenport Central           28:00.9 
+ 102 Rachel Castro             JR Epworth Western Dubuque     28:07.5 
+ 103 Evelyn Fern               JR Dubuque Hempstead           28:14.4 
+ 104 Lilli Green               JR Epworth Western Dubuque     28:17.0 
+ 105 Bailey Kestel             JR Waterloo West               28:18.1 
+ 106 Rachel Spicer             SR Central DeWitt              28:18.6 
+ 107 Lily Gao                  FR Pleasant Valley             28:19.6 
+ 108 Rylan Backas              FR Pleasant Valley             28:28.7 
+ 109 Ella Hansel               JR Waverly-Shell Rock          28:31.2 
+ 110 Lilly Anderson            JR Dubuque Senior              28:37.1 
+ 111 Lauren Nemmers            SR Dubuque Senior              28:45.4 
+ 112 Nadia Meeks               JR Pleasant Valley             29:31.4 
+ 113 Eliza Petersen            SR Central DeWitt              29:36.4 
+ 114 Lucy Ehlers               JR Epworth Western Dubuque     29:37.9 
+ 115 Naomi Steele              JR Pleasant Valley             29:42.0 
+ 116 Cambrie Pitz              JR Epworth Western Dubuque     29:45.2 
+ 117 Hailey Bowman             JR Dubuque Senior              29:47.4 
+ 118 Lea Lefebvre              FR Davenport Central           29:51.5 
+ 119 Abby Elsamiller           SR Waverly-Shell Rock          29:55.4 
+ 120 Izzy Todd                 FR Pleasant Valley             30:06.6 
+ 121 Audrey Wagner             SR East Dubuque                30:07.1 
+ 122 Tabby Skyles              SR North Scott Eldridge        30:21.5 
+ 123 Ellyn Whittemore          SO Waterloo West               30:31.8 
+ 124 Teagan Kelchen            JR Epworth Western Dubuque     31:00.5 
+ 125 Emma Pollock              SR Davenport Central           31:50.2 
+ 126 Quinn Price               SR Iowa City City High         32:27.4 
+ 127 Ruby Mackenzie            JR Dubuque Senior              32:41.9 
+ 128 Alice Hanselman           SR Dubuque Hempstead           32:59.1 
+ 129 Ania Naso                 JR Iowa City City High         33:00.6 
+ 130 Raygan Meehan             JR Dubuque Hempstead           34:57.4 
+ 131 Anna Giorgio              SR Davenport Central           36:32.6 
+ 132 Georgia Hellwig           SR Iowa City City High         45:09.3 
+ 133 Evelyn Powers             SR Iowa City City High         45:11.6 
+     Noe Richman               JR Iowa City City High              NT 
+     Joanna Galluzzo           JR Iowa City City High              NT 
+     Reagan Westphal           JR Waterloo West                    NT 
+     Kassidy Taylor            JR Waterloo West                    NT 
+     Hannah Rand               JR Waterloo West                    NT 
+     Emra Pajic                JR Waterloo West                    NT 
+     Amira Little              SO Waterloo West                    NT 
+     Kelly Salak               FR Pleasant Valley                  NT 
+     Kailee Wilson             SO Pleasant Valley                  NT 
+     Sabrina Richards          JR Pleasant Valley                  NT 
+     Muskan Mehta              SR Pleasant Valley                  NT 
+     Killie Hillis             SO Pleasant Valley                  NT 
+     Sofie Hansen              SR Pleasant Valley                  NT 
+     Delaney Ray               SR Davenport Central                NT 
+     Claire O'Melia            JR Davenport Central                NT 
+     Ivory Lesly               SR Davenport Central                NT 
+     Laura Cushman             SR Wahlert Dubuque                  NT 
+     Brooklyn Firzlaff         SR Epworth Western Dubuque          NT 
+     Chloe Hundertmark         SO North Scott Eldridge             NT 
+     Liza Trotter              JR Dubuque Hempstead                NT 
+     Lauren Henneberry         SR Dubuque Hempstead                NT 
+     Isabel Brauhn             SR Dubuque Hempstead                NT 
+     Akeelah Anderson          JR Dubuque Hempstead                NT 
+     Clara Wagner              SR Dubuque Senior                   NT 
+     Victoria Zarate           SR Cedar Falls                      NT 
+     Sejla Mehmedovic          JR Cedar Falls                      NT 
+     Paige Koehn               SR Cedar Falls                      NT 
+     Megan Gonnerman           JR Cedar Falls                      NT 
+     Olivia Carter             JR Cedar Falls                      NT 
+     Kaelee Wolf               SR Bettendorf                       NT 
+     Carmen Lopez Gomez        SR Bettendorf                       NT 
+     Julia Cuerdo Gonzalez     SR Bettendorf                       NT 
+     Rowan Appel               JR Bettendorf                       NT 
+     Lindi Stevens             JR Waverly-Shell Rock               NT 
+     Emma Ihnen                JR Waverly-Shell Rock               NT 
+     Ashley Heine              JR Waverly-Shell Rock               NT 
+     Taylor Hoftender          JR Waterloo East                    NT 
+     Nora McAvan               JR Central DeWitt                   NT 
+     Julia Fielding            JR Central DeWitt                   NT 
+     Madison Edens             SR Central DeWitt                   NT 
+
+</pre>
+    </div>
+
+
+</article>
+
+
+            </div>
+        </div>
+
+        <aside id="side" role="complementary">
+            <div>
+                
+
+
+
+<a href="/join?ref=meet-571515-tab-results&next=https%3A%2F%2Fia.milesplit.com%2Fmeets%2F571515-jim-boughton-xc-2023%2Fresults%2F962541%2Fraw&" class="joinPro">
+    <div>
+        <header>
+            MileSplit PRO
+        </header>
+        <p>
+            To get the full depth of our meet coverage, become PRO!
+        </p>
+        <div class="button callToAction">
+            Join Now
+        </div>
+    </div>
+</a>
+
+
+
+<div id="rectangle_btf_mobile"  class="mobileAd" data-name="rectangle btf mobile"></div>
+<div id="rectangle_atf" class="rectangleSideAd"></div>
+
+<div id="rectangle_btf" class="rectangleSideAd"></div>
+
+
+            </div>
+        </aside>
+
+    </main>
+
+    <div id="interstitial"></div>
+    <!--div class="leaderboard btf" id="leaderboard_btf" data-name="leaderboard btf"></div-->
+
+    <footer id="footer" role="contentinfo">
+        <div>
+            <p class="copyright">
+                &copy; 2026 <a href="/support/copyright">Copyright</a>
+                <a href="https://www.flosports.tv" target="_blank">FloSports, Inc.</a>
+            </p>
+                        <p class="editor">
+                MileSplit Iowa Editor:
+                , <a href="mailto:"></a>
+            </p>
+                        <p class="links">
+                <a href="https://support.milesplit.com">Contact Us</a>
+                <a href="https://www.flosports.tv/privacy-policy/">Privacy Policy</a>
+                <a href="https://www.flosports.tv/terms-of-service/">Terms of Use</a>
+                <a href="#" id="cookiePref" onclick="">Cookie Preferences / Do Not Sell or Share My Personal Information</a>
+            </p>
+            <p class="speed" data-cacheKey="{meet:571515}:/meets/571515-jim-boughton-xc-2023/results/962541/raw:::ia" data-environment="Production">
+                Generated by 10.1.2.248                fresh                in 214 milliseconds
+            </p>
+        </div>
+    </footer>
+
+</div>
+
+
+<script type="text/javascript">
+    var disableCopy = 1;
+    /* Disable copy
+    $(document).on("keydown", function(e) {
+        if (disableCopy && e.keyCode == 67 && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    // Disable context menu
+    window.oncontextmenu = function () {
+        if (disableCopy) {
+            return false;
+        }
+    };*/
+    // set clipboard data with plain text (no tabs or newlines)
+    if (disableCopy) {
+        document.addEventListener('copy', function(e) {
+            e.preventDefault();
+            // table html is converted to tabs and newlines
+            var text = window.getSelection()
+                .toString();
+            // remove all tabs and newlines with spaces
+            while (text.match(/\t|[ ]{2,}/)) {
+                text = text.replace(/\t|[ ]{2,}/, ' ');
+            }
+            // set clipboard data with plain text
+            e.clipboardData.setData('text/plain', text);
+        });
+    }
+</script>
+
+
+
+
+<script src="https://js.sp.milesplit.com/drivefaze/common-ms05.js?build=20261021212452"></script>
+
+<script type="text/javascript">
+    segmentNavTopLevelCategories    = $('#navbar .menu > ul > li > a');
+    segmentNavSubCategories         = $('#navbar .menu > ul > li > ul > li > a');
+    segmentNavTopLevelCategories.on('click', function(e){
+        segmentNavTrack('Go To ' + $(this).text());
+    });
+    segmentNavSubCategories.on('click', function(e){
+        segmentNavTrack('SubNav ' + $(this).text());
+    });
+    var segmentNavTrack = function(event_fired) {
+        segment.track({
+            event_fired: event_fired,
+            url: window.location.href
+        }, {
+            integrations: {
+                'All': true,
+                'Google Analytics': false,
+                'Facebook Pixel': false,
+                'Meta Pixel': false
+            }
+        });
+    }
+</script>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $(document).on("click", '#cookiePref', function (e) {
+            e.preventDefault();
+            Osano.cm.showDrawer('osano-cm-dom-info-dialog-open')
+        })
+    })
+</script>
+
+<script type="text/javascript">
+</script>
+
+
+
+<script type="text/javascript">
+    var disableCopy = 1;
+    /* Disable copy
+    $(document).on("keydown", function(e) {
+        if (disableCopy && e.keyCode == 67 && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    // Disable context menu
+    window.oncontextmenu = function () {
+        if (disableCopy) {
+            return false;
+        }
+    };*/
+    // set clipboard data with plain text (no tabs or newlines)
+    if (disableCopy) {
+        document.addEventListener('copy', function(e) {
+            e.preventDefault();
+            // table html is converted to tabs and newlines
+            var text = window.getSelection()
+                .toString();
+            // remove all tabs and newlines with spaces
+            while (text.match(/\t|[ ]{2,}/)) {
+                text = text.replace(/\t|[ ]{2,}/, ' ');
+            }
+            // set clipboard data with plain text
+            e.clipboardData.setData('text/plain', text);
+        });
+    }
+</script>
+
+
+
+
+</body>
+</html>

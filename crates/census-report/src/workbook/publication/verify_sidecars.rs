@@ -34,7 +34,7 @@ pub(super) fn verify(
     audit::verify(directory, &inputs)?;
     let outcome = inputs.outcome()?;
     bests::verify(directory, &inputs, artifact_revision, &outcome.selections)?;
-    if matches!(artifact_revision, 3..=9) {
+    if matches!(artifact_revision, 3..=8 | 10) {
         return normalized::verify_outcome(directory, &inputs, artifact_revision, &outcome);
     }
     Ok(super::inventory::RowCounts::new())

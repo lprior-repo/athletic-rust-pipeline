@@ -27,8 +27,7 @@ fn reported_revision_is_selected_only_by_the_frozen_inclusion_setting() -> TestR
 }
 
 #[test]
-fn revision_nine_inventory_adds_only_reported_performances_and_requires_exact_counts() -> TestResult
-{
+fn reported_inventory_adds_only_reported_performances_and_requires_exact_counts() -> TestResult {
     let revision_eight = inventory::names(REVISION)?;
     let revision_nine = inventory::names(REPORTED_REVISION)?;
     check!(eq; revision_eight.len() + 1, revision_nine.len());
@@ -77,6 +76,8 @@ fn reported_revision_binding_requires_a_selected_profile_binding() -> TestResult
     check!(validate(REPORTED_REVISION, Some(&selected)).is_ok());
     check!(validate(REPORTED_REVISION, None).is_err());
     check!(validate(REVISION, None).is_err());
+    check!(validate(9, Some(&selected)).is_err());
+    check!(inventory::names(9).is_err());
     Ok(())
 }
 

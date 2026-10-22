@@ -1,8 +1,10 @@
 mod documentary;
 pub(super) mod participation;
 mod promotion;
+mod reported_event;
 pub(crate) use documentary::DocumentaryParticipationRow;
 pub(crate) use participation::ParticipationDiagnostic;
+pub(crate) use reported_event::ReportedEventInterpretation;
 pub(super) mod current_affiliation;
 pub(super) mod physical_observations;
 pub(crate) use census_domain::affiliation_candidates::capture_day::CaptureDayAffiliationResolution as CurrentAffiliationResolution;
@@ -73,6 +75,7 @@ pub(crate) struct ParticipationAssessment {
     reasons: ParticipationReasons,
     evidence_refs: Vec<String>,
     diagnostics: Vec<participation::ParticipationDiagnostic>,
+    reported_event: Option<ReportedEventInterpretation>,
 }
 
 impl ParticipationAssessment {
@@ -191,6 +194,7 @@ impl ParticipationAssessment {
             reasons,
             evidence_refs,
             diagnostics: Vec::new(),
+            reported_event: None,
         }
     }
 }
@@ -268,6 +272,7 @@ impl ParticipationAssessment {
             reasons,
             evidence_refs,
             diagnostics,
+            reported_event: None,
         }
     }
 }

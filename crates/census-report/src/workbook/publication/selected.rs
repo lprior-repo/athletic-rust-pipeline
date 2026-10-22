@@ -8,7 +8,7 @@ use census_domain::profile_execution::{
 use serde::{Deserialize, Serialize};
 
 pub(super) const REVISION: u32 = 8;
-pub(super) const REPORTED_REVISION: u32 = 9;
+pub(super) const REPORTED_REVISION: u32 = 10;
 pub(super) const HISTORICAL_REVISION: u32 = 7;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

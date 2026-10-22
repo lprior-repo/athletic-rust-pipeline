@@ -665,3 +665,21 @@ profiles. ADR-026's schema/generation protection remains in force; enrollment an
 persisted/runtime wire are separately versioned and Main-owned. The existing
 [NATIONAL-CENSUS-PLAN](../NATIONAL-CENSUS-PLAN.md) remains the only implementation/order/acceptance
 plan; this decision adds no parallel plan or automatic runtime switch.
+
+### Reported event interpretation in the workbook — 2026-10-22
+
+The Include publication uses artifact revision 10 for an additional reported-event
+interpretation column and explicitly non-best review rows. Exclude remains revision 8.
+The new consumer refuses revision 9; retained revision-9 bundles and their original
+immutable verifier remain preserved. This changes neither persisted canonical facts
+nor participation or best-selection policy, and authorizes no implicit runtime update.
+
+Reported interpretation reuses authenticated retained owned-result and raw-metadata
+replay after the existing canonical/source/mark binding checks. Exact same-row D/Discus
+and S/Shot Put pairs can identify a reported field event; exact 5000m/5000 Meter Run
+with retained Cross Country meet context can identify a reported XC event. Original
+event IDs, kinds, labels, provider ownership, claims and receipts remain unchanged.
+Course identity/measurement, implement mass and performance-time/current affiliation
+remain unresolved unless independently established. These annotations grant no accepted
+identity, eligibility, comparable best or athlete best-summary value. Workbook and
+normalized output share this interpretation; independent readback verifies the cells.

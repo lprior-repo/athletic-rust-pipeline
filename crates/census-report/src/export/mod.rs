@@ -4,6 +4,7 @@ pub(crate) mod public_identity;
 mod qualification;
 #[cfg(test)]
 pub(crate) use qualification::AffiliationEvidenceAudit;
+pub(crate) use qualification::ReportedEventInterpretation;
 pub(crate) use qualification::{
     CurrentAffiliationResolution, CurrentAffiliationView, ParticipationAssessment,
     ParticipationDiagnostic, ParticipationOutcome, VerifiedCurrentAffiliations,

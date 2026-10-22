@@ -3110,3 +3110,79 @@ eligible best marks, complete state/sport coverage and authoritative UP
 membership remain unfinished. Old paused National/CO invocation identities and
 pins remain preserved; no acquisition continuation is claimed. Full release
 umbrella and all 17 native fault scenarios were not rerun on this release.
+
+### 2026-10-22 — retained MI/IL event annotations, source-only repair
+
+`athletic-rust-pipeline-rm23.10` adds evidence-bound reported interpretations
+after the existing exact source-context, physical owner and mark checks. Genuine
+retained D/Discus, S/Shot Put and raw-Cross-Country/owned-5000m examples can appear
+as explicitly non-best PR review rows. Calculated PR, performance-time affiliation
+and current affiliation remain blank; original IDs, canonical event kinds, claims,
+eligibility and shared best selection are unchanged. The normalized performance
+CSV retains the canonical event alongside a separate interpretation JSON column.
+
+Include output now declares artifact revision 10. The new consumer refuses 9;
+the delivered revision-9 generation and its immutable original consumer remain
+preserved. This source change does not qualify an in-place live upgrade or a
+revision-9 publication-root transition.
+
+Six original retained response bodies, copied without modification, are checked
+by their content-addressed filenames under
+`fixtures/milesplit/reported-event-context-20261022/`. Tests use isolated temporary
+Stores and controlled cache timestamps/school bindings, not production receipts.
+The Michigan raw document says Unattached while the API supplies schools; this
+does not establish performance-time affiliation. Illinois raw meet context does
+not establish a measured course or comparable XC best.
+
+Observed commands use `env -u CI` and the canonical `tools/moon-local` entrypoint.
+Moon 2.2.4 was SHA-verified and placed on this command's PATH under
+`/tmp/athletic-work-20261021/moon_cli-x86_64-unknown-linux-gnu`; installed tool
+configuration and the repository's version requirement were not changed.
+Logs below are under `/tmp/athletic-work-20261021/`:
+
+- PASS: `pipeline:fmt pipeline:check pipeline:lint-src`, three tasks,
+  `reported-event-check-402.log`. The configured arity review warnings remain
+  visible; this is not a warning-free full release claim.
+- PASS: `pipeline:report-test --force`, 1,477/1,477, zero skipped,
+  161.205 seconds of test execution, `reported-event-report-tests-403.log`.
+  The genuine MI/IL publication, CSV and frozen cold-read regression passed
+  in 26.934 seconds; accepted-athlete and best-mark CSVs remain empty in that
+  controlled unresolved fixture. The suite also checks unrelated-row isolation,
+  unchanged canonical Track5000m, frozen replay and forged source-owner refusal.
+- Earlier command 398 failed overall: 1,475 passed and two stale artifact-version
+  expectations failed. Corrected version expectations passed 399, two tests;
+  403 is the subsequent full-suite result. Earlier 392 failed overall, six
+  passed/one failed, despite its named publication test passing. Its negative
+  fixture reused an existing physical ID and was merged with the original valid
+  row; it did not establish an ownership defect. Corrected unique-source negative
+  fixture 394 passed with SourceBindingMismatch and no interpretation.
+- Both actual local Qwen servers returned HTTP 200 for draft/review work in
+  387/390/404. Final 5090/3090 review responses reported no findings within the
+  supplied-file limits. These responses are advisory, not independent execution
+  or acceptance evidence. The supporting chat's blocked reference-file review
+  remains NOT RUN.
+- FAIL: `pipeline:xtask --force -- scan`, exit one,
+  `reported-event-scan-405.log`. The trusted scan checked 2,836 production files
+  and 30,351 callables with no unresolved measurement sites. Four hard-size
+  failures in touched files from command 400 are resolved. Seventeen over-60
+  callables remain in untouched files across Store, crawl, service and the
+  existing reported athlete/row verifiers. This is a global readiness blocker;
+  no source-length waiver or unrelated rewrite was introduced.
+- FAIL: staged `git diff --check`, exit two,
+  `reported-event-diff-check-406.log`, for original retained HTML response-body
+  whitespace. Captured bytes are preserved rather than normalized. The same
+  check restricted to changed Rust, documentation and fixture README passes;
+  this does not turn the full diff check into a pass.
+
+No live Store apply, source acquisition, deployment, migration, replacement job
+key or new delivered workbook is claimed. The sole live owner and original
+workflow pins remain in place. Rechecked unchanged: delivered XLSX SHA256
+`f78d414b5a550f2c6899318605e0e1c8d27187e75cb0a452929fbbac52c1468f`,
+generation manifest SHA256
+`6846105ce2d97085c0c0be70d6ccc0814e47884d97789011916341517f8bd698`,
+Cargo.lock `c31c8ba79a8eec38a990238c9bd7179b84f6f76e09d4bff86f29da9af5dfebcc`
+and the separate user-owned performance edit
+`b96da5a96ddc0f3a0544f978b97ad3139172343ac4019b541301e136fa1de8f8`.
+Full release umbrella, live exact-build publication, all 17 native fault cases,
+accepted-population coverage and the complete workbook goal are not qualified
+by these source tests.

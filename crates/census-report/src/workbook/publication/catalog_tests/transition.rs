@@ -78,7 +78,7 @@ fn corrupt_extra_or_missing_revision_one_inventory_blocks_fence_and_pointer_swit
 fn future_manifest_revision_is_dispatched_before_its_shape_is_decoded() -> TestResult {
     let temporary = tempfile::tempdir()?;
     let path = temporary.path().join("manifest.json");
-    let retained = br#"{"schema_revision":10,"unknown_new_shape":true}"#;
+    let retained = br#"{"schema_revision":11,"unknown_new_shape":true}"#;
     std::fs::write(&path, retained)?;
     let error = super::super::manifest::verify_directory(temporary.path())
         .err()

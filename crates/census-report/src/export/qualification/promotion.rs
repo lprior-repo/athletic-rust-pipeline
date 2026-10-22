@@ -16,7 +16,8 @@ impl VerifiedParticipationView {
         ) = pinned.into_parts();
         let rows = rows
             .into_iter()
-            .map(|(id, row)| {
+            .map(|(id, mut row)| {
+                let reported_event = row.reported_event.take();
                 let (outcome, reasons, evidence_refs, diagnostics) = row.into_parts();
                 let outcome = match outcome {
                     CandidateOutcome::EligibleCandidate => ParticipationOutcome::Eligible,
@@ -30,6 +31,7 @@ impl VerifiedParticipationView {
                         reasons,
                         evidence_refs,
                         diagnostics,
+                        reported_event,
                     },
                 )
             })

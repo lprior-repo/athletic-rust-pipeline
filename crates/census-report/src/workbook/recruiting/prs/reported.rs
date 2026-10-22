@@ -3,7 +3,11 @@ use crate::workbook::reported::{Projection, ReportedBest};
 use census_domain::model::performance_comparison::mark_unit;
 use std::collections::BTreeSet;
 
-pub(super) const HEADERS: [&str; 2] = ["Source Athlete ID", "Performance Evidence"];
+pub(super) const HEADERS: [&str; 3] = [
+    "Source Athlete ID",
+    "Performance Evidence",
+    "Reported Event Interpretation",
+];
 
 pub(super) fn verified(cells: ReportResult<Vec<Cell>>, header: bool) -> ReportResult<Vec<Cell>> {
     let mut result = if header {
@@ -70,6 +74,7 @@ pub(super) fn row(
             })?
             .map_or(Cell::Empty, Cell::text),
     );
+    result.push(Cell::Empty);
     Ok(result)
 }
 

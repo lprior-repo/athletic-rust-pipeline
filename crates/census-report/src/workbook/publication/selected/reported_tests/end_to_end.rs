@@ -73,11 +73,11 @@ fn include_publication_writes_only_reported_rows_from_reopened_retained_facts() 
     check!(eq; repeated, workbook);
     check!(eq; std::fs::read(&repeated)?, original_bytes);
 
-    check!(eq; manifest.get("schema_revision").and_then(serde_json::Value::as_u64), Some(9));
+    check!(eq; manifest.get("schema_revision").and_then(serde_json::Value::as_u64), Some(10));
     let counts = manifest
         .get("normalized_csv_rows")
         .and_then(serde_json::Value::as_object)
-        .ok_or("normalized revision-nine row counts")?;
+        .ok_or("normalized reported row counts")?;
     check!(eq; counts.get("reported_performances.csv").and_then(serde_json::Value::as_u64), Some(3));
     check!(eq; counts.get("athletes.csv").and_then(serde_json::Value::as_u64), Some(0));
     check!(eq; counts.get("best_marks.csv").and_then(serde_json::Value::as_u64), Some(0));
