@@ -25,9 +25,14 @@ fn parse(status: &Value, child_only: bool) -> Result<BTreeSet<u32>> {
         return Ok(BTreeSet::new());
     }
     let future = decode(future)?;
-    let mut pending = vec![future.as_ref()];
+    let (root, nodes) = if child_only {
+        child_future(&future)?
+    } else {
+        (future.as_ref(), 256)
+    };
+    let mut pending = vec![root];
     let mut ids = BTreeSet::new();
-    (0..256).try_for_each(|_| -> Result<()> {
+    (0..nodes).try_for_each(|_| -> Result<()> {
         let Some(node) = pending.pop() else {
             return Ok(());
         };
@@ -86,4 +91,33 @@ fn parse(status: &Value, child_only: bool) -> Result<BTreeSet<u32>> {
     })?;
     ensure!(pending.is_empty(), "source future exceeds 256-node budget");
     Ok(ids)
+}
+
+fn child_future(future: &Value) -> Result<(&Value, usize)> {
+    let (kind, value) = variant(future)?;
+    if kind != "FirstCompleted" {
+        return Ok((future, 256));
+    }
+    let children = value.as_array().context("future branch malformed")?;
+    let [first, second] = children.as_slice() else {
+        return Ok((future, 256));
+    };
+    Ok(match (cancellation(first), cancellation(second)) {
+        (true, false) => (second, 254),
+        (false, true) => (first, 254),
+        _ => (future, 256),
+    })
+}
+
+fn cancellation(future: &Value) -> bool {
+    future.as_object().is_some_and(|outer| {
+        outer.len() == 1
+            && outer
+                .get("Single")
+                .and_then(Value::as_object)
+                .is_some_and(|notification| {
+                    notification.len() == 1
+                        && notification.get("SignalIndex").and_then(Value::as_u64) == Some(1)
+                })
+    })
 }

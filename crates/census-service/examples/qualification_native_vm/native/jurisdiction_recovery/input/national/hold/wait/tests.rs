@@ -49,7 +49,6 @@ fn sleep_other_child_signal_duplicate_or_completed_future_refuses() -> Result<()
         json!({"Single":{"CompletionId":99}}),
         json!({"Single":{"SignalName":"stop"}}),
         json!({"FirstCompleted":[{"Single":{"CompletionId":6}},{"Single":{"CompletionId":6}}]}),
-        json!({"FirstCompleted":[{"Single":{"CompletionId":6}},{"Single":{"SignalIndex":1}}]}),
     ] {
         let mut changed = status.clone();
         replace(&mut changed, "/suspended_waiting_future_json", future)?;
@@ -121,5 +120,60 @@ fn changed_full_input_target_ack_or_truncated_journal_refuses() -> Result<()> {
         call::verify(&running, &retained, &expected).is_err(),
         "running parent qualified"
     );
+    Ok(())
+}
+
+#[test]
+fn sdk_cancellation_envelope_preserves_exact_child_proof_and_original_bytes() -> Result<()> {
+    let (status, retained, expected) = fixture()?;
+    let original = call::verify(&status, &retained, &expected)?;
+    let retained_bytes = serde_json::to_vec(&retained)?;
+    for future in [
+        json!({"FirstCompleted":[{"Single":{"CompletionId":6}},{"Single":{"SignalIndex":1}}]}),
+        json!({"FirstCompleted":[{"Single":{"SignalIndex":1}},{"Single":{"CompletionId":6}}]}),
+    ] {
+        for value in [
+            future.clone(),
+            Value::String(serde_json::to_string(&future)?),
+        ] {
+            let mut changed = status.clone();
+            replace(&mut changed, "/suspended_waiting_future_json", value)?;
+            let status_bytes = serde_json::to_vec(&changed)?;
+            ensure!(
+                call::verify(&changed, &retained, &expected)? == original,
+                "SDK cancellation envelope changed exact child proof"
+            );
+            ensure!(
+                serde_json::to_vec(&changed)? == status_bytes
+                    && serde_json::to_vec(&retained)? == retained_bytes,
+                "future oracle changed retained status or journal bytes"
+            );
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn only_one_exact_outer_sdk_cancellation_envelope_is_accepted() -> Result<()> {
+    let (status, retained, expected) = fixture()?;
+    for future in [
+        json!({"Single":{"SignalIndex":1}}),
+        json!({"FirstCompleted":[{"Single":{"SignalIndex":1}},{"Single":{"SignalIndex":1}}]}),
+        json!({"FirstCompleted":[{"Single":{"CompletionId":6}},{"Single":{"SignalIndex":2}}]}),
+        json!({"FirstCompleted":[{"Single":{"CompletionId":6}},{"Single":{"SignalName":"cancel"}}]}),
+        json!({"FirstCompleted":[{"Single":{"CompletionId":6}},{"Single":{"SignalIndex":1}},{"Single":{"CompletionId":99}}]}),
+        json!({"AllCompleted":[{"Single":{"CompletionId":6}},{"Single":{"SignalIndex":1}}]}),
+        json!({"FirstCompleted":[{"FirstCompleted":[{"Single":{"CompletionId":6}},{"Single":{"SignalIndex":1}}]},{"Single":{"SignalIndex":1}}]}),
+        json!({"AllCompleted":[{"FirstCompleted":[{"Single":{"CompletionId":6}},{"Single":{"SignalIndex":1}}]}]}),
+        json!({"FirstCompleted":[{"Single":{"CompletionId":6}},{"Single":{"SignalIndex":1,"SignalName":"cancel"}}]}),
+        json!({"FirstCompleted":[{"Single":{"CompletionId":6}},{"Single":{"SignalIndex":"1"}}]}),
+    ] {
+        let mut changed = status.clone();
+        replace(&mut changed, "/suspended_waiting_future_json", future)?;
+        ensure!(
+            call::verify(&changed, &retained, &expected).is_err(),
+            "malformed or misplaced cancellation envelope accepted"
+        );
+    }
     Ok(())
 }
