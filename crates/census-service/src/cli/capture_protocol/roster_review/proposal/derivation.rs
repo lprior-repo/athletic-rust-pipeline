@@ -169,8 +169,11 @@ fn finalize(
     contracts: &RosterInterpretationContractsV1<'_>,
     objects: SourceObjects,
 ) -> Result<(LocallyCheckedRosterProposalV1, RosterSourceReviewObjectsV1)> {
-    let limits = RosterAuthorityLimitsV1::new(64 * 1024, 8 * 1024 * 1024)
-        .context("building the proposal limits")?;
+    let limits = RosterAuthorityLimitsV1::new(
+        census_domain::roster_affiliation_authority::MAX_ROSTER_AUTHORITY_RECORD_BYTES,
+        census_domain::roster_affiliation_authority::MAX_ROSTER_AUTHORITY_COMPONENT_BYTES,
+    )
+    .context("building the proposal limits")?;
     let bytes = serde_json::to_vec(&value).context("encoding the derived proposal")?;
     let proposal = decode_roster_issuance_proposal_v1(&bytes, limits)
         .context("decoding the derived proposal")?;

@@ -32,7 +32,7 @@ pub(in super::super) fn validate(
             }
             objects.insert(digest.to_owned(), raw.clone());
         } else if let Some(operation_digest) = key.strip_prefix(super::RECORD_PREFIX) {
-            let record: ReviewRecord = codec::decode(raw)?;
+            let record: ReviewRecord = codec::decode_review_composite(raw)?;
             if operation_digest != codec::digest(record.basis.operation.as_str().as_bytes()) {
                 return Err(Error::Corrupt("review operation key").into());
             }
@@ -75,7 +75,7 @@ fn check_chained(
     raw: &[u8],
     state: &mut LedgerState<'_>,
 ) -> StoreResult<()> {
-    let record: ReviewRecord = codec::decode(raw)?;
+    let record: ReviewRecord = codec::decode_review_composite(raw)?;
     head.ordinal = head.ordinal.checked_add(1).ok_or(Error::BudgetExceeded)?;
     if ordinal != head.ordinal || record.basis.next_ordinal != head.ordinal {
         return Err(Error::Corrupt("review ordinal chain").into());
@@ -180,6 +180,10 @@ fn validate_header(
     prior: &AuthorityHead,
 ) -> StoreResult<()> {
     let basis = &record.basis;
+    if basis.closure.len() > census_domain::roster_affiliation_authority::MAX_ROSTER_CLOSURE_OBJECTS
+    {
+        return Err(Error::BudgetExceeded.into());
+    }
     if &basis.store != identity
         || record.approval != super::review::approval(basis)?
         || record.approval_digest != codec::digest(&record.approval)
@@ -194,10 +198,17 @@ fn validate_header(
             return Err(Error::Corrupt("review closure order").into());
         }
         previous = Some(&reference.digest);
-        bytes = bytes
-            .checked_add(object(objects, reference)?.len())
-            .ok_or(Error::BudgetExceeded)?;
-        if bytes > 8 * 1024 * 1024 {
+        let raw = object(objects, reference)?;
+        let cap = if reference.digest == basis.physical_inventory.digest {
+            census_domain::roster_affiliation_authority::MAX_ROSTER_PHYSICAL_PROJECTION_MANIFEST_BYTES
+        } else {
+            4 * 1024 * 1024
+        };
+        if raw.len() > cap {
+            return Err(Error::BudgetExceeded.into());
+        }
+        bytes = bytes.checked_add(raw.len()).ok_or(Error::BudgetExceeded)?;
+        if bytes > census_domain::roster_affiliation_authority::MAX_ROSTER_CLOSURE_BYTES {
             return Err(Error::BudgetExceeded.into());
         }
     }

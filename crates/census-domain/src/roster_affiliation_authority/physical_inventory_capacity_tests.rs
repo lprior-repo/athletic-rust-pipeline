@@ -87,7 +87,7 @@ fn capacity(result: super::Result<()>, resource: &str, needed: u64, available: u
 }
 
 #[test]
-fn all_claims_admit_only_physical_inventory_up_to_existing_one_mib_bound() -> TestResult {
+fn all_claims_admit_only_physical_inventory_up_to_configured_manifest_bound() -> TestResult {
     let max = MAX_ROSTER_PHYSICAL_PROJECTION_MANIFEST_BYTES;
     for claim in [Claim::Proposal, Claim::Issuance, Claim::Record] {
         for size in [64 * 1024 + 1, 68_462, max] {
@@ -127,7 +127,7 @@ fn physical_inventory_uses_original_aggregate_component_grant() -> TestResult {
 
 #[test]
 fn duplicate_manifest_reference_is_counted_once_and_conflicting_length_refuses() -> TestResult {
-    let max = MAX_ROSTER_PHYSICAL_PROJECTION_MANIFEST_BYTES;
+    let max = MAX_ROSTER_PHYSICAL_PROJECTION_MANIFEST_BYTES.min(4 * 1024 * 1024);
     for claim in [Claim::Proposal, Claim::Issuance, Claim::Record] {
         let mut value = claim.sample()?;
         manifest_bytes(&mut value, claim, max)?;
@@ -181,6 +181,28 @@ fn manifest_alignment_preserves_all_record_proof_metadata_limits() -> TestResult
             "referenced object bytes",
             64 * 1024 + 1,
             64 * 1024,
+        )?;
+    }
+    Ok(())
+}
+
+#[test]
+fn physical_manifest_role_cannot_raise_the_body_reference_limit() -> TestResult {
+    let size = 4 * 1024 * 1024 + 1;
+    for claim in [Claim::Proposal, Claim::Issuance, Claim::Record] {
+        let mut value = claim.sample()?;
+        manifest_bytes(&mut value, claim, size)?;
+        claim.decode(&value, MAX_ROSTER_AUTHORITY_COMPONENT_BYTES)?;
+        let manifest = value
+            .pointer(&claim.path(MANIFEST))
+            .ok_or("manifest reference")?
+            .clone();
+        set(&mut value, &claim.path("/capture/body"), manifest)?;
+        capacity(
+            claim.decode(&value, MAX_ROSTER_AUTHORITY_COMPONENT_BYTES),
+            "roster body bytes",
+            u64::try_from(size)?,
+            4 * 1024 * 1024,
         )?;
     }
     Ok(())

@@ -148,8 +148,8 @@ fn proposal(bytes: &[u8]) -> crate::StoreResult<LocallyCheckedRosterIssuanceV1> 
 fn limits(
 ) -> crate::StoreResult<census_domain::roster_affiliation_authority::RosterAuthorityLimitsV1> {
     census_domain::roster_affiliation_authority::RosterAuthorityLimitsV1::new(
-        64 * 1024,
-        8 * 1024 * 1024,
+        census_domain::roster_affiliation_authority::MAX_ROSTER_AUTHORITY_RECORD_BYTES,
+        census_domain::roster_affiliation_authority::MAX_ROSTER_AUTHORITY_COMPONENT_BYTES,
     )
     .map_err(|_| super::RosterSourceIssuanceStoreError::BudgetExceeded.into())
 }

@@ -2987,3 +2987,39 @@ native post-roster deployment handoff, protected regional authority and the
 fully populated five-state workbook remain unqualified. The original immutable
 five-state profile remains Uniform/AllSelected; a future regional profile cannot
 retroactively certify UP-first acquisition or reset the original run budgets.
+
+## 2026-10-22 retained-corpus capacity qualification
+
+Native roster-review305 refused physical row 4,097. Selected-publication306
+refused the former 128-MiB frozen identity limit; cold backup308 exhausted the
+former 2-GiB backing inventory allowance. Source-cohort310 refused a sealed
+935,578,986-byte physical table against its former 512-MiB allowance. These
+failed attempts and original operation identities remain preserved.
+
+The finite limits and unchanged authority checks are recorded in ADR-038's
+2026-10-22 amendment. RTX3090 authored the source-proof repair; independent
+RTX5090 review verified the four exact retained original manifests and their
+configuration fences. The sorted current 210-source closure hashes to
+`1e3c0c6b2df80d81f48de0dd03b292a91fce995b0b9fd23409b9790dc6344ba2`
+over 868,880 source bytes, independently recomputed after formatting.
+
+`kernel-capacity-checks-318.log` records PASS for canonical format, all-target
+check and source lint in 40.557 seconds. The prescribed argument-count review
+warnings remain visible. `roster-scale-tests-319.log` records 651/651 passing
+affected domain, Store and crawl tests in 12.601 seconds, including six exact
+original-manifest regressions, a genuine 4,097-row projection, exact replay,
+tamper refusals and cold frozen replay. The earlier 592/645 result in
+`roster-scale-tests-313.log` failed before the exact current source pin repair.
+All logs are under `/tmp/athletic-work-20261021/`.
+
+`authority-headroom-tests-321.log` records PASS for 29/29 graph authority and
+reader tests in 21.513 seconds after raising table/section bytes to 4 GiB and
+the aggregate authority context to 8 GiB. Exact ceiling, ceiling-plus-one,
+header reserve, cumulative section accounting, merge and poison checks pass.
+The measured native physical-table size does not establish merged-context
+size or resident memory; no such claim is made.
+
+These checks do not establish native publication, a memory envelope, full
+release qualification or the populated five-state workbook. Native retries
+must retain the original source-cohort operation and separate copied-store
+qualification from the canonical Store and normal Restate publication.

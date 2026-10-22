@@ -35,7 +35,7 @@ pub(super) fn derive(
     proposal: &LocallyCheckedRosterProposalV1,
     basis: &ObjectRef,
     decision: &RosterSourceReviewDecisionV1,
-    objects: &mut objects::Objects,
+    objects: &mut objects::Builder,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<(ObjectRef, ObjectRef)> {
     if !matches!(

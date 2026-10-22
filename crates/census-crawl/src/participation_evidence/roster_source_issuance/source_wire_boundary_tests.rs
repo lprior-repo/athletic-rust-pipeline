@@ -117,21 +117,21 @@ fn prepared_frozen_bundle() -> TestResult<PreparedFrozenBundle> {
 }
 
 #[test]
-fn frozen_bundle_ceiling_refuses_oversized_envelope() -> TestResult {
+fn frozen_bundle_digest_refusal_poisons_reuse_and_fresh_grant_recovers() -> TestResult {
     let (directory, store, frozen_bytes, reference, original_extra) = prepared_frozen_bundle()?;
     drop(store);
     drop(directory);
-    let ceiling = RosterFrozenReviewedClaimsReferenceV1::MAX_ENCODED_BYTES;
-    let oversized = ceiling.checked_add(1).ok_or("ceiling overflow")?;
-    let invalid_envelope = vec![b'o'; oversized];
+    let invalid_envelope = b"invalid frozen envelope";
     let mut poisoned_grant = AttachmentReplayGrantV1::new();
     let error =
-        replay_frozen_roster_reviewed_claims_v1(&invalid_envelope, &reference, &mut poisoned_grant)
+        replay_frozen_roster_reviewed_claims_v1(invalid_envelope, &reference, &mut poisoned_grant)
             .err()
             .ok_or("replay must reject oversized envelope")?;
     check!(matches!(
         error,
-        StoreError::RosterSourceIssuance(RosterSourceIssuanceStoreError::BudgetExceeded)
+        StoreError::RosterSourceIssuance(RosterSourceIssuanceStoreError::Corrupt(
+            "frozen reviewed closure digest"
+        ))
     ));
     let reused_error =
         replay_frozen_roster_reviewed_claims_v1(&frozen_bytes, &reference, &mut poisoned_grant)

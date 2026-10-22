@@ -2,13 +2,15 @@ use crate::{StoreError, StoreResult};
 use sha2::{Digest, Sha256};
 
 #[cfg(test)]
+mod ceiling_tests;
+#[cfg(test)]
 mod tests;
 pub(crate) mod v1;
 pub(crate) mod v2;
 pub use v1::replay_frozen_public_identity_v1;
 pub use v2::{replay_frozen_public_identity_v2, FrozenPublicIdentityBundleV2};
 
-pub const MAX_FROZEN_PUBLIC_IDENTITY_BYTES: usize = 128 * 1024 * 1024;
+pub const MAX_FROZEN_PUBLIC_IDENTITY_BYTES: usize = 4 * 1024 * 1024 * 1024;
 
 fn bound(bytes: usize, max: usize) -> StoreResult<()> {
     if bytes > max {

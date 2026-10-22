@@ -437,6 +437,44 @@ rules remain mandatory; per-object limits are unchanged. These are authorized,
 bounded capacity changes, not RSS or national acceptance. The verification ledger
 records each actual refusal and subsequent execution.
 
+**2026-10-22 execution-capacity amendment (Main):** the cumulative attachment
+grant is 256 GiB and 268,435,456 traversal steps. A 750,285-row retained roster
+context requires more than the former 16,777,216 steps when every existing
+scan/hash/retention charge is preserved. Native roster-review305 independently
+refused its 4,097th physical row at the former 4,096-row inspection limit.
+The current roster inspection admits at most 1,048,576 physical rows, 2 GiB raw
+data and 64 KiB per row; its named physical manifest admits 512 MiB, its complete
+object closure 3 GiB, and protected startup state 2,097,152 rows and 8 GiB.
+The reviewed-roster frozen artifact ceiling is 16 GiB. Exact roster review
+basis, approval and record composites admit 512 MiB; ordinary metadata retains
+its 1-MiB bound. Source-body and unrelated object limits retain their separate bounds.
+All original-owner, poison, continuation, charge, hash, approval and contradiction
+checks remain. This changes finite execution capacity, not persisted wire shapes,
+accepted evidence, completed operation meaning or source-attempt identity.
+
+Native selected-publication306 refused the former 128-MiB public-identity frozen
+ceiling with 65,076 accepted identities. Current V2 frozen identity capture and
+replay admit at most 4 GiB, 65,536 distinct closure objects and 262,144 cumulative
+physical rows; historical V1 retains its 128-MiB refusal boundary. Cold backup308
+also refused the exhausted 2-GiB aggregate acquisition backing-read allowance.
+The complete startup inventory allowance is now 32 GiB cumulatively; ordinary
+work, public budget construction and recovery-target allowances are unchanged.
+Native source-cohort310 refused a sealed physical-table inventory of 935,578,986
+bytes against the former 512-MiB authority-read ceiling. Graph authority reads
+now admit 4 GiB per table/section and 8 GiB of aggregate encoded authority
+context, including the existing 1-MiB header reserve. The table ceiling is
+4,294,967,296 bytes, leaving 3,359,388,310 bytes above the measured physical
+inventory; merged authority-context bytes remain independently measured.
+The existing shared graph budget also bounds retained grade enrichment and
+affected performance/relay traversals at 4 GiB; its 1,048,576-row and 1-MiB
+record limits remain unchanged. No scan, merge, enrichment, charge or source
+check is removed; the aggregate limit can still refuse combined sections.
+These limits do not reserve their maximum sizes. They do not establish the
+separate 16-GiB process envelope, real-source workbook publication, replay or
+cold-read acceptance; those require exact-build native evidence and measured
+process memory. Combined downstream proof/output limits remain independently
+binding. Preserve all three failed attempts and the unpublished staged backup.
+
 Missing reviewed-roster authority remains an explicit withheld disposition. Its
 aggregate gap/reference/reason inventory uses the physical observation budget:
 4,000,000 entries and4-GiB encoded data. The computed roster-family proof shares

@@ -27,7 +27,7 @@ pub(super) fn load(
         codec::digest(operation.as_str().as_bytes())
     );
     let raw = super::io::read(snapshot, &store.journal, &key, grant)?;
-    let record: ReviewRecord = codec::decode(&raw)?;
+    let record: ReviewRecord = codec::decode_review_composite(&raw)?;
     if record.basis.schema != "roster-source-reviewed-claims-basis-v1"
         || record.basis.operation != *operation
     {

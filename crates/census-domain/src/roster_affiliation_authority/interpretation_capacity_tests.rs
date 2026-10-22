@@ -193,9 +193,9 @@ fn record_and_witness_capacity_do_not_expand_with_component_role() -> TestResult
         64 * 1024,
     )?;
     capacity(
-        RosterAuthorityLimitsV1::new(64 * 1024, 8 * 1024 * 1024 + 1),
+        RosterAuthorityLimitsV1::new(64 * 1024, MAX_ROSTER_AUTHORITY_COMPONENT_BYTES + 1),
         "component bytes",
-        8 * 1024 * 1024 + 1,
-        8 * 1024 * 1024,
+        MAX_ROSTER_AUTHORITY_COMPONENT_BYTES + 1,
+        MAX_ROSTER_AUTHORITY_COMPONENT_BYTES,
     )
 }

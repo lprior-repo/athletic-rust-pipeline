@@ -18,7 +18,7 @@ struct ProposalBasis<'a> {
 }
 
 pub(super) fn proposal_basis(proposal: &LocallyCheckedRosterProposalV1) -> StoreResult<Vec<u8>> {
-    codec::encode(&ProposalBasis {
+    codec::encode_review_composite(&ProposalBasis {
         schema: "roster-source-review-proposal-basis-v1",
         scope: proposal.scope(),
         parser: proposal.parser(),
@@ -30,7 +30,7 @@ pub(super) fn proposal_basis(proposal: &LocallyCheckedRosterProposalV1) -> Store
 pub(super) fn proposal_basis_for_issuance(
     issuance: &LocallyCheckedRosterIssuanceV1,
 ) -> StoreResult<Vec<u8>> {
-    codec::encode(&ProposalBasis {
+    codec::encode_review_composite(&ProposalBasis {
         schema: "roster-source-review-proposal-basis-v1",
         scope: issuance.scope(),
         parser: issuance.parser(),
@@ -85,7 +85,7 @@ pub(super) fn approval(basis: &super::ReviewBasis) -> StoreResult<Vec<u8>> {
         schema: &'static str,
         reviewed_claims: &'a super::ReviewBasis,
     }
-    codec::encode(&Approval {
+    codec::encode_review_composite(&Approval {
         schema: "roster-source-review-approval-v1",
         reviewed_claims: basis,
     })

@@ -107,10 +107,10 @@ pub(super) fn scan<const N: usize>(
         .iter()
         .flat_map(|prefix| snapshot.prefix(table, *prefix));
     combined
-        .take(4097)
+        .take(census_domain::roster_affiliation_authority::MAX_ROSTER_PROTECTED_ROWS + 1)
         .enumerate()
         .try_fold(Vec::new(), |mut rows, (index, guard)| {
-            if index >= 4096 {
+            if index >= census_domain::roster_affiliation_authority::MAX_ROSTER_PROTECTED_ROWS {
                 return Err(Error::BudgetExceeded.into());
             }
             if let Some(grant) = grant.as_deref_mut() {
@@ -180,7 +180,7 @@ pub(super) fn protected_rows(
         .contains_key(table, bare)
         .map_err(|source| StoreError::Read { source })?
     {
-        if rows.len() >= 4096 {
+        if rows.len() >= census_domain::roster_affiliation_authority::MAX_ROSTER_PROTECTED_ROWS {
             return Err(Error::BudgetExceeded.into());
         }
         rows.try_reserve(1).map_err(|_| Error::BudgetExceeded)?;
@@ -207,7 +207,9 @@ fn read_value(
     let length = usize::try_from(length).map_err(|_| Error::BudgetExceeded)?;
     budget.charge(length.checked_add(key.len()).ok_or(Error::BudgetExceeded)?)?;
     let cap = if key.starts_with(super::issuance::OBJECT_PREFIX.as_bytes()) {
-        4 * 1024 * 1024
+        census_domain::roster_affiliation_authority::MAX_ROSTER_RETAINED_OBJECT_BYTES
+    } else if key.starts_with(super::issuance::RECORD_PREFIX.as_bytes()) {
+        codec::MAX_REVIEW_COMPOSITE_BYTES
     } else {
         codec::MAX_BYTES
     };

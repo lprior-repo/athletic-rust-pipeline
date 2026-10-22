@@ -104,7 +104,7 @@ pub(super) fn seal_core(
         approval: core.approval,
         committed_at,
     };
-    let bytes = codec::encode_with_source_grant(&record, grant)?;
+    let bytes = codec::encode_review_composite_with_source_grant(&record, grant)?;
     let digest = codec::digest(&bytes);
     let head = codec::encode(&AuthorityHead {
         version: 1,

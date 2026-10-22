@@ -6,11 +6,13 @@ use census_domain::{
 };
 use serde::Deserialize;
 
+const MAX_HISTORICAL_FROZEN_BYTES: usize = 128 * 1024 * 1024;
+
 pub fn replay_frozen_public_identity_v1(
     bytes: &[u8],
     expected_digest: &str,
 ) -> StoreResult<AcceptedPublicIdentitySnapshot> {
-    super::bound(bytes.len(), super::MAX_FROZEN_PUBLIC_IDENTITY_BYTES)?;
+    super::bound(bytes.len(), MAX_HISTORICAL_FROZEN_BYTES)?;
     if !crate::journal::is_object_id(expected_digest) || super::digest(bytes) != expected_digest {
         return Err(PublicIdentityError::Corrupt("frozen graph bundle digest").into());
     }

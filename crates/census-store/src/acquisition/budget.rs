@@ -70,7 +70,7 @@ impl AcquisitionReadBudget {
             recovery: target::RecoveryReadLedger::ordinary(),
             roots: 1_048_576,
             encoded: 512 * 1024 * 1024,
-            backing: 2 * 1024 * 1024 * 1024,
+            backing: 32 * 1024 * 1024 * 1024,
             retained: 64 * 1024 * 1024,
             public_parent: false,
             parent_usage: PublicParentReadUsage::default(),
@@ -263,3 +263,6 @@ mod public_owner_tests;
 
 #[cfg(test)]
 mod parent_tests;
+
+#[cfg(test)]
+mod inventory_tests;

@@ -15,7 +15,14 @@ pub(in super::super) fn read(
         .map_err(|source| StoreError::Read { source })?
         .ok_or(Error::Corrupt("withdrawal dependency absent"))?;
     let length = usize::try_from(length).map_err(|_| Error::BudgetExceeded)?;
-    if length == 0 || length > codec::MAX_BYTES {
+    let cap = if key.starts_with(super::super::OBJECT_PREFIX) {
+        census_domain::roster_affiliation_authority::MAX_ROSTER_RETAINED_OBJECT_BYTES
+    } else if key.starts_with(super::super::RECORD_PREFIX) {
+        codec::MAX_REVIEW_COMPOSITE_BYTES
+    } else {
+        codec::MAX_BYTES
+    };
+    if length == 0 || length > cap {
         return Err(Error::BudgetExceeded.into());
     }
     let charged = length.checked_add(key.len()).ok_or(Error::BudgetExceeded)?;

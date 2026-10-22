@@ -2,16 +2,21 @@ use super::RosterSourceIssuanceStoreError as Error;
 use crate::StoreResult;
 
 pub struct RosterStartupValidationBudgetV1 {
-    rows: u64,
+    rows: usize,
     bytes: u64,
 }
 
 impl RosterStartupValidationBudgetV1 {
     pub fn new() -> Self {
         Self {
-            rows: 4096,
-            bytes: 16 * 1024 * 1024,
+            rows: census_domain::roster_affiliation_authority::MAX_ROSTER_PROTECTED_ROWS,
+            bytes: census_domain::roster_affiliation_authority::MAX_ROSTER_PROTECTED_BYTES,
         }
+    }
+
+    #[cfg(test)]
+    pub(super) fn for_test(rows: usize, bytes: u64) -> Self {
+        Self { rows, bytes }
     }
 
     pub(super) fn charge(&mut self, bytes: usize) -> StoreResult<()> {
@@ -38,3 +43,6 @@ impl Default for RosterStartupValidationBudgetV1 {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests;

@@ -3,18 +3,49 @@ use crate::StoreResult;
 use serde::{de::DeserializeOwned, Serialize};
 use sha2::{Digest, Sha256};
 
-pub(super) const MAX_BYTES: usize = 1024 * 1024;
+pub(super) const MAX_BYTES: usize =
+    census_domain::roster_affiliation_authority::MAX_ROSTER_STORE_RECORD_BYTES;
+
+pub(super) const MAX_REVIEW_COMPOSITE_BYTES: usize =
+    census_domain::roster_affiliation_authority::MAX_ROSTER_REVIEW_COMPOSITE_BYTES;
 
 pub(super) fn encode<T: Serialize>(value: &T) -> StoreResult<Vec<u8>> {
-    encode_sized(value, measured_size(value)?)
+    encode_bounded(value, MAX_BYTES)
 }
 
 pub(super) fn decode<T: DeserializeOwned + Serialize>(bytes: &[u8]) -> StoreResult<T> {
-    if bytes.len() > MAX_BYTES {
+    decode_bounded(bytes, MAX_BYTES)
+}
+
+pub(super) fn decode_physical_manifest<T: DeserializeOwned + Serialize>(
+    bytes: &[u8],
+) -> StoreResult<T> {
+    decode_bounded(
+        bytes,
+        census_domain::roster_affiliation_authority::MAX_ROSTER_PHYSICAL_PROJECTION_MANIFEST_BYTES,
+    )
+}
+
+pub(super) fn encode_review_composite<T: Serialize>(value: &T) -> StoreResult<Vec<u8>> {
+    encode_bounded(value, MAX_REVIEW_COMPOSITE_BYTES)
+}
+
+pub(super) fn decode_review_composite<T: DeserializeOwned + Serialize>(
+    bytes: &[u8],
+) -> StoreResult<T> {
+    decode_bounded(bytes, MAX_REVIEW_COMPOSITE_BYTES)
+}
+
+fn encode_bounded<T: Serialize>(value: &T, maximum: usize) -> StoreResult<Vec<u8>> {
+    encode_sized(value, measured_size(value, maximum)?)
+}
+
+fn decode_bounded<T: DeserializeOwned + Serialize>(bytes: &[u8], maximum: usize) -> StoreResult<T> {
+    if bytes.len() > maximum {
         return Err(Error::BudgetExceeded.into());
     }
     let value: T = serde_json::from_slice(bytes).map_err(|_| Error::Corrupt("decoding"))?;
-    if encode(&value)? != bytes {
+    if encode_bounded(&value, maximum)? != bytes {
         return Err(Error::Corrupt("noncanonical bytes").into());
     }
     Ok(value)
@@ -28,8 +59,34 @@ pub(super) fn encode_with_source_grant<T: Serialize>(
     value: &T,
     grant: &mut census_domain::evidence_subject_attachment::AttachmentReplayGrantV1,
 ) -> StoreResult<Vec<u8>> {
+    encode_with_source_grant_bounded(value, grant, MAX_BYTES)
+}
+
+pub(super) fn encode_physical_manifest_with_source_grant<T: Serialize>(
+    value: &T,
+    grant: &mut census_domain::evidence_subject_attachment::AttachmentReplayGrantV1,
+) -> StoreResult<Vec<u8>> {
+    encode_with_source_grant_bounded(
+        value,
+        grant,
+        census_domain::roster_affiliation_authority::MAX_ROSTER_PHYSICAL_PROJECTION_MANIFEST_BYTES,
+    )
+}
+
+pub(super) fn encode_review_composite_with_source_grant<T: Serialize>(
+    value: &T,
+    grant: &mut census_domain::evidence_subject_attachment::AttachmentReplayGrantV1,
+) -> StoreResult<Vec<u8>> {
+    encode_with_source_grant_bounded(value, grant, MAX_REVIEW_COMPOSITE_BYTES)
+}
+
+fn encode_with_source_grant_bounded<T: Serialize>(
+    value: &T,
+    grant: &mut census_domain::evidence_subject_attachment::AttachmentReplayGrantV1,
+    maximum: usize,
+) -> StoreResult<Vec<u8>> {
     grant.charge_steps(1).map_err(super::source_error)?;
-    let size = measured_size(value)?;
+    let size = measured_size(value, maximum)?;
     grant.charge_bytes(size).map_err(super::source_error)?;
     grant.charge_steps(1).map_err(super::source_error)?;
     encode_sized(value, size)
@@ -61,10 +118,10 @@ fn encode_sized<T: Serialize>(value: &T, size: usize) -> StoreResult<Vec<u8>> {
     Ok(encoded.bytes)
 }
 
-fn measured_size<T: Serialize>(value: &T) -> StoreResult<usize> {
-    let mut measure = Measure { bytes: 0 };
+fn measured_size<T: Serialize>(value: &T, maximum: usize) -> StoreResult<usize> {
+    let mut measure = Measure { bytes: 0, maximum };
     let result = serde_json::to_writer(&mut measure, value);
-    if measure.bytes > MAX_BYTES {
+    if measure.bytes > maximum {
         return Err(Error::BudgetExceeded.into());
     }
     result.map_err(|source| crate::StoreError::Json {
@@ -76,6 +133,7 @@ fn measured_size<T: Serialize>(value: &T) -> StoreResult<usize> {
 
 struct Measure {
     bytes: usize,
+    maximum: usize,
 }
 
 impl std::io::Write for Measure {
@@ -84,7 +142,7 @@ impl std::io::Write for Measure {
             Some(length) => length,
             None => usize::MAX,
         };
-        if self.bytes > MAX_BYTES {
+        if self.bytes > self.maximum {
             return Err(std::io::Error::other("roster object size cap"));
         }
         Ok(bytes.len())
@@ -120,3 +178,6 @@ impl std::io::Write for Encoded {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod bounded_capacity_tests;

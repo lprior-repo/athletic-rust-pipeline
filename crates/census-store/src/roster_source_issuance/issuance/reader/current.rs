@@ -191,7 +191,7 @@ fn roots(
         grant
             .charge_steps(1)
             .map_err(super::super::super::source_error)?;
-        let record: ReviewRecord = codec::decode(raw)?;
+        let record: ReviewRecord = codec::decode_review_composite(raw)?;
         let proposal = super::super::proposal(&record.basis.proposal)?;
         let admission = reconstruct::admission(&proposal, &objects, grant)?;
         let key = (admission.root.schema.phase(), admission.root.key.clone());

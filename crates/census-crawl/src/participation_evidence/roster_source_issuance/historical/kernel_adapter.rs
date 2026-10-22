@@ -6,6 +6,7 @@ use sha2::{Digest, Sha256};
 use crate::participation_evidence::provider_school::{
     PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V1, PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };
+mod capacity_parent;
 mod checked;
 pub(in super::super) mod context;
 mod current;
@@ -262,9 +263,12 @@ pub(in super::super) fn bind_historical_v1(
         let original = predecessors(epoch)
             .into_iter()
             .chain(directory_parent::originals(epoch))
+            .chain(capacity_parent::originals(epoch))
             .find(|candidate| candidate.hash == actual)
             .ok_or_else(|| invalid("unsupported historical semantic kernel identity"))?;
-        if !execution::compatible(configuration, original.configuration) {
+        if !execution::compatible(configuration, original.configuration)
+            && !capacity_parent::compatible(configuration, original)
+        {
             return Err(invalid(
                 "historical semantic kernel compiler/configuration/dependencies differ",
             ));

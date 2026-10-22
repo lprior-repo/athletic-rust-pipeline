@@ -21,7 +21,10 @@ pub(super) fn postcommit(
         (1, &store.journal, super::super::ROOT),
         (2, &store.receipts, super::super::OPERATION_PREFIX),
     ] {
-        for item in snapshot.prefix(keyspace, prefix).take(4097) {
+        for item in snapshot
+            .prefix(keyspace, prefix)
+            .take(census_domain::roster_affiliation_authority::MAX_ROSTER_PROTECTED_ROWS + 1)
+        {
             let key = item.key().map_err(|source| StoreError::Read { source })?;
             let length = snapshot
                 .size_of(keyspace, &key)
@@ -61,7 +64,13 @@ pub(super) fn postcommit(
 }
 
 fn admit_inventory(inventory: Inventory) -> StoreResult<()> {
-    let mut budget = RosterStartupValidationBudgetV1::new();
+    admit_inventory_with_budget(inventory, &mut RosterStartupValidationBudgetV1::new())
+}
+
+fn admit_inventory_with_budget(
+    inventory: Inventory,
+    budget: &mut RosterStartupValidationBudgetV1,
+) -> StoreResult<()> {
     for ((_, key), bytes) in inventory {
         budget.charge(key.len().checked_add(bytes).ok_or(Error::BudgetExceeded)?)?;
     }
@@ -70,7 +79,7 @@ fn admit_inventory(inventory: Inventory) -> StoreResult<()> {
 
 fn insert(inventory: &mut Inventory, table: u8, key: &[u8], bytes: usize) -> StoreResult<()> {
     inventory.insert((table, key.to_vec()), bytes);
-    if inventory.len() > 4096 {
+    if inventory.len() > census_domain::roster_affiliation_authority::MAX_ROSTER_PROTECTED_ROWS {
         return Err(Error::BudgetExceeded.into());
     }
     Ok(())
@@ -84,22 +93,40 @@ mod tests {
     #[test]
     fn resulting_inventory_byte_cap_is_exact() -> TestResult {
         let mut inventory = Inventory::new();
-        insert(&mut inventory, 0, b"a", 16 * 1024 * 1024 - 1)?;
+        let max = usize::try_from(
+            census_domain::roster_affiliation_authority::MAX_ROSTER_PROTECTED_BYTES,
+        )?;
+        insert(
+            &mut inventory,
+            0,
+            b"a",
+            max.checked_sub(1).ok_or("budget underflow")?,
+        )?;
         check!(admit_inventory(inventory.clone()).is_ok());
-        insert(&mut inventory, 0, b"a", 16 * 1024 * 1024)?;
+        insert(&mut inventory, 0, b"a", max)?;
         check!(admit_inventory(inventory).is_err());
         Ok(())
     }
 
     #[test]
-    fn resulting_inventory_row_cap_deduplicates_replacements() -> TestResult {
+    fn configured_resulting_inventory_row_budget_deduplicates_replacements() -> TestResult {
         let mut inventory = Inventory::new();
-        for index in 0_u32..4096 {
+        for index in 0_u32..4 {
             insert(&mut inventory, 1, &index.to_be_bytes(), 1)?;
         }
         insert(&mut inventory, 1, &0_u32.to_be_bytes(), 2)?;
-        check!(admit_inventory(inventory.clone()).is_ok());
-        check!(insert(&mut inventory, 1, &4096_u32.to_be_bytes(), 1).is_err());
+        check!(eq; inventory.len(), 4);
+        admit_inventory_with_budget(
+            inventory.clone(),
+            &mut RosterStartupValidationBudgetV1::for_test(4, 1024),
+        )?;
+        insert(&mut inventory, 1, &4_u32.to_be_bytes(), 1)?;
+        let mut budget = RosterStartupValidationBudgetV1::for_test(4, 1024);
+        check!(matches!(
+            admit_inventory_with_budget(inventory, &mut budget),
+            Err(StoreError::RosterSourceIssuance(Error::BudgetExceeded))
+        ));
+        check!(budget.charge(0).is_err());
         Ok(())
     }
 }

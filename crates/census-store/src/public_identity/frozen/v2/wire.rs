@@ -13,8 +13,8 @@ use serde::{
     Deserialize, Deserializer, Serialize,
 };
 
-pub(super) const MAX_OBJECTS: usize = 4096;
-pub(super) const MAX_PHYSICAL_ROWS: usize = 4096;
+pub(super) const MAX_OBJECTS: usize = 65_536;
+pub(super) const MAX_PHYSICAL_ROWS: usize = 262_144;
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -166,33 +166,24 @@ fn bounded<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
             out.write_str("bounded frozen graph inventory")
         }
         fn visit_seq<A: SeqAccess<'de>>(self, mut sequence: A) -> Result<Self::Value, A::Error> {
-            let mut done = false;
             let mut total = 0usize;
-            let values = (0..self.maximum).try_fold(
-                Vec::new(),
-                |mut values, _| -> Result<Vec<T>, A::Error> {
-                    if done {
-                        return Ok(values);
-                    }
-                    match sequence.next_element()? {
-                        Some(value) => {
-                            total = total.checked_add((self.weight)(&value)).ok_or_else(|| {
-                                serde::de::Error::custom("frozen inventory overflow")
-                            })?;
-                            if total > self.limit {
-                                return Err(serde::de::Error::custom(
-                                    "frozen physical inventory ceiling",
-                                ));
-                            }
-                            values.try_reserve(1).map_err(serde::de::Error::custom)?;
-                            values.push(value);
-                        }
-                        None => done = true,
-                    }
-                    Ok(values)
-                },
-            )?;
-            if !done && sequence.next_element::<serde::de::IgnoredAny>()?.is_some() {
+            let mut values = Vec::new();
+            for _ in 0..self.maximum {
+                let Some(value) = sequence.next_element()? else {
+                    return Ok(values);
+                };
+                total = total
+                    .checked_add((self.weight)(&value))
+                    .ok_or_else(|| serde::de::Error::custom("frozen inventory overflow"))?;
+                if total > self.limit {
+                    return Err(serde::de::Error::custom(
+                        "frozen physical inventory ceiling",
+                    ));
+                }
+                values.try_reserve(1).map_err(serde::de::Error::custom)?;
+                values.push(value);
+            }
+            if sequence.next_element::<serde::de::IgnoredAny>()?.is_some() {
                 return Err(serde::de::Error::custom("frozen graph inventory ceiling"));
             }
             Ok(values)

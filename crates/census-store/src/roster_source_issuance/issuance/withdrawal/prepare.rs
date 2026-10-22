@@ -24,7 +24,7 @@ struct Inspected<'s> {
     prior_head: ObjectRef,
     source_operation: RosterAuthorityTextV1,
     source: source::OriginalSource,
-    objects: objects::Objects,
+    objects: objects::Builder,
 }
 
 impl Store {
@@ -109,7 +109,7 @@ fn inspect<'s>(
     if source.record.basis.store != identity {
         return Err(Error::OperationConflict.into());
     }
-    let mut objects = objects::Objects::new();
+    let mut objects = objects::Builder::new();
     let prior_head = objects::insert_owned(&mut objects, head, grant)?;
     Ok(Inspected {
         revision: view.revision(),
@@ -198,7 +198,7 @@ fn finish<'s>(
         input.revision,
         PreparedRosterReviewCore {
             record,
-            objects: input.objects,
+            objects: input.objects.into_objects(),
             approval,
             approval_digest,
         },
@@ -214,7 +214,7 @@ fn closure(
         .len()
         .checked_add(added.len())
         .ok_or(Error::BudgetExceeded)?;
-    if count > 4096 {
+    if count > census_domain::roster_affiliation_authority::MAX_ROSTER_CLOSURE_OBJECTS {
         return Err(Error::BudgetExceeded.into());
     }
     let bytes = added
@@ -238,7 +238,7 @@ fn closure(
         sum.checked_add(reference.bytes)
             .ok_or(Error::BudgetExceeded)
     })?;
-    if bytes > 8 * 1024 * 1024 {
+    if bytes > census_domain::roster_affiliation_authority::MAX_ROSTER_CLOSURE_BYTES {
         return Err(Error::BudgetExceeded.into());
     }
     Ok(prior)

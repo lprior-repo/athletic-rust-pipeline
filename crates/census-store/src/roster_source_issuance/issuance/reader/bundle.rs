@@ -4,7 +4,8 @@ use census_domain::evidence_subject_attachment::{AttachmentDigestV1, AttachmentO
 use serde::{Deserialize, Serialize};
 use std::io::Write;
 
-const MAX_BUNDLE: usize = 8 * 1024 * 1024;
+const MAX_BUNDLE: usize =
+    census_domain::roster_affiliation_authority::MAX_ROSTER_FROZEN_BUNDLE_BYTES;
 
 pub struct FrozenRosterReviewedClaimsBundleV1 {
     bytes: Vec<u8>,
@@ -97,9 +98,7 @@ fn replay(
     let continuation = grant
         .checkpoint()
         .map_err(super::super::super::source_error)?;
-    if bytes.len() > MAX_BUNDLE {
-        return Err(Error::BudgetExceeded.into());
-    }
+    admit_bundle_length(bytes.len())?;
     grant
         .charge_bytes(bytes.len().checked_mul(4).ok_or(Error::BudgetExceeded)?)
         .map_err(super::super::super::source_error)?;
@@ -248,3 +247,13 @@ fn object_reference(
         bytes: u64::try_from(bytes.len()).map_err(|_| Error::BudgetExceeded)?,
     })
 }
+
+fn admit_bundle_length(length: usize) -> StoreResult<()> {
+    if length > MAX_BUNDLE {
+        return Err(Error::BudgetExceeded.into());
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests;

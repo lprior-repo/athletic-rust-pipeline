@@ -3,7 +3,8 @@ use crate::{Entity, PhysicalReadAdmissionV1, ReadBudget, StoreResult, StoreSnaps
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::model::{CanonicalSchool, CanonicalTeam, RetainedConflict, SourceObservation};
 
-pub(super) const MAX_PHYSICAL_INVENTORY_BYTES: u64 = 32 * 1024 * 1024;
+pub(super) const MAX_PHYSICAL_INVENTORY_BYTES: u64 =
+    census_domain::roster_affiliation_authority::MAX_ROSTER_PHYSICAL_BYTES;
 
 pub struct RosterPhysicalProjectionRowV1 {
     table: Table,
@@ -59,11 +60,17 @@ impl Inventory {
     ) -> StoreResult<()> {
         let count = u64::try_from(self.rows.len()).map_err(|_| Error::BudgetExceeded)?;
         let budget = ReadBudget {
-            rows: 4096_u64.checked_sub(count).ok_or(Error::BudgetExceeded)?,
+            rows: u64::try_from(
+                census_domain::roster_affiliation_authority::MAX_ROSTER_PHYSICAL_ROWS,
+            )
+            .map_err(|_| Error::BudgetExceeded)?
+            .checked_sub(count)
+            .ok_or(Error::BudgetExceeded)?,
             bytes: MAX_PHYSICAL_INVENTORY_BYTES
                 .checked_sub(self.bytes)
                 .ok_or(Error::BudgetExceeded)?,
-            record_bytes: 64 * 1024,
+            record_bytes:
+                census_domain::roster_affiliation_authority::MAX_ROSTER_PHYSICAL_ROW_BYTES,
         };
         let mut context = (self, grant);
         view.for_each_physical_observation_admitted::<T, _>(

@@ -1,4 +1,6 @@
 mod atoms;
+mod limits;
+pub use limits::*;
 mod member_evidence;
 mod member_observation;
 mod types;
@@ -18,8 +20,6 @@ pub use types::{
 
 pub const MAX_ROSTER_AUTHORITY_RECORD_BYTES: usize = 64 * 1024;
 pub const MAX_ROSTER_SEMANTIC_INTERPRETATION_BYTES: usize = 256 * 1024;
-pub const MAX_ROSTER_PHYSICAL_PROJECTION_MANIFEST_BYTES: usize = 1024 * 1024;
-pub const MAX_ROSTER_AUTHORITY_COMPONENT_BYTES: u64 = 8 * 1024 * 1024;
 const MAX_BODY_BYTES: u64 = 4 * 1024 * 1024;
 const MAX_OBJECT_BYTES: u64 = 64 * 1024;
 

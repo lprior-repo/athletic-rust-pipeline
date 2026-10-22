@@ -16,32 +16,23 @@ impl<'de> Visitor<'de> for Objects {
     }
     fn visit_seq<A: SeqAccess<'de>>(self, mut sequence: A) -> Result<Self::Value, A::Error> {
         let mut total = 0usize;
-        let mut done = false;
-        let objects = (0..MAX_OBJECTS).try_fold(
-            Vec::new(),
-            |mut objects, _| -> Result<Vec<Object>, A::Error> {
-                if done {
-                    return Ok(objects);
-                }
-                let Some(raw) = sequence.next_element::<&RawValue>()? else {
-                    done = true;
-                    return Ok(objects);
-                };
-                let count: CountedObject =
-                    serde_json::from_str(raw.get()).map_err(A::Error::custom)?;
-                total = total
-                    .checked_add(count.rows.0)
-                    .ok_or_else(|| A::Error::custom("frozen physical inventory overflow"))?;
-                if total > MAX_PHYSICAL_ROWS {
-                    return Err(A::Error::custom("frozen physical inventory ceiling"));
-                }
-                let object = serde_json::from_str(raw.get()).map_err(A::Error::custom)?;
-                objects.try_reserve(1).map_err(A::Error::custom)?;
-                objects.push(object);
-                Ok(objects)
-            },
-        )?;
-        if !done && sequence.next_element::<IgnoredAny>()?.is_some() {
+        let mut objects = Vec::new();
+        for _ in 0..MAX_OBJECTS {
+            let Some(raw) = sequence.next_element::<&RawValue>()? else {
+                return Ok(objects);
+            };
+            let count: CountedObject = serde_json::from_str(raw.get()).map_err(A::Error::custom)?;
+            total = total
+                .checked_add(count.rows.0)
+                .ok_or_else(|| A::Error::custom("frozen physical inventory overflow"))?;
+            if total > MAX_PHYSICAL_ROWS {
+                return Err(A::Error::custom("frozen physical inventory ceiling"));
+            }
+            let object = serde_json::from_str(raw.get()).map_err(A::Error::custom)?;
+            objects.try_reserve(1).map_err(A::Error::custom)?;
+            objects.push(object);
+        }
+        if sequence.next_element::<IgnoredAny>()?.is_some() {
             return Err(A::Error::custom("frozen graph inventory ceiling"));
         }
         Ok(objects)
@@ -67,23 +58,16 @@ impl<'de> Visitor<'de> for Rows {
         out.write_str("bounded physical rows")
     }
     fn visit_seq<A: SeqAccess<'de>>(self, mut sequence: A) -> Result<Self::Value, A::Error> {
-        let mut done = false;
-        let count =
-            (0..MAX_PHYSICAL_ROWS).try_fold(0usize, |count, _| -> Result<usize, A::Error> {
-                if done {
-                    return Ok(count);
-                }
-                match sequence.next_element::<&RawValue>()? {
-                    Some(_) => count
-                        .checked_add(1)
-                        .ok_or_else(|| A::Error::custom("frozen row count overflow")),
-                    None => {
-                        done = true;
-                        Ok(count)
-                    }
-                }
-            })?;
-        if !done && sequence.next_element::<IgnoredAny>()?.is_some() {
+        let mut count = 0usize;
+        for _ in 0..MAX_PHYSICAL_ROWS {
+            let Some(_) = sequence.next_element::<&RawValue>()? else {
+                return Ok(RowCount(count));
+            };
+            count = count
+                .checked_add(1)
+                .ok_or_else(|| A::Error::custom("frozen row count overflow"))?;
+        }
+        if sequence.next_element::<IgnoredAny>()?.is_some() {
             return Err(A::Error::custom("frozen physical inventory ceiling"));
         }
         Ok(RowCount(count))

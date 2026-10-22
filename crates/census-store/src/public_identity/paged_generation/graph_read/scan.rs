@@ -80,3 +80,6 @@ fn charge(current: u64, added: u64, available: u64, what: &'static str) -> Store
     }
     Ok(needed)
 }
+
+#[cfg(test)]
+mod tests;

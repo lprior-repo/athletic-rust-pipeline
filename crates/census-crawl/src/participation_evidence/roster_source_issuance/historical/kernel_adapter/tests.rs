@@ -2,6 +2,7 @@ use super::*;
 use std::sync::LazyLock;
 
 mod af9;
+mod capacity_parent;
 mod current;
 mod decoder;
 mod grade;

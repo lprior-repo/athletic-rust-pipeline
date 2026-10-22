@@ -8,32 +8,6 @@ use std::cell::Cell;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
-#[derive(Serialize)]
-struct Payload {
-    data: String,
-}
-
-fn payload_at(size: usize) -> TestResult<Payload> {
-    let length = size
-        .checked_sub(11)
-        .ok_or("payload is smaller than its JSON framing")?;
-    Ok(Payload {
-        data: "A".repeat(length),
-    })
-}
-
-#[test]
-fn exact_record_limit_is_admitted_and_one_extra_byte_is_refused() -> TestResult {
-    let at_limit = payload_at(MAX_BYTES)?;
-    check!(eq; encode(&at_limit)?.len(), MAX_BYTES);
-    let over_limit = payload_at(MAX_BYTES.checked_add(1).ok_or("record limit overflow")?)?;
-    check!(matches!(
-        encode(&over_limit),
-        Err(StoreError::RosterSourceIssuance(Error::BudgetExceeded))
-    ));
-    Ok(())
-}
-
 struct Counted<'a> {
     calls: &'a Cell<usize>,
     grow: bool,
@@ -145,57 +119,5 @@ fn serialization_failure_is_not_reported_as_budget_exhaustion() -> TestResult {
         encode(&InvalidValue),
         Err(StoreError::Json { .. })
     ));
-    Ok(())
-}
-
-#[test]
-fn physical_manifest_reference_uses_existing_codec_limit_before_decode() -> TestResult {
-    use census_domain::roster_affiliation_authority::MAX_ROSTER_PHYSICAL_PROJECTION_MANIFEST_BYTES;
-    check!(eq; MAX_BYTES, MAX_ROSTER_PHYSICAL_PROJECTION_MANIFEST_BYTES);
-    let mut raw = vec![b'!'; MAX_ROSTER_PHYSICAL_PROJECTION_MANIFEST_BYTES];
-    check!(matches!(
-        super::decode::<serde_json::Value>(&raw),
-        Err(StoreError::RosterSourceIssuance(Error::Corrupt("decoding")))
-    ));
-    raw.push(b'!');
-    check!(matches!(
-        super::decode::<serde_json::Value>(&raw),
-        Err(StoreError::RosterSourceIssuance(Error::BudgetExceeded))
-    ));
-    Ok(())
-}
-
-struct CountedPayload<'a> {
-    calls: &'a Cell<usize>,
-    value: &'a Payload,
-}
-
-impl Serialize for CountedPayload<'_> {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let calls = self.calls.get().checked_add(1).ok_or_else(|| {
-            <S::Error as serde::ser::Error>::custom("serialization counter overflow")
-        })?;
-        self.calls.set(calls);
-        self.value.serialize(serializer)
-    }
-}
-
-#[test]
-fn physical_manifest_limit_refuses_measurement_before_output_pass() -> TestResult {
-    use census_domain::roster_affiliation_authority::MAX_ROSTER_PHYSICAL_PROJECTION_MANIFEST_BYTES;
-    let value = payload_at(MAX_ROSTER_PHYSICAL_PROJECTION_MANIFEST_BYTES + 1)?;
-    let calls = Cell::new(0);
-    let counted = CountedPayload {
-        calls: &calls,
-        value: &value,
-    };
-    let mut grant = AttachmentReplayGrantV1::new();
-    check!(matches!(
-        encode_with_source_grant(&counted, &mut grant),
-        Err(StoreError::RosterSourceIssuance(Error::BudgetExceeded))
-    ));
-    check!(eq; calls.get(), 1);
-    check!(eq; grant.usage().encoded_bytes(), 0);
-    check!(eq; grant.usage().traversal_steps(), 1);
     Ok(())
 }

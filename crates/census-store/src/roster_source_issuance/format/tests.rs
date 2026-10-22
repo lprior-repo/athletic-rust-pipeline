@@ -44,27 +44,28 @@ fn insert_row(
 }
 
 #[test]
-fn combined_4096_rows_admitted_by_scanner() -> Result<(), Box<dyn std::error::Error + Send + Sync>>
-{
+fn combined_prefixes_admit_exact_configured_row_budget(
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let (_dir, db, table) = temp_table()?;
-    insert_rows(&db, &table, super::super::ROOT, 2048)?;
-    insert_rows(&db, &table, "roster_source_issuance\0", 2048)?;
+    insert_rows(&db, &table, super::super::ROOT, 2)?;
+    insert_rows(&db, &table, "roster_source_issuance\0", 2)?;
 
     let snapshot = db.snapshot();
-    let mut budget = RosterStartupValidationBudgetV1::new();
+    let mut budget = RosterStartupValidationBudgetV1::for_test(4, 16 * 1024);
     let rows = protected_rows(&snapshot, &table, &mut budget, None)?;
-    check!(eq; rows.len(), 4096);
+    check!(eq; rows.len(), 4);
     Ok(())
 }
 
 #[test]
-fn combined_4097_rows_refused_by_scanner() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+fn combined_prefixes_refuse_one_more_than_configured_row_budget(
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let (_dir, db, table) = temp_table()?;
-    insert_rows(&db, &table, super::super::ROOT, 2048)?;
-    insert_rows(&db, &table, "roster_source_issuance\0", 2049)?;
+    insert_rows(&db, &table, super::super::ROOT, 2)?;
+    insert_rows(&db, &table, "roster_source_issuance\0", 3)?;
 
     let snapshot = db.snapshot();
-    let mut budget = RosterStartupValidationBudgetV1::new();
+    let mut budget = RosterStartupValidationBudgetV1::for_test(4, 16 * 1024);
     let result = protected_rows(&snapshot, &table, &mut budget, None);
     check!(matches!(
         result,
@@ -74,13 +75,14 @@ fn combined_4097_rows_refused_by_scanner() -> Result<(), Box<dyn std::error::Err
 }
 
 #[test]
-fn cap_plus_bare_key_refused() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+fn bare_key_consumes_the_same_configured_row_budget(
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let (_dir, db, table) = temp_table()?;
-    insert_rows(&db, &table, super::super::ROOT, 4096)?;
+    insert_rows(&db, &table, super::super::ROOT, 4)?;
     insert_row(&table, "roster_source_issuance", b"extra")?;
 
     let snapshot = db.snapshot();
-    let mut budget = RosterStartupValidationBudgetV1::new();
+    let mut budget = RosterStartupValidationBudgetV1::for_test(4, 16 * 1024);
     let result = protected_rows(&snapshot, &table, &mut budget, None);
     check!(matches!(
         result,
@@ -120,19 +122,19 @@ fn startup_refuses_bare_reserved_state_without_grant_or_enrollment(
 }
 
 #[test]
-fn combined_4095_rows_plus_bare_key_fit_the_same_inventory_ceiling(
+fn combined_prefixes_plus_bare_key_fit_exact_configured_row_budget(
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let (_directory, db, table) = temp_table()?;
-    insert_rows(&db, &table, super::super::ROOT, 2048)?;
-    insert_rows(&db, &table, "roster_source_issuance\0", 2047)?;
+    insert_rows(&db, &table, super::super::ROOT, 2)?;
+    insert_rows(&db, &table, "roster_source_issuance\0", 1)?;
     insert_row(&table, "roster_source_issuance", b"extra")?;
     let rows = protected_rows(
         &db.snapshot(),
         &table,
-        &mut RosterStartupValidationBudgetV1::new(),
+        &mut RosterStartupValidationBudgetV1::for_test(4, 16 * 1024),
         None,
     )?;
-    check!(eq; rows.len(), 4096);
+    check!(eq; rows.len(), 4);
     check!(eq; rows.last().map(|(key, value)| (key.as_slice(), value.as_slice())),
         Some((b"roster_source_issuance".as_slice(), b"extra".as_slice())));
     Ok(())

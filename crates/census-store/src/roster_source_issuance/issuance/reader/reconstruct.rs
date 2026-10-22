@@ -131,7 +131,7 @@ pub(super) fn claims(
         grant
             .charge_steps(1)
             .map_err(super::super::super::source_error)?;
-        let record: ReviewRecord = codec::decode(raw)?;
+        let record: ReviewRecord = codec::decode_review_composite(raw)?;
         if record.basis.inspected_sequence > archive.selected_snapshot_sequence {
             return Err(Error::Corrupt("review inspection follows publication").into());
         }
@@ -277,7 +277,11 @@ fn validate_inventory(archive: &Archive, grant: &mut AttachmentReplayGrantV1) ->
         .checked_add(archive.records.len())
         .and_then(|n| n.checked_add(archive.receipts.len()))
         .ok_or(Error::BudgetExceeded)?;
-    if count > 4096 || archive.physical.len() > 4096 || archive.selected_snapshot_sequence == 0 {
+    if count > census_domain::roster_affiliation_authority::MAX_ROSTER_PROTECTED_ROWS
+        || archive.physical.len()
+            > census_domain::roster_affiliation_authority::MAX_ROSTER_PHYSICAL_ROWS
+        || archive.selected_snapshot_sequence == 0
+    {
         return Err(Error::BudgetExceeded.into());
     }
     for rows in [&archive.metadata, &archive.records, &archive.receipts] {

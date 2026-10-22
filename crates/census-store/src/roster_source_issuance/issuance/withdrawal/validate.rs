@@ -73,7 +73,7 @@ fn find_original(
     {
         return Err(Error::Corrupt("source record digest or length").into());
     }
-    codec::decode(raw)
+    codec::decode_review_composite(raw)
 }
 
 fn verify_original(

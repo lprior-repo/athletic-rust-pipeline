@@ -46,8 +46,8 @@ pub(super) fn deserialize<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<Vec<Record>, D::Error> {
     deserializer.deserialize_seq(RowsVisitor {
-        max_rows: 4096,
-        max_blob: 4 * 1024 * 1024,
+        max_rows: census_domain::roster_affiliation_authority::MAX_ROSTER_PROTECTED_ROWS,
+        max_blob: census_domain::roster_affiliation_authority::MAX_ROSTER_RETAINED_OBJECT_BYTES,
     })
 }
 
@@ -73,7 +73,7 @@ impl<'de> Visitor<'de> for RowsVisitor {
             if rows.len() == self.max_rows {
                 if seq.next_element::<serde::de::IgnoredAny>()?.is_some() {
                     return Err(serde::de::Error::custom(
-                        "record wire: row count exceeds 4096 bound",
+                        "record wire: row count exceeds admitted bound",
                     ));
                 }
                 break;
@@ -130,13 +130,21 @@ impl<'de> Visitor<'de> for RowVisitor {
     {
         let key = seq
             .next_element_seed(DecodedBlobSeed {
-                max_bytes: self.max_blob,
+                max_bytes: self.max_blob.min(crate::MAX_JOURNAL_KEY_BYTES),
             })?
             .ok_or_else(|| serde::de::Error::custom("record wire: missing key"))?;
+        let value_limit = if key.starts_with(super::super::OBJECT_PREFIX.as_bytes()) {
+            self.max_blob
+        } else if key.starts_with(super::super::RECORD_PREFIX.as_bytes()) {
+            self.max_blob
+                .min(super::super::super::codec::MAX_REVIEW_COMPOSITE_BYTES)
+        } else {
+            self.max_blob.min(super::super::super::codec::MAX_BYTES)
+        };
 
         let value = seq
             .next_element_seed(DecodedBlobSeed {
-                max_bytes: self.max_blob,
+                max_bytes: value_limit,
             })?
             .ok_or_else(|| serde::de::Error::custom("record wire: missing value"))?;
 
@@ -212,7 +220,7 @@ impl<'de> Visitor<'de> for DecodedBlobVisitor {
 
         if exact > self.max_bytes {
             return Err(serde::de::Error::custom(
-                "record wire: decoded blob exceeds 4MiB bound",
+                "record wire: decoded blob exceeds admitted bound",
             ));
         }
 
@@ -234,3 +242,6 @@ impl<'de> Visitor<'de> for DecodedBlobVisitor {
         Ok(buf)
     }
 }
+
+#[cfg(test)]
+mod tests;

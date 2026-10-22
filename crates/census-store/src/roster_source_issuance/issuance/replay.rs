@@ -54,8 +54,14 @@ fn load_record(
         super::RECORD_PREFIX,
         codec::digest(operation.as_bytes())
     );
-    let raw = read(snapshot, journal, &key, codec::MAX_BYTES, budget)?;
-    let record: ReviewRecord = codec::decode(&raw)?;
+    let raw = read(
+        snapshot,
+        journal,
+        &key,
+        codec::MAX_REVIEW_COMPOSITE_BYTES,
+        budget,
+    )?;
+    let record: ReviewRecord = codec::decode_review_composite(&raw)?;
     if record.basis.operation.as_str() != operation || record.approval_digest != approval_digest {
         return Err(Error::OperationConflict.into());
     }
@@ -93,7 +99,7 @@ fn load_closure(
             snapshot,
             journal,
             &format!("{}{}", super::OBJECT_PREFIX, reference.digest),
-            4 * 1024 * 1024,
+            census_domain::roster_affiliation_authority::MAX_ROSTER_RETAINED_OBJECT_BYTES,
             budget,
         )?;
         if bytes.len() != reference.bytes || codec::digest(&bytes) != reference.digest {
@@ -198,7 +204,13 @@ fn source_records(
         super::RECORD_PREFIX,
         codec::digest(target.source_operation().as_bytes())
     );
-    let raw = read(snapshot, journal, &key, codec::MAX_BYTES, budget)?;
+    let raw = read(
+        snapshot,
+        journal,
+        &key,
+        codec::MAX_REVIEW_COMPOSITE_BYTES,
+        budget,
+    )?;
     let mut records = Vec::new();
     records
         .try_reserve_exact(1)

@@ -81,7 +81,7 @@ fn encode(
         ],
         rows: Rows(rows),
     };
-    let bytes = super::super::codec::encode_with_source_grant(&manifest, grant)?;
+    let bytes = super::super::codec::encode_physical_manifest_with_source_grant(&manifest, grant)?;
     evidence.require_original_grant(grant)?;
     Ok(bytes)
 }
@@ -124,7 +124,7 @@ impl RosterSourceEvidenceV1 {
         {
             return Err(Error::InspectedClosureChanged.into());
         }
-        let manifest: RetainedManifest = codec::decode(bytes)?;
+        let manifest: RetainedManifest = codec::decode_physical_manifest(bytes)?;
         if manifest.schema != "roster-physical-projection-inventory-v1"
             || &manifest.store != store
             || manifest.snapshot_sequence != sequence
@@ -135,7 +135,8 @@ impl RosterSourceEvidenceV1 {
                     Table::Conflicts,
                     Table::SourceObservations,
                 ]
-            || manifest.rows.len() > 4096
+            || manifest.rows.len()
+                > census_domain::roster_affiliation_authority::MAX_ROSTER_PHYSICAL_ROWS
         {
             return Err(Error::InspectedClosureChanged.into());
         }

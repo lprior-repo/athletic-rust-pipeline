@@ -172,7 +172,7 @@ fn duplicate_unknown_and_missing_fields_refuse() -> TestResult {
 }
 
 #[test]
-fn original_component_budget_and_record_boundary_are_enforced() -> TestResult {
+fn configured_component_budget_and_record_boundary_are_enforced() -> TestResult {
     let raw = bytes(&fixture()?)?;
     let exact = RosterAuthorityLimitsV1::new(raw.len(), 14 * 64)?;
     check!(decode_roster_issuance_claim(&raw, exact).is_ok());
@@ -189,7 +189,7 @@ fn original_component_budget_and_record_boundary_are_enforced() -> TestResult {
     .is_err());
     check!(RosterAuthorityLimitsV1::new(0, 1).is_err());
     check!(RosterAuthorityLimitsV1::new(64 * 1024 + 1, 1).is_err());
-    check!(RosterAuthorityLimitsV1::new(1, 8 * 1024 * 1024 + 1).is_err());
+    check!(RosterAuthorityLimitsV1::new(1, MAX_ROSTER_AUTHORITY_COMPONENT_BYTES + 1).is_err());
     Ok(())
 }
 #[test]

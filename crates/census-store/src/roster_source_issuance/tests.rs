@@ -71,7 +71,15 @@ fn changed_approval_and_foreign_revision_do_not_enroll() -> TestResult {
 #[test]
 fn startup_budget_is_not_reset_after_exhaustion() -> TestResult {
     let mut budget = RosterStartupValidationBudgetV1::new();
-    check!(budget.charge(16 * 1024 * 1024 + 1).is_err());
+    check!(budget
+        .charge(
+            usize::try_from(
+                census_domain::roster_affiliation_authority::MAX_ROSTER_PROTECTED_BYTES,
+            )?
+            .checked_add(1)
+            .ok_or("budget size overflow")?
+        )
+        .is_err());
     check!(budget.charge(0).is_err());
     Ok(())
 }

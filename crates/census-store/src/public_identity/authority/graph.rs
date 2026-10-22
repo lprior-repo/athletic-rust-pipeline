@@ -10,7 +10,7 @@ mod tests;
 
 pub(in crate::public_identity) const BUDGET: crate::read::ReadBudget = crate::read::ReadBudget {
     rows: 1_048_576,
-    bytes: 512 * 1024 * 1024,
+    bytes: 4 * 1024 * 1024 * 1024,
     record_bytes: 1024 * 1024,
 };
 use crate::public_identity::paged_generation::{

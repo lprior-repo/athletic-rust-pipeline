@@ -65,7 +65,7 @@ fn prepare(
     let approval_digest = codec::digest(&approval);
     Ok(PreparedRosterReviewCore {
         record,
-        objects,
+        objects: objects.into_objects(),
         approval,
         approval_digest,
     })
@@ -76,7 +76,7 @@ fn anchored_closure(
     supplied: RosterSourceReviewObjectsV1,
     proposal: &LocallyCheckedRosterProposalV1,
 ) -> StoreResult<(
-    objects::Objects,
+    objects::Builder,
     AuthorityHead,
     super::ObjectRef,
     super::ObjectRef,
@@ -105,7 +105,7 @@ fn derived_review(
     inspection: &mut RosterIssuanceInspectionV1<'_>,
     proposal: &LocallyCheckedRosterProposalV1,
     fields: RosterSourceReviewFieldsV1,
-    objects: &mut objects::Objects,
+    objects: &mut objects::Builder,
     input_token: &super::ObjectRef,
     prior_head: &super::ObjectRef,
 ) -> StoreResult<(super::ObjectRef, super::ObjectRef, super::SemanticReview)> {

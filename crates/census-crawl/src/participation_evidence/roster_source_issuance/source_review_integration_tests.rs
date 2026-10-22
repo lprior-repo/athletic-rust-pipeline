@@ -18,6 +18,8 @@ mod admission;
 mod body_reader;
 #[path = "source_review_integration_tests/prepared_grant.rs"]
 mod prepared_grant;
+#[path = "source_review_integration_tests/scale.rs"]
+mod scale;
 #[path = "source_wire_boundary_tests.rs"]
 mod wire_boundary;
 

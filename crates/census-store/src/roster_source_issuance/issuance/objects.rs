@@ -10,42 +10,57 @@ use census_domain::roster_affiliation_authority::{
 use std::collections::BTreeMap;
 
 pub(super) type Objects = BTreeMap<String, Vec<u8>>;
+mod builder;
+pub(super) use builder::Builder;
 
 pub(super) fn insert(
-    objects: &mut Objects,
+    objects: &mut Builder,
     bytes: &[u8],
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<ObjectRef> {
-    let (reference, required) = admit(objects, bytes, grant)?;
-    if required {
+    insert_bounded(objects, bytes, 4 * 1024 * 1024, grant)
+}
+
+fn insert_bounded(
+    objects: &mut Builder,
+    bytes: &[u8],
+    maximum: usize,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<ObjectRef> {
+    let (reference, admitted_total) = admit(objects, bytes, maximum, grant)?;
+    if let Some(admitted_total) = admitted_total {
         let mut owned = Vec::new();
         owned
             .try_reserve_exact(bytes.len())
             .map_err(|_| Error::BudgetExceeded)?;
         owned.extend_from_slice(bytes);
-        objects.insert(reference.digest.clone(), owned);
+        objects.retain(reference.digest.clone(), owned, admitted_total)?;
     }
     Ok(reference)
 }
 
 pub(super) fn insert_owned(
-    objects: &mut Objects,
+    objects: &mut Builder,
     bytes: Vec<u8>,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<ObjectRef> {
-    let (reference, required) = admit(objects, &bytes, grant)?;
-    if required {
-        objects.insert(reference.digest.clone(), bytes);
+    let (reference, admitted_total) = admit(objects, &bytes, 4 * 1024 * 1024, grant)?;
+    if let Some(admitted_total) = admitted_total {
+        objects.retain(reference.digest.clone(), bytes, admitted_total)?;
     }
     Ok(reference)
 }
 
 fn admit(
-    objects: &Objects,
+    objects: &Builder,
     bytes: &[u8],
+    maximum: usize,
     grant: &mut AttachmentReplayGrantV1,
-) -> StoreResult<(ObjectRef, bool)> {
-    if bytes.is_empty() || bytes.len() > 4 * 1024 * 1024 || objects.len() >= 4096 {
+) -> StoreResult<(ObjectRef, Option<usize>)> {
+    if bytes.is_empty()
+        || bytes.len() > maximum
+        || objects.len() >= census_domain::roster_affiliation_authority::MAX_ROSTER_CLOSURE_OBJECTS
+    {
         return Err(Error::BudgetExceeded.into());
     }
     grant
@@ -57,15 +72,9 @@ fn admit(
         if existing != bytes {
             return Err(Error::Corrupt("object digest collision").into());
         }
-        false
+        None
     } else {
-        let total = objects.values().try_fold(bytes.len(), |sum, raw| {
-            sum.checked_add(raw.len()).ok_or(Error::BudgetExceeded)
-        })?;
-        if total > 8 * 1024 * 1024 {
-            return Err(Error::BudgetExceeded.into());
-        }
-        true
+        Some(objects.admit_bytes(bytes.len())?)
     };
     Ok((
         ObjectRef {
@@ -80,8 +89,8 @@ pub(super) fn collect(
     inspection: &mut RosterIssuanceInspectionV1<'_>,
     supplied: RosterSourceReviewObjectsV1,
     proposal: &LocallyCheckedRosterProposalV1,
-) -> StoreResult<Objects> {
-    let mut objects = Objects::new();
+) -> StoreResult<Builder> {
+    let mut objects = Builder::new();
     let (evidence, grant) = inspection.source_parts()?;
     retain_contracts(&mut objects, grant, supplied, proposal)?;
     retain_root_payload(&mut objects, evidence, grant, proposal)?;
@@ -92,7 +101,7 @@ pub(super) fn collect(
 }
 
 fn retain_observed_admission(
-    objects: &mut Objects,
+    objects: &mut Builder,
     evidence: &super::super::inspection::RosterSourceEvidenceV1,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<()> {
@@ -105,7 +114,7 @@ fn retain_observed_admission(
 }
 
 fn retain_contracts(
-    objects: &mut Objects,
+    objects: &mut Builder,
     grant: &mut AttachmentReplayGrantV1,
     supplied: RosterSourceReviewObjectsV1,
     proposal: &LocallyCheckedRosterProposalV1,
@@ -130,13 +139,25 @@ fn retain_contracts(
         }
     }
     for bytes in supplied.objects {
-        insert(objects, &bytes, grant)?;
+        let manifest = proposal.binding().physical_projection_inventory();
+        let large_manifest = bytes.len() > 4 * 1024 * 1024
+            && u64::try_from(bytes.len()).map_err(|_| Error::BudgetExceeded)?
+                == manifest.bytes().get();
+        let maximum = if large_manifest {
+            census_domain::roster_affiliation_authority::MAX_ROSTER_PHYSICAL_PROJECTION_MANIFEST_BYTES
+        } else {
+            4 * 1024 * 1024
+        };
+        let actual = insert_bounded(objects, &bytes, maximum, grant)?;
+        if large_manifest && actual.digest != manifest.digest().as_str() {
+            return Err(Error::Corrupt("supplied physical manifest differs").into());
+        }
     }
     Ok(())
 }
 
 fn retain_root_payload(
-    objects: &mut Objects,
+    objects: &mut Builder,
     evidence: &super::super::inspection::RosterSourceEvidenceV1,
     grant: &mut AttachmentReplayGrantV1,
     proposal: &LocallyCheckedRosterProposalV1,
@@ -144,6 +165,9 @@ fn retain_root_payload(
     let root = evidence.retained_root(grant)?;
     if proposal.binding().provider_packet().digest().as_str() != root.root().key {
         return Err(Error::Corrupt("review provider root differs").into());
+    }
+    if root.payload().get().len() > 4 * 1024 * 1024 {
+        return Err(Error::BudgetExceeded.into());
     }
     insert(objects, root.payload().get().as_bytes(), grant)?;
     for row in evidence.physical_projection(grant)? {
@@ -153,26 +177,29 @@ fn retain_root_payload(
 }
 
 fn retain_descriptors(
-    objects: &mut Objects,
+    objects: &mut Builder,
     evidence: &super::super::inspection::RosterSourceEvidenceV1,
     grant: &mut AttachmentReplayGrantV1,
     proposal: &LocallyCheckedRosterProposalV1,
 ) -> StoreResult<()> {
-    for (bytes, expected) in [
+    for (bytes, expected, maximum) in [
         (
             evidence.physical_projection_manifest(grant)?,
             proposal.binding().physical_projection_inventory(),
+            census_domain::roster_affiliation_authority::MAX_ROSTER_PHYSICAL_PROJECTION_MANIFEST_BYTES,
         ),
         (
             evidence.retained_source_admission_manifest(grant)?,
             proposal.capture().retained_source_admission(),
+            4 * 1024 * 1024,
         ),
         (
             evidence.verification_grant_manifest(grant)?,
             proposal.capture().verification_grant(),
+            4 * 1024 * 1024,
         ),
     ] {
-        let actual = insert(objects, &bytes, grant)?;
+        let actual = insert_bounded(objects, &bytes, maximum, grant)?;
         if actual.digest != expected.digest().as_str()
             || u64::try_from(actual.bytes).map_err(|_| Error::BudgetExceeded)?
                 != expected.bytes().get()
@@ -230,3 +257,6 @@ pub(super) fn inventory(objects: &Objects) -> Vec<ObjectRef> {
         })
         .collect()
 }
+
+#[cfg(test)]
+mod tests;

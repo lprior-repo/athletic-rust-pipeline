@@ -55,6 +55,7 @@ fn retained_section_boundary_does_not_reset_per_row() -> TestResult {
 
 #[test]
 fn aggregate_keeps_one_record_reserved_for_header() -> TestResult {
+    check!(eq; CONTEXT_TOTAL_BYTES, 8_589_934_592);
     let exact = CONTEXT_TOTAL_BYTES
         .checked_sub(CONTEXT_RECORD_BYTES)
         .ok_or("reserve")?;
@@ -80,5 +81,43 @@ fn section_row_limit_is_cumulative() -> TestResult {
         section.record(sink, &"")
     })
     .is_err());
+    Ok(())
+}
+
+#[test]
+fn aggregate_is_carried_across_sections_and_refusal_preserves_counters() -> TestResult {
+    let mut probe = AuthorityBytes::default();
+    Section::new("observation").record(&mut probe, &"")?;
+    let encoded = probe.written_bytes();
+    let exact = CONTEXT_TOTAL_BYTES
+        .checked_sub(CONTEXT_RECORD_BYTES)
+        .ok_or("reserve")?;
+    let mut sink = AuthorityBytes {
+        bytes: exact.checked_sub(encoded).ok_or("entry bytes")?,
+    };
+    let mut section = Section::new("observation");
+    section.record(&mut sink, &"")?;
+    check!(eq; sink.written_bytes(), exact);
+    check!(eq; section.rows, 1);
+    check!(eq; section.bytes, u64::try_from(encoded)?);
+    let mut next = Section::new("observation");
+    let needed = CONTEXT_TOTAL_BYTES
+        .checked_add(encoded)
+        .ok_or("aggregate bytes")?;
+    match next.record(&mut sink, &"") {
+        Err(StoreError::BudgetExceeded {
+            what,
+            needed: actual,
+            available,
+        }) => {
+            check!(eq; what, "graph authority sections with header reserve");
+            check!(eq; actual, u64::try_from(needed)?);
+            check!(eq; available, u64::try_from(CONTEXT_TOTAL_BYTES)?);
+        }
+        _ => return Err("aggregate section overflow was not refused".into()),
+    }
+    check!(eq; sink.written_bytes(), exact);
+    check!(eq; next.rows, 0);
+    check!(eq; next.bytes, 0);
     Ok(())
 }
