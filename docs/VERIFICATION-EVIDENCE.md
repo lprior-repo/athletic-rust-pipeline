@@ -4136,3 +4136,38 @@ remains running under sole live owner 590. Status 697 reports 571,461 retained
 performance records and zero accepted identity decisions. The separate restored
 copy does not confer acceptance on live state. Normal roster-owned profile
 acquisition and the fully populated workbook remain unfinished.
+
+### Completed cold restore and full-copy identity replay
+
+The pending restore 693 above completed successfully: exit 0, 35:04.80 elapsed,
+maximum RSS 1,243,340 KiB. The existing restore verifier restored all 105,677
+manifest-listed files, 21,183,941,454 bytes and zero links to
+`/home/lewis/.cache/athletic-five-state-co2027-20261021/probes/source-cohort-full-corpus-686`.
+All 19 table counts match the backup, including 661,201 athletes, 82,447
+performances, 691,705 source observations, 8,718 schools and 10,141 coaches.
+The backup's seven manifest/metadata files explain its larger total size; the
+restored manifest-listed corpus is not claimed to include those metadata files.
+
+Full-copy command 705 then completed the existing
+`local-identity-adjudication establish-source-cohort` operation
+`five-state-co2027-source-cohort-20261022`, graduation year 2027: exit 0,
+11:36.76 elapsed, maximum RSS 7,958,676 KiB, zero swaps. It accepted 65,530
+deterministic source-bound identity decisions on that restored copy. Head
+sequence is 65,530, digest
+`24df6f9ace09d2fa5eca74820a7474f93a53496f8e56dd60ebdd0cadf8448c10`.
+Command 715 repeated the exact same operation, store and CLI: exit 0, 10:41.42,
+maximum RSS 3,398,164 KiB, zero swaps, `replayed: true`, identical accepted count
+and head. No replacement operation or identity key was supplied.
+
+Both identity commands used the unchanged optimized CLI SHA256
+`6134fb23484846f5c032a0615717939981fd5b20635d9f228f985ffe846be2dc`.
+Raw logs are `/tmp/athletic-work-20261021/worksheet-source-cohort-restore-693.log`,
+`worksheet-full-corpus-source-cohort-705.log` and
+`worksheet-full-corpus-source-cohort-replay-715.log`, with matching `.stderr`
+files retaining process measurements. This closes the native restore-dispatch
+qualification for `athletic-rust-pipeline-rm23.14`, not the parent workbook goal.
+
+Live ingress status 718 still reports zero identity decisions and 681,660
+retained performance records. No copied-store identity decision was applied to
+the live owner. Current affiliation, participation eligibility, all five-state
+coverage and fully populated workbook acceptance remain separate obligations.
