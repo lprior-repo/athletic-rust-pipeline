@@ -90,6 +90,22 @@ impl SourceTargetPacketV1 {
             &person.id,
         )
     }
+
+    pub fn profile_capture(&self) -> &RetainedHtmlCaptureV1 {
+        &self.profile
+    }
+
+    pub fn read_profile_prs_if_published(
+        &self,
+    ) -> StoreResult<Option<profile_pr::CheckedProfilePrTableV1<'_>>> {
+        self.reference()?;
+        let person = urls::person(self.profile.requested_url())?;
+        profile_pr::read_if_published(
+            &self.profile,
+            census_domain::UsJurisdiction::Michigan,
+            &person.id,
+        )
+    }
 }
 
 #[cfg(test)]

@@ -8,17 +8,17 @@ use std::path::{Component, Path};
 mod checksum;
 mod retained;
 const MAX_OBJECTS: usize = 16_384;
-pub(super) const MAX_BYTES: u64 = 3 * 1024 * 1024 * 1024;
+pub(in crate::export::dataset) const MAX_BYTES: u64 = 3 * 1024 * 1024 * 1024;
 const MAX_ANCESTORS: usize = 256;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct Reference {
-    pub(super) digest: String,
-    pub(super) bytes: u64,
+pub(in crate::export::dataset) struct Reference {
+    pub(in crate::export::dataset) digest: String,
+    pub(in crate::export::dataset) bytes: u64,
 }
 
-pub(super) fn require_empty(directory: &Path) -> ReportResult<()> {
+pub(in crate::export::dataset) fn require_empty(directory: &Path) -> ReportResult<()> {
     require_directory(directory)?;
     if std::fs::read_dir(directory)
         .map_err(|source| io_error(directory, source))?
@@ -96,7 +96,10 @@ pub(super) fn validate(references: &[Reference]) -> ReportResult<()> {
     Ok(())
 }
 
-pub(super) fn verify(directory: &Path, references: &[Reference]) -> ReportResult<()> {
+pub(in crate::export::dataset) fn verify(
+    directory: &Path,
+    references: &[Reference],
+) -> ReportResult<()> {
     validate(references)?;
     if inventory(directory)? != references {
         return Err(invalid(

@@ -43,6 +43,16 @@ impl<'de> Deserialize<'de> for super::Manifest {
                 "normalized CSV count inventory exceeds eleven entries",
             ));
         }
+        if manifest.schema_revision <= 12
+            && manifest
+                .normalized_csv_rows
+                .as_ref()
+                .is_some_and(|rows| rows.len() > 12)
+        {
+            return Err(serde::de::Error::custom(
+                "normalized CSV count inventory exceeds twelve entries",
+            ));
+        }
         super::super::selected::validate(
             manifest.schema_revision,
             manifest.selected_profile.as_ref(),

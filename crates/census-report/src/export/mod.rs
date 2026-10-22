@@ -11,6 +11,7 @@ pub(crate) use qualification::{
     VerifiedParticipationView,
 };
 mod dataset;
+pub(crate) use dataset::reported_profile_prs::ReportedProfilePrTable;
 pub mod link;
 pub mod postal;
 pub mod provenance;
@@ -25,6 +26,8 @@ pub use dataset::{
 pub(crate) use dataset::{proof_objects, store_snapshot_lineage, MAX_FROZEN_INPUT_BYTES};
 pub use provenance::{athletic_net_meet_identity, coach_source};
 
+#[cfg(test)]
+pub(crate) use dataset::reported_profile_prs::tests::source as profile_pr_test_source;
 #[cfg(test)]
 pub(crate) use dataset::selected::tests::fixture as selected_test_fixture;
 

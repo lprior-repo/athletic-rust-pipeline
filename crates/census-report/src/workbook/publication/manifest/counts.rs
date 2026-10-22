@@ -19,12 +19,12 @@ impl<'de> Visitor<'de> for CountMap {
     type Value = super::super::inventory::RowCounts;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter.write_str("at most twelve unique normalized CSV filename counts")
+        formatter.write_str("at most thirteen unique normalized CSV filename counts")
     }
 
     fn visit_map<M: MapAccess<'de>>(self, mut access: M) -> Result<Self::Value, M::Error> {
         let mut counts = Self::Value::new();
-        let state = (0..13).try_fold(
+        let state = (0..14).try_fold(
             CountState::Reading,
             |state, _| -> Result<CountState, M::Error> {
                 if state == CountState::Exhausted {
@@ -33,9 +33,9 @@ impl<'de> Visitor<'de> for CountMap {
                 let Some(name) = access.next_key::<String>()? else {
                     return Ok(CountState::Exhausted);
                 };
-                if counts.len() >= 12 {
+                if counts.len() >= 13 {
                     return Err(serde::de::Error::custom(
-                        "normalized CSV count inventory exceeds twelve entries",
+                        "normalized CSV count inventory exceeds thirteen entries",
                     ));
                 }
                 if counts.contains_key(&name) {
@@ -49,7 +49,7 @@ impl<'de> Visitor<'de> for CountMap {
         )?;
         if state != CountState::Exhausted {
             return Err(serde::de::Error::custom(
-                "normalized CSV count inventory did not end within twelve entries",
+                "normalized CSV count inventory did not end within thirteen entries",
             ));
         }
         Ok(counts)

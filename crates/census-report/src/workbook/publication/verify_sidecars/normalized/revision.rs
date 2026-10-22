@@ -18,7 +18,7 @@ impl Revision {
             4 => Ok(Self::SupportingReferences),
             5 => Ok(Self::CombinedExclusions),
             6 => Ok(Self::ResultGroups),
-            7 | 8 | 10..=12 => Ok(Self::ParticipationExclusions),
+            7 | 8 | 10..=13 => Ok(Self::ParticipationExclusions),
             _ => Err(super::super::defect(format!(
                 "unsupported normalized artifact revision {revision}"
             ))),

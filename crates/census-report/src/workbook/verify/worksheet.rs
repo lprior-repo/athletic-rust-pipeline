@@ -8,6 +8,7 @@ use census_domain::model::CanonicalAthlete;
 use std::collections::BTreeSet;
 
 mod marks;
+mod profile_prs;
 
 const HEADERS: [&str; 24] = [
     "Athlete ID",
@@ -111,7 +112,7 @@ fn values(
     row.extend(current(affiliations, athlete, subject)?);
     row.extend(coaches(expected, athlete, subject));
     row.extend(marks::values(expected, affiliations, athlete, reported)?);
-    row.push(Value::Empty);
+    row.push(profile_prs::value(expected.dataset, athlete)?);
     row.push(Value::optional(
         athletes::cells::profiles_of(athlete).milesplit,
     ));

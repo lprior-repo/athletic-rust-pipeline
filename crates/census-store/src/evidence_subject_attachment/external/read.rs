@@ -10,6 +10,7 @@ use serde_json::value::RawValue;
 use sha2::{Digest, Sha256};
 
 mod borrowed;
+mod enumerate;
 mod inventory;
 mod physical;
 pub(crate) use borrowed::{with_checked, CheckedCapture, CheckedRoot, CheckedSchool};

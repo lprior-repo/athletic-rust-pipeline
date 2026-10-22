@@ -16,6 +16,7 @@ use std::path::Path;
 pub(super) fn read_all(objects_dir: &Path, manifest: &FrozenManifest) -> ReportResult<Loaded> {
     Ok(Loaded {
         selection: None,
+        reported_profile_prs: super::super::reported_profile_prs::ReportedProfilePrs::default(),
         athletes: collect::<CanonicalAthlete>(objects_dir, StreamKind::Athletes, manifest)?,
         schools: collect::<CanonicalSchool>(objects_dir, StreamKind::Schools, manifest)?,
         teams: collect::<CanonicalTeam>(objects_dir, StreamKind::Teams, manifest)?,

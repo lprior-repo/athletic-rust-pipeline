@@ -51,7 +51,7 @@ impl Schema {
         match artifact_revision {
             1 | 2 => Ok(Self::Historical),
             3..=5 => Ok(Self::CandidateInventory),
-            6..=8 | 10..=12 => Ok(Self::ResultGroups),
+            6..=8 | 10..=13 => Ok(Self::ResultGroups),
             _ => Err(defect(format!(
                 "unsupported publication artifact revision: {artifact_revision}"
             ))),

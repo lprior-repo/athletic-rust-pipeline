@@ -3834,3 +3834,95 @@ athletes, certified performance rows and the certified selected-proof bundle.
 RTX 5090/3090 supplied packet/worksheet drafts in run 594; Main retained them
 outside the repository because they contain validation, API and cell-budget
 defects. No completed PR acquisition or populated PR column is claimed.
+
+## 2026-10-22 — retained profile PR publication slice
+
+The Include worksheet can now carry source-declared profile PRs in column U and
+`source_profile_prs.csv` under artifact recipe 13/policy 22. These facts do not
+create canonical performances, accepted identities, eligibility or verified-best
+marks. The existing 24 columns remain. An empty collection preserves recipe 12
+and its input serialization; earlier recipe inventories retain their exact limits.
+This slice consumes the existing profile-plus-linked-results packet without
+relabeling that packet as a profile-only acquisition.
+
+One pinned snapshot enumerates owned retained roots under the shared replay
+grant. Exact source IDs and the selected capture cutoff are checked before PR
+parsing. A valid profile with no PR table retains unknown PRs; a present malformed
+table refuses. Raw source objects, root references and byte locators enter the
+frozen commitment and are reparsed during cold readback. Writer and verifier
+construct cell and CSV expectations separately. Excel text overflow refuses;
+source facts are never silently truncated or promoted to verified marks.
+
+The namespace scan retains the existing 25,000-physical-row/64-MiB limits;
+collection limits are 16,384 roots, 4 MiB per packet and 3 GiB aggregate objects.
+Exhaustion refuses explicitly. These bounds are not full-population scale
+qualification. Accepted-only profiles and normal roster-to-profile acquisition
+remain outside this completed consumer slice.
+
+Executed checks used repository-root `tools/moon-local`, with `CI` unset and
+the installed Moon binary prepended to PATH. Build jobs and test threads were 4.
+Run 617 passed 20 focused tests. Run 620 passed 353/354 adjacent tests; the failure
+was the old assertion that recipe 13 must be unknown. The assertion now refuses
+14, also checking that recipes 12 and 13 differ; run 624 passed 20/20.
+Run 629 passed 383/383 publication, manifest, normalized-writing, frozen/selected,
+provider-target and retained-reader tests (Nextest
+`154fd3a1-305f-4d0b-87dd-de223afdd368`, 270.510 s test time).
+After extracting the final normalized row verifier, run 639 passed 85/85 PR and
+normalized-readback tests (11.412 s test time). The exact filters are recorded
+below; outputs are in
+`/tmp/athletic-work-20261021/worksheet-profile-pr-{adjacent-629,tests-639}.log`.
+After moving the existing deserialization and alias-loading boundary out of the
+oversized dataset file, run 643 passed 279/279 frozen, selected-proof, PR and
+normalized-readback tests in 18.731 s (Nextest
+`42c50d70-e620-4051-a349-7b04f4fd1b3d`). The dataset file is now 293 lines and
+its loading module 64 lines; the wire attributes and loading rules are unchanged.
+Final format/check/source-lint run 642 passed all three tasks in 38.354 s;
+forced arity review warnings remain advisory under repository policy.
+
+```sh
+env -u CI MOON_RUST_TEST_THREADS=4 MOON_RUST_BUILD_JOBS=4 PATH=/tmp/athletic-work-20261021/moon_cli-x86_64-unknown-linux-gnu:$PATH tools/moon-local run pipeline:tests-scoped -- -p census-store -p census-report -p census-crawl --lib -E 'test(workbook::publication::selected) | test(workbook::publication::manifest) | test(workbook::publication::versions) | test(workbook::publication::normalized) | test(export::dataset::frozen) | test(export::dataset::selected) | test(export::dataset::reported_profile_prs) | test(provider_target) | test(evidence_subject_attachment::external::read)'
+env -u CI MOON_RUST_TEST_THREADS=4 MOON_RUST_BUILD_JOBS=4 PATH=/tmp/athletic-work-20261021/moon_cli-x86_64-unknown-linux-gnu:$PATH tools/moon-local run pipeline:tests-scoped -- -p census-store -p census-report -p census-crawl --lib -E 'test(reported_profile_prs) | test(profile_prs) | test(profile_pr::tests) | test(read::tests::enumerate) | test(workbook::publication::selected::revision_tests) | test(workbook::publication::versions) | test(workbook::publication::verify_sidecars::normalized)'
+env -u CI MOON_RUST_TEST_THREADS=4 MOON_RUST_BUILD_JOBS=4 PATH=/tmp/athletic-work-20261021/moon_cli-x86_64-unknown-linux-gnu:$PATH tools/moon-local run pipeline:tests-scoped -- -p census-store -p census-report -p census-crawl --lib -E 'test(reported_profile_prs) | test(profile_prs) | test(profile_pr::tests) | test(read::tests::enumerate) | test(workbook::publication::selected::revision_tests) | test(workbook::publication::versions) | test(workbook::publication::verify_sidecars::normalized) | test(export::dataset::frozen) | test(export::dataset::selected_proofs) | test(selected_capture_save_reopen_retains_all_three_verified_views_without_live_sources)'
+```
+
+The publication tests write all 46 PR rows, retain the source comparison filters,
+replay the same test job and verify with the test Store path absent. Forged cells,
+CSV marks, missing objects and changed source bytes refuse independent readback.
+The publication fixture changes athlete ID/capture date for controlled matching;
+it is not genuine five-state Class-of-2027 eligibility or live acquisition evidence.
+The underlying captured profile fixture alone does not establish that cohort.
+
+Initial AST scans 621/630 refused four oversized functions, then one remaining
+61-line verifier. Capture policy, selected CSV families and independent claim
+verification were separated without weakening the 60-line limit. Final scan 644
+passed in 5 min 19.881 s, checking 30,560 strict callables in 2,856 files with zero
+functions over 60 logic lines and zero unresolved sites. Existing oversized files
+elsewhere remain disclosed source debt; this is not a repository-wide size claim.
+Repository-wide
+comments (633) and panic extraction (634) still refuse the existing publication
+symlink `output/recruiting-five-states-2027/current`. No artifact was removed and
+no source-walk exclusion was added. Supported scoped panic extraction
+`pipeline:xtask -- panic-extraction --root crates` (635) passed 5,501 Rust files
+and three rendered templates. This is not a full release-gate pass.
+
+Both GPUs supplied real HTTP-200 work: run 610 optional-reader/regression drafts
+(5090 5.469 s, 3090 61.052 s), run 622 static reviews (2.612/8.123 s), and run 625
+formatter/counting drafts (22.554/36.655 s). Main corrected API, private-module,
+test, budget and size defects, integrated the changes and executed the checks.
+Static model reviews do not certify runtime acceptance.
+
+The sole live Store owner remains endpoint 590/PID 2403935. The same MI invocation
+`inv_1lc4hnnCg2sx2WxMFUNVA43OuGPWIMqETi` remains running at results execution;
+it was not resubmitted or restarted. Ingress `Census/status` read 638 reports
+969,708 athlete rows, 392,440 performances and 1,058,628 source observations,
+compared with cold backup 581's 661,201/82,447/691,705. Read 632 had 370,849
+performances, so growth also occurred between the two current ingress reads.
+These are retained table counts, not accepted cohort counts or proof that this
+single invocation owns every added row. Identity decisions remain zero. The full
+workbook goal is incomplete. No new native workbook was published in this slice.
+
+The selected published profile cutoff is `2026-10-22`. The Downloads single-sheet
+workbook still hashes to
+`1d9387b5c5722ded4d24448e049cf1e96101da71cc1e4df3c8532d908a01aab4`.
+Foreign Beads files, `xtask/src/perf/candidate.rs`, output artifacts and the
+running Store were preserved. No live Store was opened by a second owner.

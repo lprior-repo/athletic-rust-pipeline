@@ -22,6 +22,9 @@ impl<'a> CheckedProfilePrTableV1<'a> {
     pub fn rows(&self) -> &[SourceProfilePrV1] {
         &self.rows
     }
+    pub fn into_rows(self) -> Vec<SourceProfilePrV1> {
+        self.rows
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]

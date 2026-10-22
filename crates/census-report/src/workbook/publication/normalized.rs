@@ -17,6 +17,8 @@ mod integrity;
 mod provenance;
 pub(in crate::workbook::publication) mod reported_performances;
 mod schools;
+mod selected_rows;
+pub(in crate::workbook::publication) mod source_profile_prs;
 #[cfg(test)]
 mod tests;
 
@@ -67,7 +69,9 @@ pub(in crate::workbook) fn write_outcome(
     }
     if !matches!(
         revision,
-        super::selected::REVISION | super::selected::REPORTED_REVISION
+        super::selected::REVISION
+            | super::selected::REPORTED_REVISION
+            | super::selected::PROFILE_PRS_REVISION
     ) && !outcome.participation_exclusions.is_empty()
     {
         return Err(defect(
@@ -81,30 +85,7 @@ pub(in crate::workbook) fn write_outcome(
         &outcome.selections,
         &outcome.combined_exclusions,
     )?;
-    if matches!(
-        revision,
-        super::selected::REVISION | super::selected::REPORTED_REVISION
-    ) {
-        counts.insert(
-            "current_affiliations.csv".into(),
-            super::current_affiliations::write(directory, dataset)?,
-        );
-        counts.insert(
-            "participation_exclusions.csv".into(),
-            super::participation_exclusions::write(
-                directory,
-                dataset,
-                dataset.verified_participation()?,
-                outcome,
-            )?,
-        );
-        if revision == super::selected::REPORTED_REVISION {
-            counts.insert(
-                "reported_performances.csv".into(),
-                write_reported(directory, derivation, outcome)?,
-            );
-        }
-    }
+    selected_rows::write(directory, derivation, outcome, revision, &mut counts)?;
     Ok(counts)
 }
 

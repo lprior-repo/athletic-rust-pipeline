@@ -10,6 +10,7 @@ use std::collections::BTreeSet;
 use std::path::Path;
 
 mod marks;
+mod profile_prs;
 
 #[cfg(test)]
 mod tests;
@@ -109,7 +110,7 @@ fn row(
     cells.extend(current_school(schools, athlete, basis)?);
     cells.extend(coaches(dataset, athlete, basis));
     cells.extend(marks::cells(dataset, athlete, reported, schools)?);
-    cells.push(Cell::Empty);
+    cells.push(profile_prs::cell(dataset.source, athlete)?);
     cells.push(
         profiles_of(athlete)
             .milesplit

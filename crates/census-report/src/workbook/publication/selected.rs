@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 pub(super) const REVISION: u32 = 11;
 pub(super) const REPORTED_REVISION: u32 = 12;
+pub(super) const PROFILE_PRS_REVISION: u32 = 13;
 pub(super) const HISTORICAL_REVISION: u32 = 7;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -61,9 +62,8 @@ pub(super) fn binding(
         HISTORICAL_REVISION if dataset.is_historical_selected_replay() => {
             SelectedProfile::of(dataset).map(Some)
         }
-        REVISION | REPORTED_REVISION => {
-            let profile = verified_profile(dataset)?;
-            let expected = current_revision_from_profile(profile);
+        REVISION | REPORTED_REVISION | PROFILE_PRS_REVISION => {
+            let expected = current_revision(dataset)?;
             if revision != expected {
                 return Err(super::invariant(
                     "publication revision does not match the frozen provisional-inclusion profile"
@@ -80,7 +80,10 @@ pub(super) fn binding(
 
 pub(super) fn validate(revision: u32, binding: Option<&SelectedProfile>) -> ReportResult<()> {
     match (revision, binding) {
-        (1..=6, None) | (HISTORICAL_REVISION | REVISION | REPORTED_REVISION, Some(_)) => Ok(()),
+        (1..=6, None)
+        | (HISTORICAL_REVISION | REVISION | REPORTED_REVISION | PROFILE_PRS_REVISION, Some(_)) => {
+            Ok(())
+        }
         _ => Err(super::invariant(
             "publication revision and selected profile binding disagree".into(),
         )),
@@ -89,7 +92,17 @@ pub(super) fn validate(revision: u32, binding: Option<&SelectedProfile>) -> Repo
 
 fn current_revision(dataset: &ExportDataset) -> ReportResult<u32> {
     let profile = verified_profile(dataset)?;
-    Ok(current_revision_from_profile(profile))
+    let revision = current_revision_from_profile(profile);
+    if dataset.has_reported_profile_prs() {
+        if revision != REPORTED_REVISION {
+            return Err(super::invariant(
+                "reported profile PRs require the Include profile".into(),
+            ));
+        }
+        Ok(PROFILE_PRS_REVISION)
+    } else {
+        Ok(revision)
+    }
 }
 
 fn current_revision_from_profile(profile: &census_domain::model::QueryProfileV1) -> u32 {
@@ -172,7 +185,10 @@ pub(super) fn ensure_options_for_revision(
     revision: u32,
 ) -> ReportResult<()> {
     binding(revision, dataset)?;
-    if matches!(revision, REVISION | REPORTED_REVISION) {
+    if matches!(
+        revision,
+        REVISION | REPORTED_REVISION | PROFILE_PRS_REVISION
+    ) {
         ensure_profile_options(verified_profile(dataset)?, options)?;
     }
     Ok(())

@@ -6,6 +6,9 @@ use census_domain::evidence_subject_attachment::EvidenceSubjectAttachmentError;
 const KEY: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 const SCHEMA: RetainedCaptureRootSchemaV1 = RetainedCaptureRootSchemaV1::HtmlResultCaptureV1;
 
+#[path = "tests/enumerate.rs"]
+mod enumerate;
+
 fn payload() -> serde_json::Value {
     serde_json::json!({
         "requested_url":"https://example.test/source","final_url":"https://example.test/source",

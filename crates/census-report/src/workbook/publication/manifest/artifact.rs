@@ -64,7 +64,7 @@ pub(super) fn artifact_names(revision: u32, grad_year: Option<i16>) -> ReportRes
     ];
     match revision {
         1 => {}
-        2..=8 | 10..=12 => names.extend(
+        2..=8 | 10..=13 => names.extend(
             [
                 "event-catalog.json",
                 "relay-dispositions.json",

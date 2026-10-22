@@ -122,6 +122,7 @@ fn resolve(
 ) -> ReportResult<Loaded> {
     Ok(Loaded {
         selection: None,
+        reported_profile_prs: super::reported_profile_prs::ReportedProfilePrs::default(),
         athletes: joined.0?,
         schools: joined.1?,
         teams: joined.2?,

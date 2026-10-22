@@ -50,17 +50,15 @@ impl ExportDataset {
             })
             .transpose()?;
         let calendar_closure = capture_calendar(snapshot, &identity, &mut grant)?;
-        let replayed_calendar = calendar_closure
-            .as_ref()
-            .map(|closure| {
-                closure.replay(
-                    &lineage.store_identity,
-                    lineage.snapshot_sequence,
-                    &mut grant,
-                )
-            })
-            .transpose()?;
+        let replayed_calendar = replay_calendar(calendar_closure.as_ref(), &lineage, &mut grant)?;
         extend_school(&mut loaded, replayed_school.as_ref(), &mut grant)?;
+        super::super::reported_profile_prs::ReportedProfilePrs::extend_selected(
+            &mut loaded,
+            snapshot,
+            &profile,
+            objects_directory,
+            &mut grant,
+        )?;
         let mut dataset = selected_dataset(loaded, lineage, &profile, authority)?;
         attach_selected_proofs(
             &mut dataset,
@@ -178,6 +176,16 @@ fn capture_calendar(
     } else {
         Ok(None)
     }
+}
+
+fn replay_calendar<'a>(
+    closure: Option<&'a archive::CalendarClosure>,
+    lineage: &super::super::DatasetLineage,
+    grant: &mut AttachmentReplayGrantV1,
+) -> ReportResult<Option<census_store::ReplayedResultCalendarCorrespondencesV1<'a>>> {
+    closure
+        .map(|closure| closure.replay(&lineage.store_identity, lineage.snapshot_sequence, grant))
+        .transpose()
 }
 
 fn extend_school(

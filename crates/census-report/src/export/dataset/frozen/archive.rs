@@ -78,7 +78,12 @@ pub(super) fn hydrate_retained(
         let directory = super::proof_directory(path)?;
         proofs.bind_directory(&directory)?;
         let hydrated = proofs.hydrate(dataset, &profile, &fingerprints, &directory)?;
+        dataset.replay_reported_profile_prs(&directory)?;
         dataset.attach_selected_proofs(proofs, hydrated)?;
+    } else if !dataset.reported_profile_prs.is_empty() {
+        return Err(invalid(
+            "reported profile PR sources require retained frozen objects",
+        ));
     }
     Ok(())
 }

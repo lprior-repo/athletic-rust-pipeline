@@ -17,6 +17,7 @@ mod revision;
 pub(in crate::workbook::publication) mod rows;
 mod schema;
 mod schools;
+mod source_profile_prs;
 #[cfg(test)]
 mod tests;
 
@@ -56,7 +57,11 @@ pub(super) fn verify_outcome(
         directory, inputs, bests, &schools, &coaches, &facts, revision,
     )?;
     insert_exclusion_counts(directory, inputs, outcome, revision, &mut counts)?;
-    if artifact_revision == crate::workbook::publication::selected::REPORTED_REVISION {
+    if matches!(
+        artifact_revision,
+        crate::workbook::publication::selected::REPORTED_REVISION
+            | crate::workbook::publication::selected::PROFILE_PRS_REVISION
+    ) {
         let projection = crate::workbook::reported::Projection::of(
             inputs.dataset,
             &inputs.derivation,
@@ -69,6 +74,12 @@ pub(super) fn verify_outcome(
         counts.insert(
             "reported_performances.csv".into(),
             reported_performances::verify(directory, &projection)?,
+        );
+    }
+    if artifact_revision == crate::workbook::publication::selected::PROFILE_PRS_REVISION {
+        counts.insert(
+            "source_profile_prs.csv".into(),
+            source_profile_prs::verify(directory, inputs, outcome)?,
         );
     }
     Ok(counts)
@@ -157,7 +168,7 @@ pub(in crate::workbook) fn visit_athletes(
 ) -> ReportResult<u64> {
     let additional = match artifact_revision {
         1..=6 => None,
-        7 | 8 | 10..=12 => Some(["canonical_candidate_id", "identity_resolution"]),
+        7 | 8 | 10..=13 => Some(["canonical_candidate_id", "identity_resolution"]),
         _ => {
             return Err(super::defect(format!(
                 "unsupported comparison artifact revision {artifact_revision}"

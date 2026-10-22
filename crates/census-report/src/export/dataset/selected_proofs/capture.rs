@@ -23,7 +23,9 @@ impl SelectedProofs {
     ) -> ReportResult<(Self, HydratedProofs)> {
         require_binding(dataset, profile, expected_fingerprints)?;
         require_physical_roots(snapshot, expected_fingerprints)?;
-        objects::require_empty(directory)?;
+        dataset
+            .reported_profile_prs
+            .require_initial_objects(directory)?;
         dataset.prepare_selected_public_identities(identity.replay()?)?;
         let public_identity = identity::Bundle::capture(directory, identity)?;
         let (affiliation, affiliations) =

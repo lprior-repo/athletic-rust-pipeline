@@ -29,11 +29,12 @@ fn single_worksheet_has_distinct_recipe_and_preserves_exact_seven_recipe() -> Te
     check!(eq; recipes::recipe_for_selected_revision(lineage, options, &selected, 7)?, original);
     check!(ne; recipes::recipe_for_selected_revision(lineage, options, &selected, 11)?, original);
     check!(ne; recipes::recipe_for_selected_revision(lineage, options, &selected, 12)?, original);
+    check!(ne; recipes::recipe_for_selected_revision(lineage, options, &selected, 13)?, recipes::recipe_for_selected_revision(lineage, options, &selected, 12)?);
     check!(recipes::recipe_for_selected_revision(lineage, options, &selected, 8).is_err());
     check!(recipes::recipe_for_selected_revision(lineage, options, &selected, 10).is_err());
     check!(recipes::recipe_for_selected_revision(lineage, options, &selected, 6).is_err());
     check!(recipes::recipe_for_selected_revision(lineage, options, &selected, 9).is_err());
-    check!(recipes::recipe_for_selected_revision(lineage, options, &selected, 13).is_err());
+    check!(recipes::recipe_for_selected_revision(lineage, options, &selected, 14).is_err());
     check!(eq; inventory::names(7)?, inventory::names(8)?);
     Ok(())
 }

@@ -1,9 +1,9 @@
 use crate::report::ReportResult;
 use census_domain::model::{
-    AppliedAthleteIdentity, AthleteIdentityIndex, AthleteIdentityProjection, CanonicalAthlete,
-    CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CanonicalTeam, CensusRun, CoachLaneObligation, CoverageRow, GradYear, RelayResult, ReviewCase,
-    ReviewVerdictRecord, SchoolId, SourceAccessCondition, TeamId,
+    AppliedAthleteIdentity, AthleteIdentityProjection, CanonicalAthlete, CanonicalCoach,
+    CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool, CanonicalTeam, CensusRun,
+    CoachLaneObligation, CoverageRow, GradYear, RelayResult, ReviewCase, ReviewVerdictRecord,
+    SchoolId, SourceAccessCondition, TeamId,
 };
 use census_store::{Store, Table};
 use serde::{Deserialize, Serialize};
@@ -13,8 +13,11 @@ use std::sync::Arc;
 
 mod frozen;
 mod job_request;
+mod loaded;
 pub use job_request::ExportJobRequest;
+use loaded::{aliases_of, projection_of, Loaded};
 mod read;
+pub(crate) mod reported_profile_prs;
 pub(crate) mod selected;
 mod selected_proofs;
 
@@ -120,6 +123,8 @@ pub struct ExportDataset {
     pub lineage: DatasetLineage,
     pub coverage_evidence: CoverageEvidence,
     pub relays: Vec<RelayResult>,
+    #[serde(skip_serializing_if = "reported_profile_prs::ReportedProfilePrs::is_empty")]
+    reported_profile_prs: reported_profile_prs::ReportedProfilePrs,
     #[serde(skip)]
     identity_projection: Arc<AthleteIdentityProjection>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -183,58 +188,6 @@ pub fn cancel_freeze_v2(store: &Store, job: &str) -> ReportResult<CancelOutcome>
 
 pub fn to_export_dataset(root: &FrozenRoot, store: &Store) -> ReportResult<ExportDataset> {
     frozen::to_export_dataset(root, store)
-}
-
-#[derive(Deserialize)]
-struct Loaded {
-    athletes: Vec<CanonicalAthlete>,
-    #[serde(deserialize_with = "frozen::map_values")]
-    schools: Vec<CanonicalSchool>,
-    #[serde(deserialize_with = "frozen::map_values")]
-    teams: Vec<CanonicalTeam>,
-    coaches: Vec<CanonicalCoach>,
-    coach_observations: Vec<CanonicalCoach>,
-    events: Vec<CanonicalEvent>,
-    meets: Vec<CanonicalMeet>,
-    performances: Vec<CanonicalPerformance>,
-    review_cases: Vec<ReviewCase>,
-    source_access: Vec<SourceAccessCondition>,
-    verdicts: Vec<ReviewVerdictRecord>,
-    identity_decisions: Vec<AppliedAthleteIdentity>,
-    coverage_evidence: CoverageEvidence,
-    relays: Vec<RelayResult>,
-    #[serde(default)]
-    selection: Option<super::qualification::SelectionBinding>,
-}
-
-fn projection_of(loaded: &Loaded) -> ReportResult<Arc<AthleteIdentityProjection>> {
-    let mut index = AthleteIdentityIndex::default();
-    for athlete in &loaded.athletes {
-        index
-            .observe(athlete)
-            .map_err(census_store::StoreError::from)?;
-    }
-    Ok(Arc::new(census_store::build_athlete_identity_projection(
-        index,
-        &loaded.review_cases,
-        &loaded.verdicts,
-        &loaded.identity_decisions,
-    )?))
-}
-
-fn aliases_of(
-    athletes: &[CanonicalAthlete],
-    projection: &AthleteIdentityProjection,
-) -> HashMap<String, String> {
-    let mut aliases = HashMap::new();
-    for athlete in athletes {
-        let subject = athlete.id.as_str();
-        let canonical = projection.canonical_id(subject);
-        if canonical != subject {
-            aliases.insert(subject.to_string(), canonical.to_string());
-        }
-    }
-    aliases
 }
 
 fn coverage_evidence(snapshot: &census_store::StoreSnapshot<'_>) -> ReportResult<CoverageEvidence> {
@@ -307,6 +260,7 @@ impl ExportDataset {
             identity_decisions: loaded.identity_decisions,
             coverage_evidence: loaded.coverage_evidence,
             relays: loaded.relays,
+            reported_profile_prs: loaded.reported_profile_prs,
             lineage,
             identity_projection,
         };

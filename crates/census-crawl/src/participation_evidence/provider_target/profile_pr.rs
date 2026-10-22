@@ -16,6 +16,15 @@ pub fn read<'a>(
     site: UsJurisdiction,
     athlete_id: &str,
 ) -> StoreResult<CheckedProfilePrTableV1<'a>> {
+    read_if_published(capture, site, athlete_id)?
+        .ok_or_else(|| invalid("profile PR table is absent"))
+}
+
+pub fn read_if_published<'a>(
+    capture: &'a RetainedHtmlCaptureV1,
+    site: UsJurisdiction,
+    athlete_id: &str,
+) -> StoreResult<Option<CheckedProfilePrTableV1<'a>>> {
     let resource = PublicSourceResourceV1::milesplit_athlete_profile(athlete_id)
         .map_err(|_| invalid("profile PR athlete identity invalid"))?;
     let canonical = capture
@@ -27,7 +36,11 @@ pub fn read<'a>(
         .map_err(|_| invalid("profile PR requested owner differs"))?;
     let body = capture.body()?;
     markup::canonical(&body, canonical)?;
-    let table = markup::single(markup::elements(&body, b"table", Some("pr-table"))?)?;
+    let tables = markup::elements(&body, b"table", Some("pr-table"))?;
+    if tables.is_empty() {
+        return Ok(None);
+    }
+    let table = markup::single(tables)?;
     if table.attribute("id") != Some("prTable") {
         return Err(invalid("profile PR table identity differs"));
     }
@@ -37,13 +50,13 @@ pub fn read<'a>(
         &(INTERPRETATION, site, athlete_id, capture),
         MAX_PACKET,
     )?);
-    Ok(CheckedProfilePrTableV1 {
+    Ok(Some(CheckedProfilePrTableV1 {
         capture,
         athlete: SourceIdentity::new(SourceNamespace::MilesplitAthlete, athlete_id)
             .with_url(capture.requested_url().to_owned()),
         reference,
         rows,
-    })
+    }))
 }
 
 #[cfg(test)]

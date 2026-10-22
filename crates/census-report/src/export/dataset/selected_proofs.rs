@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 
 mod capture;
 mod identity;
-mod objects;
+pub(super) mod objects;
 mod version;
 pub(in crate::export::dataset) use version::Version;
 #[cfg(test)]
