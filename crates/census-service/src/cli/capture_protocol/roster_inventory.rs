@@ -24,7 +24,7 @@ const SCHOOL_BUDGET: ReadBudget = ReadBudget {
 };
 const TEAM_BUDGET: ReadBudget = ReadBudget {
     rows: 131_072,
-    bytes: 128 * 1024 * 1024,
+    bytes: 256 * 1024 * 1024,
     record_bytes: 1024 * 1024,
 };
 const MAX_PACKET_REFS: u64 = 65_536;

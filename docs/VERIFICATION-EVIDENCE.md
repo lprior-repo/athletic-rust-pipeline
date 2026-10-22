@@ -3549,3 +3549,50 @@ endpoint SHA-256 is
 Both are copied into the immutable release cache under the service hash.
 The actual corrected derivation remains pending. Publication, replay,
 cold-read acceptance and genuine five-state population are unfinished.
+
+### Bounded roster inventory and frozen proof refusals — 2026-10-22
+
+Actual read-only inventory 509, using immutable service `aef161d4...` against
+the stopped restored root, FAILED before emitting JSON: reading retained team
+bindings required 134,220,788 encoded bytes against the 134,217,728-byte bound.
+No intake, source review or identity authority was applied. Main reviewed GPU
+draft 515 (5090 HTTP 200, 13.273 seconds) and changed only the inventory team's
+aggregate byte limit from 128 to 256 MiB. The 131,072-row limit, 1-MiB record
+limit, 64-MiB school limit, 32-MiB output limit and all owner/conflict checks
+remain unchanged. Main retained the original file newline instead of replacing
+the whole file with the draft. PASS: canonical format 518, 21.944 seconds;
+check/lint 519, both tasks completed, 34.243 seconds overall; focused 520,
+all five tests passed (including actual CLI source review and cold receipt
+replay), 21.999 seconds execution and 68.718 seconds overall. Actual inventory
+success still requires a rebuilt CLI and a stopped owner; the larger bound is
+not an accepted roster or athlete count.
+
+Actual negative verifications 516 and 517 used an owned reflink copy of the
+complete but semantically failed 495b bundle, preserving its original manifest
+and frozen input. Removing proof
+`005db7e73775d97edc7e175cb10e20823d77310e8acef4e0e31ccbe05b268234`
+caused exit 1 with `selected proof directory differs from its authenticated
+object inventory`. Restoring that file, then changing exactly one byte without
+changing its length, caused exit 1 with `the frozen object does not hash to its
+name`. The changed proof hashes to
+`5bae56d9d17d0c187823910937b86da5bb29c6ff04907c8c119274f697c27cc3`;
+the original proof in copy 502 was independently rehashed to its original name.
+The supplied nonexistent `proof-reader-no-store-516` root remained absent.
+These establish fail-closed proof preflight on this retained input; they do not
+establish positive cold-read acceptance or repair the failed census sidecar.
+
+Release attempt 511 refused an unsupported `MOON_RUST_TEST_THREADS` override
+before running checks. Canonical clean-worktree retry 511b used exact pushed
+source `5ec71f91199e430e1bbdad56ad98a7acfd043ee7` without that override. Format,
+zero comments, architecture, check and docs passed. Tests FAILED: 7,299 of 9,237
+ran, 7,298 passed, one failed, 26 slow, 13 skipped, 307.480 seconds execution;
+the same National reconciliation checkpoint returned `Elapsed(())` after
+45.608 seconds. Fail-fast left other tests unrun. Main SIGINT-interrupted only
+its owned process group 768296 during subsequent panic extraction, verified
+that group exited, and retained the 14m47.696s interrupted Moon result. This is
+not a full release pass. The normal test task explicitly uses 16 concurrent
+tests, while the gate uses Nextest's default CPU count. [Nextest documents](https://nexte.st/docs/configuration/env-vars/)
+`NEXTEST_TEST_THREADS` as its supported concurrency setting; a controlled
+16-test retry can compare these configurations without changing any deadline,
+assertion, source rule, retry policy or required test. Concurrency as the cause
+of this timeout remains an inference until checked.
