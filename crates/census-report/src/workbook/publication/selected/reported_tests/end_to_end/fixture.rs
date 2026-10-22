@@ -22,6 +22,17 @@ pub(super) struct IncludedFixture {
 
 impl IncludedFixture {
     pub(super) fn new() -> TestResult<Self> {
+        Self::with_evidence(None)
+    }
+
+    pub(super) fn with_aggregate_evidence(
+        athlete_note: &str,
+        performance_note: &str,
+    ) -> TestResult<Self> {
+        Self::with_evidence(Some((athlete_note, performance_note)))
+    }
+
+    fn with_evidence(notes: Option<(&str, &str)>) -> TestResult<Self> {
         let directory = tempfile::tempdir()?;
         let root = directory.path().join("selected-store");
         Store::create_public_identity_qualification_v3(&root)?;
@@ -44,7 +55,7 @@ impl IncludedFixture {
             ),
             "2026-10-14",
         ));
-        let first = athlete(&school_id, "First Runner", "9501")?;
+        let mut first = athlete(&school_id, "First Runner", "9501")?;
         let second = athlete(&school_id, "Second Runner", "9502")?;
         let (team, first_meet, first_event) =
             event_context(&school_id, first.gender, "2026-04-10", "First 400m Meet")?;
@@ -60,7 +71,7 @@ impl IncludedFixture {
             "reported-50",
             "50.00",
         )?;
-        let faster_performance = performance(
+        let mut faster_performance = performance(
             &first,
             &team,
             &second_meet,
@@ -76,6 +87,18 @@ impl IncludedFixture {
             "reported-55",
             "55.00",
         )?;
+        if let Some((athlete_note, performance_note)) = notes {
+            first.evidence.first_mut().ok_or("athlete evidence")?.note =
+                Some(athlete_note.to_owned());
+            let mut additional = first.evidence.first().ok_or("athlete evidence")?.clone();
+            additional.note = Some(format!("{athlete_note}-additional"));
+            first.evidence.push(additional);
+            faster_performance
+                .evidence
+                .first_mut()
+                .ok_or("performance evidence")?
+                .note = Some(performance_note.to_owned());
+        }
         store.append(Table::Schools, &school)?;
         store.append_many(Table::Athletes, &[first.clone(), second.clone()])?;
         store.append(Table::Teams, &team)?;

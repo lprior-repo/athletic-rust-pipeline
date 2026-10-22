@@ -7,6 +7,8 @@ use std::collections::BTreeMap;
 mod fixture;
 #[path = "end_to_end/mutation.rs"]
 mod mutation;
+#[path = "end_to_end/overflow.rs"]
+mod overflow;
 #[path = "end_to_end/support.rs"]
 mod support;
 

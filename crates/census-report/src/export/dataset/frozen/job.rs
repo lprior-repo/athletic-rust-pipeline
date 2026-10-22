@@ -5,10 +5,33 @@ use std::path::Path;
 mod selected;
 pub(in crate::export::dataset) use selected::freshness::Freshness as SelectedJobFreshness;
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum InputMode {
+    CaptureOrResume,
+    ResumeOnly,
+}
+
 pub(in crate::export::dataset) fn capture(
     store: &Store,
     job: &str,
     request: &ExportJobRequest,
+) -> ReportResult<ExportDataset> {
+    open(store, job, request, InputMode::CaptureOrResume)
+}
+
+pub(in crate::export::dataset) fn resume(
+    store: &Store,
+    job: &str,
+    request: &ExportJobRequest,
+) -> ReportResult<ExportDataset> {
+    open(store, job, request, InputMode::ResumeOnly)
+}
+
+fn open(
+    store: &Store,
+    job: &str,
+    request: &ExportJobRequest,
+    mode: InputMode,
 ) -> ReportResult<ExportDataset> {
     if job.is_empty() || job.len() > 4096 {
         return Err(invalid("export job identity must contain 1..=4096 bytes"));
@@ -19,7 +42,7 @@ pub(in crate::export::dataset) fn capture(
         .map_err(|source| io_error(&directory, source))?;
     let lock_path = directory.join(format!("{digest}.lock"));
     let _lock = super::capture_lock(&lock_path)?;
-    capture_locked(store, job, &directory, &digest, request)
+    capture_locked(store, job, &directory, &digest, request, mode)
 }
 
 fn capture_locked(
@@ -28,6 +51,7 @@ fn capture_locked(
     directory: &Path,
     digest: &str,
     request: &ExportJobRequest,
+    mode: InputMode,
 ) -> ReportResult<ExportDataset> {
     let archive = directory.join(format!("{digest}.json"));
     let selected_root = directory.join(format!("{digest}.selected-v1"));
@@ -45,7 +69,7 @@ fn capture_locked(
             "legacy export job cannot become selected publication",
         ));
     }
-    selected::capture(store, job, selection, &selected_root)
+    selected::capture(store, job, selection, &selected_root, mode)
 }
 
 fn preflight(store: &Store, job: &str, lineage: &super::DatasetLineage) -> ReportResult<()> {

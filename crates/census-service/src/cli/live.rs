@@ -148,13 +148,26 @@ pub(super) async fn workbook(
 ) -> Result<WorkbookReply> {
     let key = workbook_request_key(&request, generation)?;
     log_submit("submitting workbook export", generation, key.as_str());
-    let Json(reply) = workbook_client(origin, key)?
+    let outcome = workbook_client(origin, key.clone())?
         .run(Json(request))
         .call()
         .await
-        .map_err(ingress::error)?
-        .into_body()
-        .map_err(ingress::error)?;
+        .and_then(|response| response.into_body());
+    let Json(reply) = match outcome {
+        Ok(reply) => reply,
+        Err(error)
+            if error
+                .response()
+                .is_some_and(|response| response.status().as_u16() == 409) =>
+        {
+            let origin = ingress::origin(origin);
+            let invocation_id = ingress::lookup_workflow(origin, "Workbook", &key).await?;
+            let handle: restate_sdk::ingress::InvocationHandle<CurrentRoute, Json<WorkbookReply>> =
+                ingress::job_client(origin)?.invocation_handle(invocation_id);
+            handle.attach().await.map_err(ingress::error)?.into_body()
+        }
+        Err(error) => return Err(ingress::error(error)),
+    };
     Ok(reply)
 }
 
@@ -222,3 +235,7 @@ pub(super) async fn drive_states(
 #[cfg(test)]
 #[path = "live_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "live_workbook_tests.rs"]
+mod workbook_tests;

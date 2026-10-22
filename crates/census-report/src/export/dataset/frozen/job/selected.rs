@@ -23,6 +23,7 @@ pub(super) fn capture(
     job: &str,
     selection: &ProfileSelectionV1,
     root: &Path,
+    mode: super::InputMode,
 ) -> ReportResult<ExportDataset> {
     let pending = pending(root);
     if present(root)? {
@@ -37,6 +38,11 @@ pub(super) fn capture(
                 .ok_or_else(|| invalid("selected job has no parent"))?,
         )?;
         return Ok(dataset);
+    }
+    if mode == super::InputMode::ResumeOnly {
+        return Err(invalid(
+            "resuming publication requires an existing frozen input; no new input was captured",
+        ));
     }
     let (dataset, archive_digest) = if !present(&pending)? {
         let (mut prepared, archive_digest) = prepare(store, job, selection, &pending)?;

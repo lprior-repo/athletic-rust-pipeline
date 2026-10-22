@@ -152,7 +152,7 @@ fn reported_values(
     let school = projection.source.schools.get(&athlete.school);
     row.extend([
         Value::text(source_ids),
-        Value::text(evidence),
+        expected_evidence(&evidence),
         Value::text(athlete.school.as_str()),
         Value::optional(
             school
@@ -162,4 +162,19 @@ fn reported_values(
         Value::optional(school.map(|school| school.name.as_str())),
     ]);
     Ok(row)
+}
+
+fn expected_evidence(value: &str) -> Value {
+    use sha2::{Digest, Sha256};
+
+    let units = value.encode_utf16().count();
+    match units {
+        0..=32_767 => Value::text(value),
+        _ => {
+            let digest = Sha256::digest(value.as_bytes());
+            Value::text(format!(
+                "Excel display overflow: {units} UTF-16 units; SHA-256 {digest:x}; full evidence in frozen-input.json; performance evidence in reported_performances.csv"
+            ))
+        }
+    }
 }

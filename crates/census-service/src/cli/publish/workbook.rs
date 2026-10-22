@@ -4,8 +4,8 @@ use census_domain::UsJurisdiction;
 use census_report::export::{ExportDataset, ExportJobRequest};
 use census_report::workbook;
 use census_service::restate_services::{
-    reject_offline_generation, ExportGeneration, PublicationContract, WorkbookReply,
-    WorkbookRequest,
+    reject_offline_generation, workbook_request_key, ExportGeneration, PublicationContract,
+    WorkbookReply, WorkbookRequest,
 };
 use census_store::Store;
 use clap::Args;
@@ -56,6 +56,12 @@ pub(crate) struct WorkbookArgs {
     generation: Option<String>,
     #[arg(
         long,
+        requires_all = ["generation", "selected_store_identity", "selected_profile_id"],
+        help = "Resume an existing native workbook frozen input with the same request and generation; requires --store and a stopped owner, and never captures new input"
+    )]
+    resume_frozen: bool,
+    #[arg(
+        long,
         value_name = "STORE_IDENTITY",
         help = "Store identity for the selected publication; requires --selected-profile-id"
     )]
@@ -74,6 +80,10 @@ pub(crate) struct WorkbookArgs {
 }
 
 pub(crate) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
+    anyhow::ensure!(
+        !args.resume_frozen || cli.store.is_some(),
+        "--resume-frozen requires explicit --store and a stopped owner"
+    );
     let grad_year = publication_preflight::publication_cohort(
         args.grad_year,
         args.selected_store_identity.is_some() || args.selected_profile_id.is_some(),
@@ -141,13 +151,14 @@ fn run_workbook_offline(
             let request = publication_preflight::selected_request(store_identity, profile_id)?;
             let generation = ExportGeneration::resolve(args.generation.as_deref())?;
             let store = publication_preflight::open_selected_store(root)?;
-            build_offline_selected(&store, options, &request, &generation)
+            build_offline_selected(&store, args, options, &request, &generation)
         }
     }
 }
 
 fn build_offline_selected(
     store: &Store,
+    args: &WorkbookArgs,
     requested: &workbook::Options,
     request: &ExportJobRequest,
     generation: &ExportGeneration,
@@ -155,18 +166,28 @@ fn build_offline_selected(
     let selection = request.require_selected_publication();
     let options = workbook::options_for_selected_request(store, selection, requested)
         .context("binding workbook options to the selected profile")?;
-    let job = format!(
-        "cli-workbook-selected-v1-{}-{}-{}",
-        generation.as_str(),
-        selection.store_identity().as_str(),
-        selection.profile_id().as_str()
-    );
-    let dataset = ExportDataset::for_job_request(store, &job, request)
-        .context("capturing the selected workbook input")?;
+    let dataset = if args.resume_frozen {
+        let native = workbook_request(requested, request);
+        let job = format!("workbook:{}", workbook_request_key(&native, generation)?);
+        ExportDataset::resume_job_request(store, &job, request)
+            .context("resuming the existing native workbook input")?
+    } else {
+        let job = format!(
+            "cli-workbook-selected-v1-{}-{}-{}",
+            generation.as_str(),
+            selection.store_identity().as_str(),
+            selection.profile_id().as_str()
+        );
+        ExportDataset::for_job_request(store, &job, request)
+            .context("capturing the selected workbook input")?
+    };
     let censuses = workbook::Censuses::of(&dataset, &store.out_dir(), &options.jurisdictions)?;
     workbook::build_from(&dataset, store, &options, &censuses)
         .context("building the selected census workbook")
 }
+
+#[cfg(test)]
+mod tests;
 
 async fn run_workbook_live(
     origin: &str,
@@ -177,19 +198,31 @@ async fn run_workbook_live(
     export_job: &ExportJobRequest,
 ) -> Result<()> {
     let generation = ExportGeneration::resolve(args.generation.as_deref())?;
-    let request = WorkbookRequest {
+    let options = workbook::Options {
         grad_year,
         limit: args.limit,
-        scope: Some(scope_of(args.core).as_str().to_string()),
-        out: args
-            .out
-            .as_ref()
-            .map(|path| path.to_string_lossy().into_owned()),
-        school_year: Some(contact_season.get()),
+        scope: scope_of(args.core),
+        out: args.out.clone(),
+        school_year: contact_season,
         jurisdictions: jurisdictions.to_vec(),
-        export_job: export_job.clone(),
     };
+    let request = workbook_request(&options, export_job);
     let WorkbookReply { path, .. } = live::workbook(Some(origin), request, &generation).await?;
     println!("wrote {path}");
     Ok(())
+}
+
+fn workbook_request(options: &workbook::Options, export_job: &ExportJobRequest) -> WorkbookRequest {
+    WorkbookRequest {
+        grad_year: options.grad_year,
+        limit: options.limit,
+        scope: Some(options.scope.as_str().to_string()),
+        out: options
+            .out
+            .as_ref()
+            .map(|path| path.to_string_lossy().into_owned()),
+        school_year: Some(options.school_year.get()),
+        jurisdictions: options.jurisdictions.clone(),
+        export_job: export_job.clone(),
+    }
 }

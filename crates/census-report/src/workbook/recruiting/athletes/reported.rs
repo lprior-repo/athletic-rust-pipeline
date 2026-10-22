@@ -5,6 +5,9 @@ use std::collections::BTreeSet;
 
 mod summaries;
 
+#[cfg(test)]
+mod evidence_tests;
+
 pub(super) const HEADERS: [&str; 5] = [
     "Reported Source Person IDs",
     "Reported Source Evidence",
@@ -110,7 +113,7 @@ fn append_sources(
     let school = projection.source.schools.get(&athlete.school);
     result.extend(row!(
         Cell::text(identities),
-        Cell::text(evidence),
+        evidence_cell(evidence),
         Cell::text(athlete.school.as_str()),
         school
             .and_then(|school| school.state)
@@ -124,4 +127,17 @@ fn encoding(error: serde_json::Error) -> crate::report::ReportError {
     crate::report::ReportError::Invariant {
         detail: format!("encoding reported athlete source evidence: {error}"),
     }
+}
+
+fn evidence_cell(value: String) -> Cell {
+    use sha2::{Digest, Sha256};
+
+    let units = value.encode_utf16().count();
+    if units <= 32_767 {
+        return Cell::text(value);
+    }
+    let digest = Sha256::digest(value.as_bytes());
+    Cell::text(format!(
+        "Excel display overflow: {units} UTF-16 units; SHA-256 {digest:x}; full evidence in frozen-input.json; performance evidence in reported_performances.csv"
+    ))
 }
