@@ -6,7 +6,6 @@ use crate::public_identity::{
 use crate::{StoreError, StoreResult};
 use census_domain::public_identity_history::{
     genesis, prepare_next, replay_candidate_history, DecodedCandidateHistory, HistoryRecord,
-    ReplayLimits,
 };
 use census_domain::public_identity_qualification::{
     PublicIdentityQualification, PublicIdentityQualificationVersion,
@@ -35,8 +34,13 @@ pub(in crate::public_identity) fn validate_graph_retained(
     }
     let identity = declaration.store_identity();
     let initial = genesis(identity).map_err(PublicIdentityError::from)?;
-    let prefix = replay_candidate_history(identity, &initial, &[], ReplayLimits::SMALL)
-        .map_err(PublicIdentityError::from)?;
+    let prefix = replay_candidate_history(
+        identity,
+        &initial,
+        &[],
+        crate::public_identity::REPLAY_LIMITS,
+    )
+    .map_err(PublicIdentityError::from)?;
     let mut sources = SourceReplayCache::default();
     let (prefix, _) = history.records().iter().try_fold(
         (prefix, BTreeSet::new()),
@@ -45,7 +49,7 @@ pub(in crate::public_identity) fn validate_graph_retained(
                 identity,
                 prefix.head(),
                 record.request.clone(),
-                ReplayLimits::SMALL,
+                crate::public_identity::REPLAY_LIMITS,
             )
             .map_err(PublicIdentityError::from)?;
             if &prepared.uncommitted_record != record {

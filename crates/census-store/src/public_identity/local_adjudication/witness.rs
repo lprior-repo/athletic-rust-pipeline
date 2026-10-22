@@ -8,7 +8,7 @@ use crate::StoreResult;
 use census_domain::model::{serialized_digest, StoreIdentity};
 use census_domain::public_identity_history::local_adjudication::LocalIdentityAdjudicationRecordV2;
 use census_domain::public_identity_history::{
-    prepare_next, HistoryProjection, HistoryRecord, PreparedHistoryRecord, ReplayLimits,
+    prepare_next, HistoryProjection, HistoryRecord, PreparedHistoryRecord,
 };
 use census_domain::public_identity_qualification::PublicIdentityQualificationVersion;
 use serde::{Deserialize, Serialize};
@@ -97,8 +97,13 @@ impl LocalAdjudicationWitnessV1 {
         let request = record
             .history_request(&claims)
             .map_err(PublicIdentityError::from)?;
-        let replayed = prepare_next(identity, previous.head(), request, ReplayLimits::SMALL)
-            .map_err(PublicIdentityError::from)?;
+        let replayed = prepare_next(
+            identity,
+            previous.head(),
+            request,
+            crate::public_identity::REPLAY_LIMITS,
+        )
+        .map_err(PublicIdentityError::from)?;
         if &replayed != prepared {
             return Err(
                 PublicIdentityError::Corrupt("manual historical correction binding").into(),

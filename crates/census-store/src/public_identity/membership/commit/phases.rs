@@ -36,8 +36,13 @@ pub(super) fn prepare(
         &accepted,
         ledger.history.projection(),
     )?;
-    let prepared = prepare_next(&writer.identity, head, authorized, ReplayLimits::SMALL)
-        .map_err(PublicIdentityError::from)?;
+    let prepared = prepare_next(
+        &writer.identity,
+        head,
+        authorized,
+        crate::public_identity::REPLAY_LIMITS,
+    )
+    .map_err(PublicIdentityError::from)?;
     if !prepared.established_ids.is_empty() {
         return Err(PublicIdentityError::Corrupt("membership introduced public IDs").into());
     }

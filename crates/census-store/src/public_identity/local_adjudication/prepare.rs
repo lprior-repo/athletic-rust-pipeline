@@ -45,6 +45,7 @@ impl PublicIdentityWriterV1 {
         expected: StoreRevision<'s>,
         head: &RegistryHead,
     ) -> StoreResult<PreparedLocalAdjudicationV1<'s>> {
+        crate::public_identity::commit::source_batch::refuse_child_operation(operation)?;
         let digest = request_digest(&self.identity, operation, &request)?;
         let mut capture = graph_operation::begin(self, store, operation, &digest, expected, head)?;
         #[cfg(test)]

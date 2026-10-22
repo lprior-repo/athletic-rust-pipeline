@@ -6,7 +6,7 @@ use census_domain::model::{
 };
 use census_domain::public_identity_history::{
     BindingResolution, CandidateDecisionReference, CandidateMembershipClaimV1, HistoryProjection,
-    HistoryRequest, PublicAthleteId, PublicResolution, ReplayLimits,
+    HistoryRequest, PublicAthleteId, PublicResolution,
 };
 use serde::{Deserialize, Serialize};
 
@@ -31,7 +31,7 @@ pub(in crate::public_identity) fn digest(
         request.anchor_binding_id.as_str(),
     ] {
         if text.is_empty()
-            || text.len() > ReplayLimits::SMALL.text_bytes
+            || text.len() > crate::public_identity::REPLAY_LIMITS.text_bytes
             || text.chars().any(char::is_control)
         {
             return Err(PublicIdentityError::OperationConflict.into());
@@ -107,8 +107,9 @@ pub(in crate::public_identity) fn authorized_rows(
     {
         return Err(PublicIdentityError::NotSourceBound.into());
     }
-    let evidence = CandidateDecisionReference::from_accepted(accepted, ReplayLimits::SMALL)
-        .map_err(PublicIdentityError::from)?;
+    let evidence =
+        CandidateDecisionReference::from_accepted(accepted, crate::public_identity::REPLAY_LIMITS)
+            .map_err(PublicIdentityError::from)?;
     Ok(HistoryRequest::BindCandidateMembership {
         owner: request.owner.clone(),
         membership: CandidateMembershipClaimV1 {

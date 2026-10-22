@@ -8,7 +8,7 @@ pub(in crate::public_identity) use members::{member_rows, members, review_case};
 #[cfg(test)]
 mod tests;
 
-const BUDGET: crate::read::ReadBudget = crate::read::ReadBudget {
+pub(in crate::public_identity) const BUDGET: crate::read::ReadBudget = crate::read::ReadBudget {
     rows: 1_048_576,
     bytes: 512 * 1024 * 1024,
     record_bytes: 1024 * 1024,

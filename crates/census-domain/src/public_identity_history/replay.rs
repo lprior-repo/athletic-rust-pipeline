@@ -4,8 +4,11 @@ use crate::model::{AthleteCandidateId, StoreIdentity};
 
 use super::{
     budget, genesis, record, request_order, BindingClaim, EstablishmentOrdinal, HistoryError,
-    HistoryRecord, HistoryRequest, PublicAthleteId, RegistryHead, ReplayLimits,
+    HistoryRecord, HistoryRequest, PublicAthleteId, RegistryHead, ReplayLimits, SourceObjectKey,
 };
+
+#[cfg(test)]
+mod index_tests;
 
 #[derive(Debug, Clone)]
 pub(super) enum IdentityState {
@@ -52,6 +55,10 @@ pub struct HistoryProjection {
     pub(super) identities: BTreeMap<PublicAthleteId, IdentityEntry>,
     pub(super) bindings: BTreeMap<String, BindingEntry>,
     pub(super) memberships: BTreeMap<String, super::membership::MembershipEntry>,
+    // Derived from retained claims; stable IDs preserve live ownership after corrections.
+    pub(super) candidate_bindings: BTreeMap<AthleteCandidateId, BTreeSet<String>>,
+    pub(super) candidate_memberships: BTreeMap<AthleteCandidateId, BTreeSet<String>>,
+    pub(super) source_bindings: BTreeMap<SourceObjectKey, BTreeSet<String>>,
     pub(super) withheld: BTreeMap<u64, Vec<String>>,
     pub(super) merges: BTreeMap<u64, MergeEntry>,
     pub(super) applications: BTreeSet<String>,
@@ -90,6 +97,9 @@ impl HistoryProjection {
             identities: BTreeMap::new(),
             bindings: BTreeMap::new(),
             memberships: BTreeMap::new(),
+            candidate_bindings: BTreeMap::new(),
+            candidate_memberships: BTreeMap::new(),
+            source_bindings: BTreeMap::new(),
             withheld: BTreeMap::new(),
             merges: BTreeMap::new(),
             applications: BTreeSet::new(),

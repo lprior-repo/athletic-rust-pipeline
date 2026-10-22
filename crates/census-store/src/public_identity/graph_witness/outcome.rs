@@ -8,7 +8,7 @@ use crate::public_identity::{
 };
 use crate::StoreResult;
 use census_domain::public_identity_history::{
-    prepare_next, HistoryRecord, PublicAthleteId, RegistryHead, ReplayLimits,
+    prepare_next, HistoryRecord, PublicAthleteId, RegistryHead,
 };
 impl HeldGraphWitness {
     pub(in crate::public_identity) fn outcome(
@@ -52,7 +52,7 @@ impl HeldGraphWitness {
                     &record.installation,
                     &record.previous,
                     record.request.clone(),
-                    ReplayLimits::SMALL,
+                    crate::public_identity::REPLAY_LIMITS,
                 )
                 .map_err(PublicIdentityError::from)?
                 .established_ids,

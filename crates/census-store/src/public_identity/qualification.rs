@@ -116,6 +116,7 @@ pub(crate) fn require_legacy(
         || has_prefix(snapshot, meta, "public_identity")?
         || has_prefix(snapshot, journal, "public_identity")?
         || has_prefix(snapshot, receipts, "public_identity")?
+        || has_prefix(snapshot, receipts, "source-cohort-v1:")?
     {
         return Err(PublicIdentityError::OptInRequired.into());
     }
@@ -165,6 +166,13 @@ pub(crate) fn validate(
             super::witness::verify_count(snapshot, journal, history.records().len())?;
             super::witness::verify_count(snapshot, receipts, history.records().len())?;
             graph_witnesses::validate_graph_retained(&reader, &history, &declaration)?;
+            super::commit::source_batch::audit(
+                snapshot,
+                journal,
+                receipts,
+                declaration.store_identity(),
+                history.records(),
+            )?;
         }
         _ => witnesses::validate(
             snapshot,

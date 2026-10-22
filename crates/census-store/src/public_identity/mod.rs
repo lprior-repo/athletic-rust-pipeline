@@ -24,6 +24,8 @@ mod init;
 pub(crate) use init::create_historical_test_fixture;
 mod input_revisions;
 mod inventory;
+mod limits;
+pub(crate) use limits::REPLAY_LIMITS;
 mod membership;
 mod membership_withholding;
 pub use membership::{SourceCandidateMembershipOutcomeV1, SourceCandidateMembershipRequestV1};
@@ -47,7 +49,7 @@ pub(crate) const OPERATION_PREFIX: &str = "public_identity_v1:";
 pub(crate) const DECLARATION: &str = "public_identity:v1:qualification";
 const HEAD: &str = "public_identity:v1:head";
 const HISTORY: &str = "public_identity:v1:history";
-pub const MAX_PUBLIC_IDENTITY_HISTORY_BYTES: usize = 16 * 1024 * 1024;
+pub const MAX_PUBLIC_IDENTITY_HISTORY_BYTES: usize = 256 * 1024 * 1024;
 
 pub use correction::{ReviewedIdentityCommitOutcomeV1, ReviewedIdentityRequestV1};
 pub use frozen::{
@@ -77,10 +79,14 @@ pub(crate) fn is_graph_qualification_lifecycle(revision: Option<u32>) -> bool {
 }
 
 pub(crate) fn refuse_reserved(value: &str) -> crate::StoreResult<()> {
-    if value.starts_with("public_identity") {
+    if is_reserved_operation(value.as_bytes()) {
         return Err(PublicIdentityError::ReservedWrite.into());
     }
     Ok(())
+}
+
+pub(crate) fn is_reserved_operation(value: &[u8]) -> bool {
+    value.starts_with(b"public_identity") || commit::source_batch::is_reserved_operation(value)
 }
 
 pub(crate) fn refuse_identity_write(

@@ -1,15 +1,20 @@
 use census_domain::model::{
-    Grade, ObservedGrade, SchoolYear, SourceAthleteObservation, SourceNamespace, SourceObservation,
-    SourceRef,
+    CanonicalAthlete, Grade, ObservedGrade, SchoolYear, SourceAthleteObservation, SourceNamespace,
+    SourceObservation, SourceRef,
 };
+use census_domain::public_identity_history::{
+    CandidateHistorySeed, HistoryRequest, RegistryHead, ReplayLimits,
+};
+use serde::de::DeserializeSeed;
 
 use super::support::{refused, PhysicalState};
 use super::*;
+use crate::{IdentityCommitOutcomeV1, PublicIdentityWriterV1, StoreRevision};
 
 const AUTHORITY_ROWS: u64 = 8_192;
 
 #[test]
-fn public_identity_enrichment_budget_refusal_discards_local_prefix_and_preserves_replay(
+fn public_identity_explicit_enrichment_refusal_and_wider_production_admission_preserve_replay(
 ) -> TestResult {
     let (directory, store, writer) = fixture()?;
     let prior = subject("enrichment-prior", "905")?;
@@ -26,7 +31,59 @@ fn public_identity_enrichment_budget_refusal_discards_local_prefix_and_preserves
     )?;
     let grade = matching_grade()?;
     append_legal_source_rows(&store, &grade)?;
-    let before = wide_state(&store)?;
+    assert_bounded_enrichment_refusal(&store, &pending)?;
+    let pending_revision = store.snapshot().revision();
+    let admitted = writer.establish_source_bound(
+        &store,
+        "enrichment-pending",
+        &pending.id.cast(),
+        pending_revision,
+        committed.head(),
+    )?;
+    check!(!admitted.replayed());
+    check!(eq; admitted.head().sequence, committed.head().sequence.checked_add(1).ok_or("head overflow")?);
+    check!(eq; writer.head(&store)?, *admitted.head());
+    check!(eq; store.count(Table::AthleteIdentityDecisions)?, 2);
+    assert_source_binding(&store, &pending, admitted.head())?;
+    let persisted = wide_state(&store)?;
+    assert_replay(
+        &store,
+        &writer,
+        ("enrichment-pending", &pending),
+        (pending_revision, committed.head()),
+        &admitted,
+    )?;
+    assert_replay(
+        &store,
+        &writer,
+        ("enrichment-prior", &prior),
+        (original_revision, &original_head),
+        &committed,
+    )?;
+    drop(writer);
+    drop(store);
+    let root = directory.path().join("identity");
+    let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
+    for (operation, athlete, head, outcome) in [
+        ("enrichment-pending", &pending, committed.head(), &admitted),
+        ("enrichment-prior", &prior, &original_head, &committed),
+    ] {
+        assert_replay(
+            &store,
+            &writer,
+            (operation, athlete),
+            (store.snapshot().revision(), head),
+            outcome,
+        )?;
+    }
+    check!(eq; writer.head(&store)?, *admitted.head());
+    check!(eq; store.count(Table::AthleteIdentityDecisions)?, 2);
+    check!(eq; wide_state(&store)?, persisted);
+    Ok(())
+}
+
+fn assert_bounded_enrichment_refusal(store: &Store, pending: &CanonicalAthlete) -> TestResult {
+    let before = wide_state(store)?;
     let mut local = vec![pending.clone()];
     let error = refused(
         store
@@ -36,61 +93,49 @@ fn public_identity_enrichment_budget_refusal_discards_local_prefix_and_preserves
     assert_budget(error)?;
     check!(eq; local, vec![pending.clone()]);
     check!(pending.observed_grades.is_empty());
-    check!(eq; wide_state(&store)?, before);
-    let error = refused(writer.establish_source_bound(
-        &store,
-        "enrichment-pending",
-        &pending.id.cast(),
-        store.snapshot().revision(),
-        committed.head(),
-    ))?;
-    assert_budget(error)?;
-    check!(eq; writer.head(&store)?, *committed.head());
-    check!(eq; store.count(Table::AthleteIdentityDecisions)?, 1);
-    let staged = wide_state(&store)?;
-    super::support::assert_graph_staging_bounded(
-        &store,
-        &before,
-        &staged,
-        writer.store_identity(),
-        "enrichment-pending",
-        10_000,
-    )?;
-    let retry = refused(writer.establish_source_bound(
-        &store,
-        "enrichment-pending",
-        &pending.id.cast(),
-        store.snapshot().revision(),
-        committed.head(),
-    ))?;
-    assert_budget(retry)?;
-    check!(eq; wide_state(&store)?, staged);
-    let repeated = writer.establish_source_bound(
-        &store,
-        "enrichment-prior",
-        &prior.id.cast(),
-        original_revision,
-        &original_head,
-    )?;
+    check!(eq; wide_state(store)?, before);
+    Ok(())
+}
+
+fn assert_replay(
+    store: &Store,
+    writer: &PublicIdentityWriterV1,
+    request: (&str, &CanonicalAthlete),
+    fence: (StoreRevision<'_>, &RegistryHead),
+    committed: &IdentityCommitOutcomeV1,
+) -> TestResult {
+    let before = wide_state(store)?;
+    let repeated =
+        writer.establish_source_bound(store, request.0, &request.1.id.cast(), fence.0, fence.1)?;
     check!(repeated.replayed());
     check!(eq; repeated.public_id(), committed.public_id());
     check!(eq; repeated.head(), committed.head());
-    check!(eq; wide_state(&store)?, staged);
-    drop(writer);
-    drop(store);
-    let root = directory.path().join("identity");
-    let (store, writer) = Store::open_public_identity_qualification_v3(&root)?.into_parts();
-    let repeated = writer.establish_source_bound(
-        &store,
-        "enrichment-prior",
-        &prior.id.cast(),
-        store.snapshot().revision(),
-        &original_head,
-    )?;
-    check!(repeated.replayed());
-    check!(eq; repeated.public_id(), committed.public_id());
-    check!(eq; repeated.head(), committed.head());
-    check!(eq; wide_state(&store)?, staged);
+    check!(eq; wide_state(store)?, before);
+    Ok(())
+}
+
+fn assert_source_binding(
+    store: &Store,
+    pending: &CanonicalAthlete,
+    head: &RegistryHead,
+) -> TestResult {
+    let identity = store.store_identity()?;
+    let raw = store
+        .meta
+        .get("public_identity:v1:history")?
+        .ok_or("history")?;
+    let mut parser = serde_json::Deserializer::from_slice(&raw);
+    let history =
+        CandidateHistorySeed::new(&identity, head, ReplayLimits::SMALL).deserialize(&mut parser)?;
+    parser.end()?;
+    check!(eq; history.records().len(), 2);
+    let record = history.records().get(1).ok_or("pending history record")?;
+    let HistoryRequest::Establish { binding, .. } = &record.request else {
+        return Err("expected source establishment".into());
+    };
+    check!(eq; binding.candidate, pending.id.cast());
+    check!(eq; binding.source.namespace, SourceNamespace::MilesplitAthlete);
+    check!(eq; binding.source.identifier, "906");
     Ok(())
 }
 

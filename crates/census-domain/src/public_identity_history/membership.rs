@@ -34,6 +34,32 @@ impl HistoryProjection {
             )
     }
 
+    pub(super) fn candidate_claims(
+        &self,
+        candidate: &AthleteCandidateId,
+    ) -> impl Iterator<Item = (&str, &AthleteCandidateId, Option<&PublicAthleteId>)> {
+        self.candidate_bindings
+            .get(candidate)
+            .into_iter()
+            .flat_map(|ids| ids.iter())
+            .filter_map(move |id| {
+                self.bindings
+                    .get(id)
+                    .map(|entry| (id.as_str(), &entry.claim.candidate, entry.owner.as_ref()))
+            })
+            .chain(
+                self.candidate_memberships
+                    .get(candidate)
+                    .into_iter()
+                    .flat_map(|ids| ids.iter())
+                    .filter_map(move |id| {
+                        self.memberships.get(id).map(|entry| {
+                            (id.as_str(), &entry.claim.candidate, entry.owner.as_ref())
+                        })
+                    }),
+            )
+    }
+
     pub(super) fn claim_candidate(&self, id: &str) -> Option<&AthleteCandidateId> {
         self.bindings
             .get(id)
@@ -124,6 +150,10 @@ impl HistoryProjection {
                 established_at: sequence,
             },
         );
+        self.candidate_memberships
+            .entry(claim.candidate.clone())
+            .or_default()
+            .insert(claim.id.clone());
         let entry = self
             .identities
             .get_mut(owner)
@@ -162,14 +192,7 @@ impl HistoryProjection {
             .bindings
             .get(&claim.anchor_binding_id)
             .ok_or(HistoryError::Unknown("membership anchor"))?;
-        if self
-            .bindings
-            .values()
-            .filter(|binding| binding.claim.source == claim.source)
-            .take(2)
-            .count()
-            != 1
-        {
+        if self.source_claims(&claim.source).take(2).count() != 1 {
             return Err(HistoryError::SourceEpochEvidenceRequired);
         }
         if anchor.superseded_by.is_some()

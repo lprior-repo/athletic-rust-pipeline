@@ -1,4 +1,5 @@
 mod source;
+pub(in crate::public_identity) mod source_batch;
 use source::{finish_source, prepare_source};
 mod decision;
 #[cfg(feature = "native-fault-injection")]
@@ -15,7 +16,7 @@ use crate::{Store, StoreError, StoreResult, StoreRevision};
 use census_domain::model::{serialized_digest, AthleteCandidateId, StoreIdentity};
 use census_domain::public_identity_history::{
     prepare_next, BindingClaim, CandidateDecisionReference, EffectiveScope, HistoryRecord,
-    HistoryRequest, PublicResolution, RegistryHead, ReplayLimits, SourceObjectKey,
+    HistoryRequest, PublicResolution, RegistryHead, SourceObjectKey,
 };
 use fjall::PersistMode;
 
@@ -28,6 +29,7 @@ impl PublicIdentityWriterV1 {
         expected: StoreRevision<'_>,
         head: &RegistryHead,
     ) -> StoreResult<IdentityCommitOutcomeV1> {
+        source_batch::refuse_child_operation(operation)?;
         let guard = store.lock_appends();
         expected.ensure_origin(store, operation)?;
         self.require_current_qualification()?;

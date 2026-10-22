@@ -17,7 +17,6 @@ use census_domain::public_identity_history::local_membership_withholding::{
 };
 use census_domain::public_identity_history::{
     prepare_next, HistoryProjection, PreparedHistoryRecord, PublicAthleteId, RegistryHead,
-    ReplayLimits,
 };
 impl PublicIdentityWriterV1 {
     pub fn inspect_membership_withholding(
@@ -49,6 +48,7 @@ impl PublicIdentityWriterV1 {
         expected: StoreRevision<'s>,
         head: &RegistryHead,
     ) -> StoreResult<PreparedMembershipWithholdingV1<'s>> {
+        crate::public_identity::commit::source_batch::refuse_child_operation(operation)?;
         let digest = request_digest(&self.identity, operation, &request)?;
         let mut capture = graph_operation::begin(self, store, operation, &digest, expected, head)?;
         #[cfg(test)]
@@ -180,7 +180,7 @@ pub(super) fn prepare_history(
         &record.store,
         &record.expected_head,
         request,
-        ReplayLimits::SMALL,
+        crate::public_identity::REPLAY_LIMITS,
     )
     .map_err(PublicIdentityError::from)?;
     let after = projection

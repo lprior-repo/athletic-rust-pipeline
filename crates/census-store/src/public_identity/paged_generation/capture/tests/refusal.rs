@@ -33,7 +33,7 @@ fn oversize_physical_row_refuses_before_reservation_or_objects() -> TestResult {
 }
 
 #[test]
-fn aggregate_admission_refuses_before_reservation_or_objects() -> TestResult {
+fn aggregate_above_former_admission_limit_captures_and_replays_without_new_charges() -> TestResult {
     let (_directory, store, writer) = enrolled()?;
     let mut batch = store.db.batch();
     for index in 0..97 {
@@ -73,25 +73,50 @@ fn aggregate_admission_refuses_before_reservation_or_objects() -> TestResult {
         measured > 128 * 1024 * 1024,
         "aggregate fixture measured only {measured} bytes"
     );
+    let before_authority = super::concurrency::authority_state(&store, &writer)?;
     let id = operation("aggregate-budget")?;
-    let result = writer.capture_raw_generation_v2(&store, &id);
+    let outcome = writer.capture_raw_generation_v2(&store, &id)?;
+    check!(matches!(
+        &outcome,
+        RawGenerationCaptureOutcomeV2::Captured(_)
+    ));
+    let retained = outcome.retained().clone();
+    let seal = retained.verify(&store.snapshot())?;
+    check!(eq;seal.declared_inventory().rows(), 97);
+    let reserved = load_graph(&store, writer.store_identity(), &id)?.ok_or("graph reservation")?;
+    check!(reserved.is_complete(&store)?);
+    check!(eq;reserved.capture(), retained.binding());
+    check!(eq;reserved.seal(), retained.seal());
     let after = diagnostic::journal_state(&store)?;
-    eprintln!("aggregate capture result={result:?}; measured_physical_bytes={measured}; sequence={sequence}->{}; journal/header before={before:?}; after={after:?}", store.snapshot().sequence());
-    match &result {
-        Err(StoreError::PublicIdentity(crate::PublicIdentityError::AdmissionCapacity {
-            resource: crate::PublicIdentityAdmissionResource::Bytes,
-            needed,
-            available,
-        })) => {
-            check!(eq;*available, 128 * 1024 * 1024);
-            check!(*needed > *available);
-            check!(*needed >= measured);
-        }
-        other => return Err(format!("unexpected aggregate refusal: {other:?}").into()),
-    }
-    check!(eq;diagnostic::physical_state(&store)?, before_physical);
-    check!(eq;after, before);
-    check!(load_graph(&store, writer.store_identity(), &id)?.is_none());
+    let admission: serde_json::Value = serde_json::from_slice(&after.2)?;
+    let charged_bytes = admission
+        .get("bytes")
+        .and_then(serde_json::Value::as_u64)
+        .ok_or("admission bytes")?;
+    check!(charged_bytes > 128 * 1024 * 1024);
+    check!(charged_bytes >= measured);
+    check!(eq;
+        admission.get("reservations").and_then(serde_json::Value::as_u64),
+        Some(1)
+    );
+    check!(eq;
+        admission.get("roots").and_then(serde_json::Value::as_u64),
+        Some(u64::from(seal.inventory_including_seal(retained.seal())?.object_count()))
+    );
+    check!(eq;super::concurrency::authority_state(&store, &writer)?, before_authority);
+    let captured_sequence = store.snapshot().sequence();
+    let captured_physical = diagnostic::physical_state(&store)?;
+    let replay = writer.capture_raw_generation_v2(&store, &id)?;
+    check!(matches!(
+        &replay,
+        RawGenerationCaptureOutcomeV2::HistoricalReplay(_)
+    ));
+    check!(eq;replay.retained(), &retained);
+    replay.retained().verify(&store.snapshot())?;
+    check!(eq;store.snapshot().sequence(), captured_sequence);
+    check!(eq;diagnostic::journal_state(&store)?, after);
+    check!(eq;diagnostic::physical_state(&store)?, captured_physical);
+    check!(eq;super::concurrency::authority_state(&store, &writer)?, before_authority);
     Ok(())
 }
 

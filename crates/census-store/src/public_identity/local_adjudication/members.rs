@@ -2,7 +2,7 @@ use crate::public_identity::PublicIdentityError;
 use crate::{StoreError, StoreResult};
 use census_domain::model::{AthleteCandidateId, CanonicalAthlete};
 use census_domain::public_identity_history::{
-    HistoryProjection, PublicAthleteId, PublicResolution, ReplayLimits,
+    HistoryProjection, PublicAthleteId, PublicResolution,
 };
 
 pub(in crate::public_identity) struct Members<'a> {
@@ -39,7 +39,7 @@ impl<'a> Members<'a> {
         if &current != self.canonical {
             return Ok(());
         }
-        if self.members.len() >= ReplayLimits::SMALL.members_per_operation {
+        if self.members.len() >= crate::public_identity::REPLAY_LIMITS.members_per_operation {
             return Err(PublicIdentityError::Corrupt("manual member bound").into());
         }
         self.members

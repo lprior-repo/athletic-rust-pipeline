@@ -1,5 +1,5 @@
 mod graph_effects;
-pub(crate) use graph_effects::{assert_graph_staging, assert_graph_staging_bounded};
+pub(crate) use graph_effects::assert_graph_staging;
 
 use std::path::Path;
 

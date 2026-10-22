@@ -23,8 +23,11 @@ impl HeldGraphWitness {
         if digest != self.request_digest {
             return Err(PublicIdentityError::Corrupt("graph source request").into());
         }
-        let evidence = CandidateDecisionReference::from_accepted(&accepted, ReplayLimits::SMALL)
-            .map_err(PublicIdentityError::from)?;
+        let evidence = CandidateDecisionReference::from_accepted(
+            &accepted,
+            crate::public_identity::REPLAY_LIMITS,
+        )
+        .map_err(PublicIdentityError::from)?;
         let rebuilt = prepare_next(
             &record.installation,
             previous.head(),
@@ -32,7 +35,7 @@ impl HeldGraphWitness {
                 binding: commit::source_binding(candidate, source, &digest),
                 evidence,
             },
-            ReplayLimits::SMALL,
+            crate::public_identity::REPLAY_LIMITS,
         )
         .map_err(PublicIdentityError::from)?;
         if rebuilt
@@ -77,7 +80,7 @@ impl HeldGraphWitness {
             &record.installation,
             previous.head(),
             request.authorized(&accepted)?,
-            ReplayLimits::SMALL,
+            crate::public_identity::REPLAY_LIMITS,
         )
         .map_err(PublicIdentityError::from)?;
         if rebuilt
@@ -118,7 +121,7 @@ impl HeldGraphWitness {
             &record.installation,
             previous.head(),
             authorized,
-            ReplayLimits::SMALL,
+            crate::public_identity::REPLAY_LIMITS,
         )
         .map_err(PublicIdentityError::from)
         .map_err(Into::into)

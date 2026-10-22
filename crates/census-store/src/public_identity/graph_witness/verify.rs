@@ -11,7 +11,7 @@ use crate::StoreResult;
 use census_domain::model::{serialized_digest, AppliedAthleteIdentity};
 use census_domain::public_identity_history::{
     prepare_next, CandidateDecisionReference, HistoryProjection, HistoryRecord, HistoryRequest,
-    PreparedHistoryRecord, PublicAthleteId, ReplayLimits,
+    PreparedHistoryRecord, PublicAthleteId,
 };
 
 #[derive(Default)]

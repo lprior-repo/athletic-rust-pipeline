@@ -17,7 +17,7 @@ const PREFIX: &str = "manual-context-admission-v1\0";
 const HEADER: &str = "manual-context-admission-v1\0header";
 const RESERVATIONS: &str = "manual-context-admission-v1\0reservation\0";
 const POLICY: &str = "manual-context-admission/v2";
-const MAX_BYTES: u64 = 1024 * 1024 * 1024;
+const MAX_BYTES: u64 = 4 * 1024 * 1024 * 1024;
 const MAX_ROOTS: u64 = 4096;
 const MAX_RESERVATIONS: u64 = 4096;
 const HEADER_MARGIN: u64 = 4096;
@@ -47,7 +47,7 @@ fn invalid() -> StoreError {
 fn add(left: u64, right: u64) -> StoreResult<u64> {
     left.checked_add(right).ok_or(StoreError::CounterOverflow)
 }
-fn key(operation: &str) -> String {
+pub(in crate::public_identity) fn key(operation: &str) -> String {
     format!(
         "{RESERVATIONS}{}",
         crate::journal::object_digest(operation.as_bytes())

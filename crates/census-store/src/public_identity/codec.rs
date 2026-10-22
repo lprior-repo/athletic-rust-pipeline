@@ -1,6 +1,6 @@
 use census_domain::model::StoreIdentity;
 use census_domain::public_identity_history::{
-    CandidateHistorySeed, DecodedCandidateHistory, RegistryHead, ReplayLimits,
+    CandidateHistorySeed, DecodedCandidateHistory, RegistryHead,
 };
 use fjall::{Keyspace, Readable, Snapshot};
 use serde::{de::DeserializeOwned, de::DeserializeSeed, Deserialize, Serialize};
@@ -71,7 +71,7 @@ pub(super) fn history(
         });
     }
     let mut parser = serde_json::Deserializer::from_slice(raw);
-    let history = CandidateHistorySeed::new(identity, head, ReplayLimits::SMALL)
+    let history = CandidateHistorySeed::new(identity, head, crate::public_identity::REPLAY_LIMITS)
         .deserialize(&mut parser)
         .map_err(|source| StoreError::Decode {
             key: super::HISTORY.to_owned(),

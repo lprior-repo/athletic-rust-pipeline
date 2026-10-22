@@ -7,7 +7,7 @@ use crate::public_identity::{
 };
 use crate::{StoreError, StoreResult};
 use base64::{engine::general_purpose::STANDARD, Engine};
-use census_domain::{model::StoreIdentity, public_identity_history::ReplayLimits};
+use census_domain::model::StoreIdentity;
 use serde::{
     de::{SeqAccess, Visitor},
     Deserialize, Deserializer, Serialize,
@@ -77,7 +77,10 @@ impl Bundle {
         super::super::bound(self.declaration.len(), 65_536)?;
         super::super::bound(self.head.len(), 1024)?;
         super::super::bound(self.history.len(), crate::MAX_PUBLIC_IDENTITY_HISTORY_BYTES)?;
-        super::super::bound(self.operations.len(), ReplayLimits::SMALL.records)?;
+        super::super::bound(
+            self.operations.len(),
+            crate::public_identity::REPLAY_LIMITS.records,
+        )?;
         super::super::bound(self.objects.len(), MAX_OBJECTS)?;
         self.operations.iter().try_for_each(|operation| {
             HeldGraphWitness::decode("frozen graph witness", operation.witness.as_bytes())?;
@@ -133,7 +136,12 @@ fn binary(value: &str, limit: usize) -> StoreResult<Vec<u8>> {
 }
 
 fn operations<'de, D: Deserializer<'de>>(parser: D) -> Result<Vec<Operation>, D::Error> {
-    bounded(parser, ReplayLimits::SMALL.records, |_| 0, 0)
+    bounded(
+        parser,
+        crate::public_identity::REPLAY_LIMITS.records,
+        |_| 0,
+        0,
+    )
 }
 fn objects<'de, D: Deserializer<'de>>(parser: D) -> Result<Vec<Object>, D::Error> {
     object_intake::decode(parser)

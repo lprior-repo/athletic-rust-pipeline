@@ -19,8 +19,9 @@ pub(super) fn prepare_source(
     let snapshot = store.snapshot();
     let view = VerifiedRawGraph::verify(&snapshot, capture.graph.capture(), capture.graph.seal())?;
     let (accepted, source) = graph::accept_source(&view, candidate, &capture.observed_at)?;
-    let evidence = CandidateDecisionReference::from_accepted(&accepted, ReplayLimits::SMALL)
-        .map_err(PublicIdentityError::from)?;
+    let evidence =
+        CandidateDecisionReference::from_accepted(&accepted, crate::public_identity::REPLAY_LIMITS)
+            .map_err(PublicIdentityError::from)?;
     let prepared = prepare_next(
         &writer.identity,
         head,
@@ -28,7 +29,7 @@ pub(super) fn prepare_source(
             binding: source_binding(candidate, source, digest),
             evidence,
         },
-        ReplayLimits::SMALL,
+        crate::public_identity::REPLAY_LIMITS,
     )
     .map_err(PublicIdentityError::from)?;
     let [public_id] = prepared.established_ids.as_slice() else {

@@ -10,7 +10,7 @@ use crate::public_identity::{
     PublicIdentityError, PublicIdentityWriterV1,
 };
 use crate::{Store, StoreResult, StoreRevision};
-use census_domain::public_identity_history::{prepare_next, RegistryHead, ReplayLimits};
+use census_domain::public_identity_history::{prepare_next, RegistryHead};
 impl PublicIdentityWriterV1 {
     pub fn extend_source_candidate(
         &self,
@@ -20,6 +20,7 @@ impl PublicIdentityWriterV1 {
         expected: StoreRevision<'_>,
         head: &RegistryHead,
     ) -> StoreResult<SourceCandidateMembershipOutcomeV1> {
+        crate::public_identity::commit::source_batch::refuse_child_operation(operation)?;
         let guard = store.lock_appends();
         expected.ensure_origin(store, operation)?;
         self.require_current_qualification()?;

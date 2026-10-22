@@ -29,7 +29,7 @@ pub(super) fn prepare(
         &writer.identity,
         head,
         request.authorized(&accepted)?,
-        ReplayLimits::SMALL,
+        crate::public_identity::REPLAY_LIMITS,
     )
     .map_err(PublicIdentityError::from)?;
     if &ReviewedIdentityRequestV1::from_history(

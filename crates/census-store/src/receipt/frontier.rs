@@ -88,7 +88,7 @@ impl Store {
                 .map_err(|source| StoreError::Read { source })?;
             if key.starts_with(b"source_acquisition_attempt_")
                 || crate::acquisition::public_resources::format::is_reserved_operation(&key)
-                || key.starts_with(b"public_identity")
+                || crate::public_identity::is_reserved_operation(&key)
                 || crate::evidence_subject_attachment::is_reserved_operation(&key)
                 || crate::roster_source_issuance::is_reserved_operation(&key)
                 || crate::result_school_correspondence::is_reserved_operation(&key)

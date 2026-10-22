@@ -7,7 +7,7 @@ use crate::StoreResult;
 use census_domain::model::StoreIdentity;
 use census_domain::public_identity_history::{
     genesis, prepare_next, replay_candidate_history, DecodedCandidateHistory, HistoryProjection,
-    HistoryRecord, HistoryRequest, PreparedHistoryRecord, PublicResolution, ReplayLimits,
+    HistoryRecord, HistoryRequest, PreparedHistoryRecord, PublicResolution,
 };
 use census_domain::public_identity_qualification::{
     PublicIdentityQualification, PublicIdentityQualificationVersion,
@@ -42,15 +42,20 @@ pub(in crate::public_identity) fn validate_retained(
 ) -> StoreResult<()> {
     let identity = declaration.store_identity();
     let initial = genesis(identity).map_err(PublicIdentityError::from)?;
-    let mut prefix = replay_candidate_history(identity, &initial, &[], ReplayLimits::SMALL)
-        .map_err(PublicIdentityError::from)?;
+    let mut prefix = replay_candidate_history(
+        identity,
+        &initial,
+        &[],
+        crate::public_identity::REPLAY_LIMITS,
+    )
+    .map_err(PublicIdentityError::from)?;
     let mut superseded_material = std::collections::BTreeSet::new();
     for record in history.records() {
         let prepared = prepare_next(
             identity,
             prefix.head(),
             record.request.clone(),
-            ReplayLimits::SMALL,
+            crate::public_identity::REPLAY_LIMITS,
         )
         .map_err(PublicIdentityError::from)?;
         if &prepared.uncommitted_record != record {

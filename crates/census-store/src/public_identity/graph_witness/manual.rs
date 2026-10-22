@@ -12,7 +12,6 @@ use census_domain::public_identity_history::local_adjudication::LocalIdentityAdj
 use census_domain::public_identity_history::local_membership_withholding::LocalMembershipWithholdingRecordV2;
 use census_domain::public_identity_history::{
     prepare_next, HistoryProjection, HistoryRecord, HistoryRequest, PreparedHistoryRecord,
-    ReplayLimits,
 };
 use std::collections::BTreeSet;
 
@@ -53,8 +52,13 @@ pub(in crate::public_identity) fn rebuild_manual(
     let request = record
         .history_request(&claims)
         .map_err(PublicIdentityError::from)?;
-    let prepared = prepare_next(&record.store, previous.head(), request, ReplayLimits::SMALL)
-        .map_err(PublicIdentityError::from)?;
+    let prepared = prepare_next(
+        &record.store,
+        previous.head(),
+        request,
+        crate::public_identity::REPLAY_LIMITS,
+    )
+    .map_err(PublicIdentityError::from)?;
     previous
         .clone()
         .extend_candidate(&prepared.uncommitted_record)
@@ -92,8 +96,13 @@ pub(in crate::public_identity) fn rebuild_withholding(
     let request = record
         .history_request(&claims)
         .map_err(PublicIdentityError::from)?;
-    let history = prepare_next(&record.store, previous.head(), request, ReplayLimits::SMALL)
-        .map_err(PublicIdentityError::from)?;
+    let history = prepare_next(
+        &record.store,
+        previous.head(),
+        request,
+        crate::public_identity::REPLAY_LIMITS,
+    )
+    .map_err(PublicIdentityError::from)?;
     let after = previous
         .clone()
         .extend_candidate(&history.uncommitted_record)

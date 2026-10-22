@@ -4,7 +4,7 @@ use crate::StoreResult;
 use census_domain::model::{
     serialized_digest, AppliedAthleteIdentity, AppliedIdentityKind, StoreIdentity,
 };
-use census_domain::public_identity_history::{HistoryRecord, ReplayLimits};
+use census_domain::public_identity_history::HistoryRecord;
 
 pub(super) fn verify(
     witness: &ReviewedWitness,
@@ -34,10 +34,10 @@ pub(super) fn verify(
     let evidence = witness::evidence(&record.request)?;
     let matches = match (witness.kind, decision.kind) {
         (ReviewedKind::Merge, AppliedIdentityKind::SamePerson) => {
-            evidence.matches_applied(&decision, ReplayLimits::SMALL)
+            evidence.matches_applied(&decision, crate::public_identity::REPLAY_LIMITS)
         }
         (ReviewedKind::Split | ReviewedKind::Revoke, AppliedIdentityKind::DifferentPerson) => {
-            evidence.matches_correction(&decision, ReplayLimits::SMALL)
+            evidence.matches_correction(&decision, crate::public_identity::REPLAY_LIMITS)
         }
         _ => return Err(PublicIdentityError::Corrupt("reviewed decision kind").into()),
     }

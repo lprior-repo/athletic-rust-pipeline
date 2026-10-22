@@ -4,7 +4,7 @@ use census_domain::model::{
     serialized_digest, AcceptedAthleteIdentity, AppliedIdentityKind, StoreIdentity,
 };
 use census_domain::public_identity_history::{
-    BindingPartition, CandidateDecisionReference, HistoryRequest, PublicAthleteId, ReplayLimits,
+    BindingPartition, CandidateDecisionReference, HistoryRequest, PublicAthleteId,
     RevocationRequest, SplitRequest,
 };
 use serde::{Deserialize, Serialize};
@@ -63,10 +63,16 @@ impl ReviewedIdentityRequestV1 {
         }
         let evidence = match (self.kind(), accepted.record().kind) {
             (ReviewedKind::Merge, AppliedIdentityKind::SamePerson) => {
-                CandidateDecisionReference::from_accepted(accepted, ReplayLimits::SMALL)
+                CandidateDecisionReference::from_accepted(
+                    accepted,
+                    crate::public_identity::REPLAY_LIMITS,
+                )
             }
             (ReviewedKind::Split | ReviewedKind::Revoke, AppliedIdentityKind::DifferentPerson) => {
-                CandidateDecisionReference::from_correction(accepted, ReplayLimits::SMALL)
+                CandidateDecisionReference::from_correction(
+                    accepted,
+                    crate::public_identity::REPLAY_LIMITS,
+                )
             }
             _ => return Err(PublicIdentityError::NotReviewed.into()),
         }
@@ -147,7 +153,7 @@ pub(in crate::public_identity) fn digest(
         || operation.len() > 256
         || operation.chars().any(char::is_control)
         || request.case_id().is_empty()
-        || request.case_id().len() > ReplayLimits::SMALL.text_bytes
+        || request.case_id().len() > crate::public_identity::REPLAY_LIMITS.text_bytes
         || request.case_id().chars().any(char::is_control)
     {
         return Err(PublicIdentityError::OperationConflict.into());

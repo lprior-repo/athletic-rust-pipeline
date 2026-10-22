@@ -3,9 +3,8 @@ mod persist;
 mod retained;
 mod validate;
 pub(in crate::public_identity) use super::graph_wire::GraphReservation;
-use super::graph_wire::{
-    Descriptor, Purpose, Reference, MAX_DESCRIPTORS, MAX_METADATA_BYTES, MAX_PHYSICAL_ROWS,
-};
+pub(in crate::public_identity) use super::graph_wire::MAX_METADATA_BYTES;
+use super::graph_wire::{Descriptor, Purpose, Reference, MAX_DESCRIPTORS, MAX_PHYSICAL_ROWS};
 use super::{add, codec, invalid, ContextCharge, Permit};
 use crate::public_identity::paged_generation::{
     admission as bridge, CaptureBindingV2, DigestV2, ObjectRefV2, RawGenerationOperationIdV2,

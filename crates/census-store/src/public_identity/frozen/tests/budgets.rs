@@ -1,5 +1,4 @@
 use super::*;
-use census_domain::public_identity_history::ReplayLimits;
 
 fn frozen_v2_bytes() -> TestResult<(tempfile::TempDir, Vec<u8>)> {
     let (directory, store, _writer, _) = two_births()?;
@@ -39,17 +38,22 @@ fn frozen_graph_witness_budget_is_checked_before_replay() -> TestResult {
 fn frozen_graph_collection_decoder_refuses_one_more_than_history_limit() -> TestResult {
     let (_directory, bytes) = frozen_v2_bytes()?;
     let mut bundle: serde_json::Value = serde_json::from_slice(&bytes)?;
-    let operations = bundle
-        .get("operations")
-        .and_then(serde_json::Value::as_array)
-        .ok_or("graph operations")?;
-    let template = operations.first().ok_or("graph operation")?.clone();
-    let overflowed: Vec<serde_json::Value> =
-        core::iter::repeat_n(template, ReplayLimits::SMALL.records + 1).collect();
-    bundle["operations"] = serde_json::Value::Array(overflowed);
-    let tampered = serde_json::to_vec(&bundle)?;
+    bundle["operations"] = serde_json::Value::Null;
+    let count = crate::public_identity::REPLAY_LIMITS
+        .records
+        .checked_add(1)
+        .ok_or("operation count overflow")?;
+    let operation = r#"{"sequence":1,"witness":"x","receipt":"x"}"#;
+    let operations = core::iter::repeat_n(operation, count)
+        .collect::<Vec<_>>()
+        .join(",");
+    let tampered = serde_json::to_string(&bundle)?.replacen(
+        "\"operations\":null",
+        &format!("\"operations\":[{operations}]"),
+        1,
+    );
     check!(matches!(
-        replayed(&tampered)?,
+        replayed(tampered.as_bytes())?,
         StoreError::Decode { key, .. } if key == "frozen graph bundle"
     ));
     Ok(())

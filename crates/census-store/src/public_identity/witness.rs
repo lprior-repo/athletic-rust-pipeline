@@ -116,10 +116,7 @@ pub(super) fn verify_rows(
         || decision.id != witness.decision_id
         || serialized_digest(&decision)? != witness.decision_digest
         || !evidence
-            .matches_applied(
-                &decision,
-                census_domain::public_identity_history::ReplayLimits::SMALL,
-            )
+            .matches_applied(&decision, crate::public_identity::REPLAY_LIMITS)
             .map_err(PublicIdentityError::from)?
     {
         return Err(PublicIdentityError::Corrupt("accepted decision digest").into());

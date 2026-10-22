@@ -69,11 +69,14 @@ fn objects_and_operations_accept_exact_counts_and_refuse_one_more() -> TestResul
         .ok_or("objects accepted")?;
     check!(error.to_string().contains("frozen graph inventory ceiling"));
     let operation = r#"{"sequence":1,"witness":"x","receipt":"x"}"#;
-    let exact = array(operation, ReplayLimits::SMALL.records);
-    check!(eq; operations(&mut serde_json::Deserializer::from_str(&exact))?.len(), ReplayLimits::SMALL.records);
+    let exact = array(operation, crate::public_identity::REPLAY_LIMITS.records);
+    check!(eq; operations(&mut serde_json::Deserializer::from_str(&exact))?.len(), crate::public_identity::REPLAY_LIMITS.records);
     let extra = array(
         operation,
-        ReplayLimits::SMALL.records.checked_add(1).ok_or("bound")?,
+        crate::public_identity::REPLAY_LIMITS
+            .records
+            .checked_add(1)
+            .ok_or("bound")?,
     );
     let error = operations(&mut serde_json::Deserializer::from_str(&extra))
         .err()

@@ -1,11 +1,10 @@
 use super::*;
-use census_domain::public_identity_history::ReplayLimits;
 
 pub(in crate::public_identity) fn member_rows<S: RawObjectSource>(
     view: &VerifiedRawGraph<'_, S>,
     members: &[AthleteCandidateId],
 ) -> StoreResult<Vec<(usize, CanonicalAthlete)>> {
-    if members.len() > ReplayLimits::SMALL.members_per_operation {
+    if members.len() > crate::public_identity::REPLAY_LIMITS.members_per_operation {
         return Err(PublicIdentityError::Corrupt("manual member bound").into());
     }
     admission::preflight(view)?;
