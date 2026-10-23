@@ -1,13 +1,17 @@
 use crate::{AcceptedPublicIdentitySnapshot, StoreResult};
 
 mod capture;
+mod measure;
 mod replay;
 mod retained;
 #[cfg(test)]
 mod tests;
+mod walk;
 mod wire;
 
 pub(crate) use capture::capture;
+pub(crate) use measure::measure;
+pub use measure::{FrozenPublicIdentityDemandV2, MAX_FROZEN_PUBLIC_IDENTITY_DEMAND_JSON_BYTES};
 
 #[derive(Debug)]
 pub struct FrozenPublicIdentityBundleV2 {
