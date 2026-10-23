@@ -99,6 +99,31 @@ it neither merges people nor establishes affiliation, eligibility or publication
 Reuse its original operation/subject for receipt replay. Neither command certifies
 current eligibility or authenticates a human reviewer.
 
+Measure an already completed retained cohort graph on the stopped root:
+
+```sh
+census-service --store ROOT local-identity-adjudication measure-retained-source-cohort \
+  --operation ORIGINAL_COHORT_OPERATION --graduation-year 2027
+```
+
+Use the original outer cohort operation, not its internal derived key. Missing,
+incomplete, foreign or stale graphs refuse without staging a replacement. The
+measurement holds append serialization and checks protected inputs, registry head
+and logical sequence. Its requested cohort year is labeled as input; the raw graph
+does not authenticate that year. Any retained preparation must match the request.
+
+Inspect `measurement.authority.status`, including when the command exits zero.
+`complete` covers the four authority sections; `stopped` retains a provisional
+prefix. Six body-verified inventories are reported separately. The diagnostic
+allows 32 GiB per scanned raw table and 32 GiB of cumulative serialized entries,
+separately from ordinary 8 GiB raw/section and 32 GiB aggregate admission limits.
+The ordinary aggregate includes a 1 MiB header reserve. Its row and record caps
+remain 2,097,152 and 1 MiB; grade enrichment shares the normal read budget.
+Earlier reservation audits and graph verification have their own existing limits
+and are outside those later scan budgets. The report measures neither enrichment,
+accepted cohort, history, decision/witness demand nor working set or commit batch.
+It performs no identity acceptance and does not qualify a workbook publication.
+
 ```sh
 env -u CI tools/moon-local run pipeline:xtask -- census-status
 env -u CI tools/moon-local run pipeline:xtask -- coverage

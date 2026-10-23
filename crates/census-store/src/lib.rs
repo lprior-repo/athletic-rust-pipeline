@@ -57,7 +57,7 @@ pub use public_identity::{
     PreparedMembershipWithholdingV1, PublicIdentityAdmissionResource, PublicIdentityError,
     PublicIdentityQualificationStore, PublicIdentityWriterV1, ReviewedIdentityCommitOutcomeV1,
     ReviewedIdentityRequestV1, SourceCandidateMembershipOutcomeV1,
-    SourceCandidateMembershipRequestV1, MAX_FROZEN_PUBLIC_IDENTITY_BYTES,
+    SourceCandidateMembershipRequestV1, SourceCohortDemandV1, MAX_FROZEN_PUBLIC_IDENTITY_BYTES,
     MAX_PUBLIC_IDENTITY_HISTORY_BYTES,
 };
 mod inspect;

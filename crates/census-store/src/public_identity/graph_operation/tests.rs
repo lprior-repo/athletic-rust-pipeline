@@ -24,7 +24,7 @@ fn number(value: &Value, key: &str) -> TestResult<u64> {
         .and_then(Value::as_u64)
         .ok_or_else(|| format!("header {key}").into())
 }
-fn stage_source_preparation(
+pub(in crate::public_identity) fn stage_source_preparation(
     store: &Store,
     writer: &PublicIdentityWriterV1,
     operation: &str,

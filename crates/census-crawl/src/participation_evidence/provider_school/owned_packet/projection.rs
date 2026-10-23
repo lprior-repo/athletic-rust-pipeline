@@ -12,8 +12,9 @@ use crate::participation_evidence::provider_school::{
 };
 use crate::CrawlResult;
 use census_domain::model::{
-    AcquisitionDigest, AcquisitionOccurrenceRefV1, Evidence, NormalizedObservedHttpV1,
-    SourceNamespace, SourceRef, SourceSchoolObservation, MAX_CAPTURE_RECORD_BYTES,
+    AcquisitionDigest, AcquisitionOccurrenceRefV1, CanonicalSchool, Evidence,
+    NormalizedObservedHttpV1, SourceNamespace, SourceRef, SourceSchoolObservation,
+    MAX_CAPTURE_RECORD_BYTES,
 };
 use census_store::{PublicSchoolIntakeCaptureV1, StoreResult};
 use serde::Serialize;
@@ -61,20 +62,7 @@ pub(super) fn read(
         None,
         &kernels,
     )?);
-    let mut observation = SourceSchoolObservation::of_school(
-        &SourceNamespace::MilesplitSchool,
-        &school,
-        &directory.fetch.fetched_at,
-    )
-    .ok_or_else(|| invalid("owned provider school projection has no source identity"))?;
-    observation.source_row_key = format!(
-        "{}:{}:directory:{}:{}:{}",
-        OWNED_PROVIDER_SCHOOL_INTAKE_PHASE,
-        reference.as_str(),
-        selected.proof.row().ordinal,
-        selected.proof.row().byte_offset,
-        selected.proof.row().byte_length
-    );
+    let observation = school_observation(&school, directory, &selected.proof, &reference)?;
     Ok(CheckedProviderSchoolPacketV1 {
         reference,
         semantic_contract: OWNED_PROVIDER_SCHOOL_SEMANTIC_CONTRACT,
@@ -84,6 +72,29 @@ pub(super) fn read(
         directory_proof: selected.proof,
         published_roster_owners: projected.owners,
     })
+}
+
+fn school_observation(
+    school: &CanonicalSchool,
+    directory: &ObservedCapture,
+    proof: &ProviderSchoolDirectoryProofV1,
+    reference: &ProviderSchoolPacketRefV1,
+) -> CrawlResult<SourceSchoolObservation> {
+    let mut observation = SourceSchoolObservation::of_school(
+        &SourceNamespace::MilesplitSchool,
+        school,
+        &directory.fetch.fetched_at,
+    )
+    .ok_or_else(|| invalid("owned provider school projection has no source identity"))?;
+    observation.source_row_key = format!(
+        "{}:{}:directory:{}:{}:{}",
+        OWNED_PROVIDER_SCHOOL_INTAKE_PHASE,
+        reference.as_str(),
+        proof.row().ordinal,
+        proof.row().byte_offset,
+        proof.row().byte_length
+    );
+    Ok(observation)
 }
 
 #[derive(Serialize)]

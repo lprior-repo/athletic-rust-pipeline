@@ -55,7 +55,7 @@ fn retained_section_boundary_does_not_reset_per_row() -> TestResult {
 
 #[test]
 fn aggregate_keeps_one_record_reserved_for_header() -> TestResult {
-    check!(eq; CONTEXT_TOTAL_BYTES, 8_589_934_592);
+    check!(eq; CONTEXT_TOTAL_BYTES, 34_359_738_368);
     let exact = CONTEXT_TOTAL_BYTES
         .checked_sub(CONTEXT_RECORD_BYTES)
         .ok_or("reserve")?;

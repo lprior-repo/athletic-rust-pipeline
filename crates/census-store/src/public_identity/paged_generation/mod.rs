@@ -22,6 +22,7 @@ mod scalar;
 mod seal;
 mod source;
 mod wire;
+pub(in crate::public_identity) use graph_read::require_inventory;
 pub(crate) use graph_read::VerifiedRawGraph;
 pub(crate) use source::{graph_physical_rows, FrozenRawObjectSource, RawObjectSource};
 

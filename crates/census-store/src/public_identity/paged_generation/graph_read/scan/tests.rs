@@ -55,7 +55,7 @@ fn measured_cohort_inventory_refuses_old_bytes_and_fits_production_budget() -> T
 
 #[test]
 fn production_inventory_bytes_are_inclusive_and_refuse_one_over() -> TestResult {
-    check!(eq; BUDGET.bytes, 4_294_967_296);
+    check!(eq; BUDGET.bytes, 8_589_934_592);
     preflight(inventory(1, BUDGET.bytes)?, BUDGET)?;
     let excess = BUDGET.bytes.checked_add(1).ok_or("byte overflow")?;
     exceeded(
@@ -100,4 +100,36 @@ fn recorded_physical_counts_refuse_original_row_ceiling_and_fit_current_bound() 
         preflight(counts, BUDGET)?;
     }
     Ok(())
+}
+
+#[test]
+fn measured_980_bytes_preserve_old_refusal_and_fit_current_normal_capacity() -> TestResult {
+    let actual = inventory(1_796_172, 7_440_378_517)?;
+    exceeded(
+        preflight(
+            actual,
+            ReadBudget {
+                bytes: 4_294_967_296,
+                ..BUDGET
+            },
+        ),
+        "capture encoded bytes",
+        7_440_378_517,
+        4_294_967_296,
+    )?;
+    preflight(actual, BUDGET)?;
+    crate::public_identity::authority::graph::admission::demand::require_raw_inventory(actual)?;
+    Ok(())
+}
+
+#[test]
+fn normal_raw_capacity_covers_measured_archive_and_stays_finite() -> TestResult {
+    preflight(inventory(1_796_172, 7_440_378_517)?, BUDGET)?;
+    preflight(inventory(1, 8_589_934_592)?, BUDGET)?;
+    exceeded(
+        preflight(inventory(1, 8_589_934_593)?, BUDGET),
+        "capture encoded bytes",
+        8_589_934_593,
+        8_589_934_592,
+    )
 }

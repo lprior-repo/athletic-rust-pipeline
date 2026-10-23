@@ -5043,3 +5043,91 @@ These focused checks do not qualify the repaired native full-corpus apply,
 ordinary acquisition continuation, eligibility, frozen publication, normal
 five-state coverage, UP completeness or a fully populated workbook. The
 preserved Downloads generation `7e9bfcc3` is still partial.
+
+### 2026-10-23: retained graph demand and finite normal byte-capacity repair
+
+**PASS 977:** clean `2b508315` portable build, exit 0/no signal,
+270,584 ms. Immutable release 978 binds CLI
+`0ab1033e8bf19bb11b3207b91a1608f83b6323cd9b0f4971be406b6461ec7810`,
+serve `fa531f73de637ca2a78d09efe7d31b9be00b98191e872938af729b41ea8846a0`
+and embedded kernel
+`91a58870079dcd74c2096e7c5d5cc13f9dced992bf4976bdbca49d76030702bb`.
+**PASS 979:** genuine retained Quincy review preview, exit 0/no signal,
+180,162 ms; output 72,219,342 bytes, SHA256
+`31793d10e279478db376f70ae90aebada9b85db527edff6791b949f2dd315afd`.
+No approval digest was supplied; preview did not apply source authority.
+
+**FAIL 980:** original operation `five-state-co2027-source-cohort-20261022`,
+year 2027, exited 1/no signal at 09:35:45.165 UTC after 1,122,033 ms:
+`capture encoded bytes would require 7440378517 but only 4294967296`.
+No accepted outcome or replay was produced. Its 76 OS samples recorded minimum
+free space 253,124,308,992 bytes and maximum process write bytes 170,668,032.
+Those writes include physical database activity; they do not establish logical
+progress. Reported HWM 2,388,148 KiB preceded the refusal and cannot qualify the
+larger computation. Original Store, operation, internal keys, receipts and cold
+backup 889 remain preserved.
+
+The retained-only diagnostic uses the existing complete original graph, append
+serialization, one scan snapshot and protected input/head fences. It stages no
+replacement graph. Optional retained preparation must authenticate the request;
+otherwise requested year remains explicitly unauthenticated by the raw graph.
+Six body-verified inventories are separate from four scanned authority sections.
+The shared exact Entry-plus-newline encoder reports complete scans or provisional
+prefixes on refusal. Diagnostic caps are 32 GiB per raw table and 32 GiB cumulative
+entries; earlier reservation audits and graph verification retain separate limits.
+Enrichment, accepted cohort, history, decision/witness bytes and working set or
+atomic batch demand are expressly unmeasured. Exit zero with `stopped` is not a
+complete measurement or identity acceptance.
+
+Normal shared reads, sections and enrichment now allow 8 GiB; the measured table
+has 1,149,556,075 bytes of arithmetic headroom. Aggregate authority allows 32 GiB
+including a 1 MiB header reserve. Four exact 8 GiB sections therefore cannot all
+fit with the header. Rows remain 2,097,152 and records 1 MiB. Historical admission
+ledger, root, metadata, history, witness and authenticity checks remain enforced;
+their remaining actual demand and physical memory fit are not inferred from this
+increase. Section-byte refusal can change a temporary sink before the entire
+failed preflight is dropped; aggregate-refusal tests establish their specific
+counter preservation, not blanket local-counter atomicity.
+
+**RED 985 and 1019:** actual 980 inventory refuses the old 4 GiB limit; both
+new normal/aggregate boundary expectations fail before the capacity change.
+**FAIL 988:** test helper visibility compilation, repaired. **INTERRUPTED 990:**
+62 passed, one unchanged 4,096-reservation stress test received deliberate SIGINT;
+this is not a passing 63-test run. **FAIL 994:** malformed fixture failed during
+staging and was replaced with a valid oversized merged-entry fixture. **PASS 996:**
+that real provisional-prefix fixture; **PASS 997:** 106 Store tests. **FAIL 998:**
+wrong CLI library target selected zero tests. **PASS 1000:** actual CLI binary,
+11 tests. **FAIL 1001/1006:** hard callable-size checks; cohesive retained-graph
+and school-observation helper extractions repaired the reported violations.
+
+**PASS 1011:** 38/38 crawl tests, 89,527 ms wall. Service 1011 failed before tests
+because the offline cache lacked a locked dependency; canonical fetch 1014 passed.
+**PASS 1014:** service 23/23 (78,612 ms wall), Store 106/106 (38,118 ms),
+fmt/check/lint-src (59,769 ms), and canonical `pipeline:xtask -- scan`
+(351,880 ms). Only two production capacity constants and test expectations changed
+after that structural scan; production callables stayed identical.
+**FAIL 1021:** 106/107 passed, one older test retained a literal 4 GiB expectation.
+**PASS 1022 after correcting that expectation:** Store 107/107, 39,580 ms wall;
+workspace fmt/check/lint-src, 34,066 ms. Tests retain explicit old-limit refusal,
+current exact/one-over raw and section limits, aggregate/header boundaries,
+outside-cohort ambiguity, authentic preparation, stale/head/cold/no-write refusal
+and partial diagnostic accounting. The final scope excludes the interrupted
+reservation-exhaustion test; it does not replace full release qualification.
+
+Compiled comparison 1013 matches all 210 ordered production source entries and
+digest `a4299d2a8e6fbad998ffc7c97d42175c3a06e45afbfee8f1486616246da969cc`
+on the isolated pre-integration tree. It is not the closure of a later merge.
+Local GPU 1012 reviews completed HTTP 200/stop (5090 2,380 ms; 3090 5,480 ms),
+with no concrete defect found in their narrow source review. The later 5090
+capacity draft repeated an existing test and was rejected; 3090 capacity review
+timed out at 180,001 ms and supplies no passing verdict. Independent static review
+found no capacity-constant coupling blocker and disclosed the temporary-counter
+limitation above. Historical failures remain in numbered receipts under
+`/tmp/athletic-work-20261021/`.
+
+At this checkpoint the candidate is not a native capacity or workbook pass.
+Remote `90833346` separately contains workbook changes requiring preservation and
+combined-source qualification before the next build. Original-key native demand,
+apply/replay, acquisition continuation, eligibility, publication, normalized
+outputs and the populated five-state workbook remain outstanding. Downloads
+generation `7e9bfcc3` remains the preserved partial artifact.

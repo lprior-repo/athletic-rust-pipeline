@@ -5,6 +5,7 @@ use super::{
 use crate::{Entity, ReadBudget, ReadCounts, StoreError, StoreResult};
 
 mod scan;
+pub(in crate::public_identity) use scan::preflight as require_inventory;
 
 pub(crate) struct VerifiedRawGraph<'a, S: RawObjectSource> {
     source: &'a S,
@@ -36,7 +37,6 @@ impl<'a, S: RawObjectSource> VerifiedRawGraph<'a, S> {
         self.object
     }
 
-    #[cfg(test)]
     pub(crate) fn table_inventory(
         &self,
         table: AuthorityTableV2,

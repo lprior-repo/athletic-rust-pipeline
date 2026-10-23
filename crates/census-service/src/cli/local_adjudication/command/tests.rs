@@ -6,6 +6,39 @@ use clap::{error::ErrorKind, Parser};
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 #[test]
+fn retained_demand_cli_requires_original_operation_and_explicit_year() -> TestResult {
+    let cli = Cli::try_parse_from([
+        "census-service",
+        "--store",
+        "synthetic-offline-store",
+        "local-identity-adjudication",
+        "measure-retained-source-cohort",
+        "--operation",
+        "original-operation",
+        "--graduation-year",
+        "2027",
+    ])?;
+    check!(matches!(
+        cli.command,
+        Command::LocalIdentityAdjudication(LocalAdjudicationArgs {
+            command: LocalCommand::MeasureRetainedSourceCohort {
+                graduation_year: 2027,
+                ..
+            }
+        })
+    ));
+    check!(Cli::try_parse_from([
+        "census-service",
+        "local-identity-adjudication",
+        "measure-retained-source-cohort",
+        "--operation",
+        "original-operation",
+    ])
+    .is_err());
+    Ok(())
+}
+
+#[test]
 fn local_identity_cli_registers_inspect_split_and_receipt_without_live_ingress() -> TestResult {
     let canonical = format!("ath_public_v1_{}", "1".repeat(64));
     let cli = Cli::try_parse_from([

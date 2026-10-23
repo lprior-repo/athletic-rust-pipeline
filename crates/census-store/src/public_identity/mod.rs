@@ -9,6 +9,7 @@ pub(crate) use attachment_fence::read_head as attachment_public_head;
 mod authority;
 mod codec;
 mod commit;
+pub use commit::source_batch::SourceCohortDemandV1;
 mod context;
 mod correction;
 mod local_adjudication;

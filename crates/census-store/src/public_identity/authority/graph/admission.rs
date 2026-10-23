@@ -5,7 +5,27 @@ use census_domain::model::{CanonicalAthlete, ReviewCase, ReviewVerdictRecord, So
 use serde::Serialize;
 
 const CONTEXT_RECORD_BYTES: usize = BUDGET.record_bytes;
-const CONTEXT_TOTAL_BYTES: usize = 8 * 1024 * 1024 * 1024;
+const CONTEXT_TOTAL_BYTES: usize = 32 * 1024 * 1024 * 1024;
+
+pub(in crate::public_identity) mod demand;
+
+pub(in crate::public_identity) fn entry_bytes(
+    kind: &'static str,
+    ordinal: u64,
+    row: &impl Serialize,
+) -> StoreResult<usize> {
+    codec::encode(
+        &wire::Entry {
+            key: &format!("{kind}:{ordinal:020}"),
+            at: "",
+            payload: wire::Payload { kind, value: row },
+        },
+        CONTEXT_RECORD_BYTES - 1,
+    )?
+    .len()
+    .checked_add(1)
+    .ok_or(StoreError::CounterOverflow)
+}
 
 #[derive(Default)]
 struct AuthorityBytes {
@@ -17,11 +37,7 @@ impl AuthorityBytes {
         self.bytes
     }
 
-    fn record(&mut self, row: &impl Serialize) -> StoreResult<()> {
-        let bytes = codec::encode(row, CONTEXT_RECORD_BYTES - 1)?
-            .len()
-            .checked_add(1)
-            .ok_or(StoreError::CounterOverflow)?;
+    fn record(&mut self, bytes: usize) -> StoreResult<()> {
         let next = self
             .bytes
             .checked_add(bytes)
@@ -90,14 +106,7 @@ impl Section {
             });
         }
         let before = sink.written_bytes();
-        sink.record(&wire::Entry {
-            key: &format!("{}:{:020}", self.kind, self.rows),
-            at: "",
-            payload: wire::Payload {
-                kind: self.kind,
-                value: row,
-            },
-        })?;
+        sink.record(demand::entry_bytes(self.kind, self.rows, row)?)?;
         let added = sink
             .written_bytes()
             .checked_sub(before)

@@ -203,7 +203,7 @@ pub(super) fn inspect(
 }
 
 #[cfg(test)]
-mod tests;
+pub(in crate::public_identity) mod tests;
 
 fn require_uncommitted(store: &Store, operation: &str) -> StoreResult<()> {
     if codec::load(

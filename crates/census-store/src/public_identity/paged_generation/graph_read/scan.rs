@@ -1,7 +1,10 @@
 use super::super::InventoryV2;
 use super::*;
 
-pub(super) fn preflight(inventory: InventoryV2, budget: ReadBudget) -> StoreResult<()> {
+pub(in crate::public_identity) fn preflight(
+    inventory: InventoryV2,
+    budget: ReadBudget,
+) -> StoreResult<()> {
     charge(0, inventory.rows(), budget.rows, "capture physical rows")?;
     charge(
         0,
@@ -81,5 +84,7 @@ fn charge(current: u64, added: u64, available: u64, what: &'static str) -> Store
     Ok(needed)
 }
 
+#[cfg(test)]
+mod demand_tests;
 #[cfg(test)]
 mod tests;

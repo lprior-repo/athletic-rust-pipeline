@@ -59,3 +59,23 @@ pub(super) fn cohort(root: &Path, operation: &str, graduation_year: i16) -> Resu
         "qualification_scope": "Deterministic source-bound identity only; current affiliation, participation eligibility and workbook publication require their existing evidence",
     }))
 }
+
+pub(super) fn measure(root: &Path, operation: &str, graduation_year: i16) -> Result<()> {
+    let cohort = GradYear::new(graduation_year).context("invalid graduation year")?;
+    let (store, writer) = open(root)?;
+    let head = writer.head(&store)?;
+    let report = writer
+        .measure_retained_source_cohort(
+            &store,
+            operation,
+            cohort,
+            store.snapshot().revision(),
+            &head,
+        )
+        .context("measuring the original retained graph; no new graph is staged on refusal")?;
+    emit(&serde_json::json!({
+        "schema": "local-identity-source-cohort-demand/v1",
+        "operation": operation,
+        "measurement": report,
+    }))
+}

@@ -1,4 +1,4 @@
-mod admission;
+pub(in crate::public_identity) mod admission;
 mod affected;
 mod claims;
 mod members;
@@ -10,7 +10,7 @@ mod tests;
 
 pub(in crate::public_identity) const BUDGET: crate::read::ReadBudget = crate::read::ReadBudget {
     rows: 2_097_152,
-    bytes: 4 * 1024 * 1024 * 1024,
+    bytes: 8 * 1024 * 1024 * 1024,
     record_bytes: 1024 * 1024,
 };
 use crate::public_identity::paged_generation::{

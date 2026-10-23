@@ -9,6 +9,8 @@ use std::collections::BTreeSet;
 const PREFIX: &str = "source-cohort-v1:";
 
 mod audit;
+mod demand;
+pub use demand::SourceCohortDemandV1;
 mod persist;
 mod prepare;
 mod replay;

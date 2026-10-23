@@ -100,6 +100,15 @@ enum LocalCommand {
         #[arg(long, value_parser = clap::value_parser!(i16).range(2020..=2040))]
         graduation_year: i16,
     },
+    #[command(
+        about = "Measure an existing complete cohort graph without staging or accepting identities"
+    )]
+    MeasureRetainedSourceCohort {
+        #[arg(long, value_name = "ORIGINAL_OPERATION_ID")]
+        operation: String,
+        #[arg(long, value_parser = clap::value_parser!(i16).range(2020..=2040))]
+        graduation_year: i16,
+    },
 }
 
 pub(in crate::cli) fn run(cli: &crate::cli::Cli, args: &LocalAdjudicationArgs) -> Result<()> {
@@ -149,6 +158,10 @@ pub(in crate::cli) fn run(cli: &crate::cli::Cli, args: &LocalAdjudicationArgs) -
             operation,
             graduation_year,
         } => source::cohort(root, operation, *graduation_year),
+        LocalCommand::MeasureRetainedSourceCohort {
+            operation,
+            graduation_year,
+        } => source::measure(root, operation, *graduation_year),
     }
 }
 
