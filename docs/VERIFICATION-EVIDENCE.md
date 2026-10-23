@@ -4626,3 +4626,46 @@ Normalized accepted athletes, eligible best marks and comparison classes remain
 zero. Its 10,108 global coach-contact rows do not fill recruit coach cells.
 The original Store and Downloads file remain unchanged; the full goal remains
 incomplete and no release or selected-publication acceptance is claimed.
+
+### Address cold readback and preserved Downloads delivery (2026-10-23 UTC)
+
+**PASS cold 884:** the separate native verifier exited zero at
+05:33:42.378 UTC after 982,090 ms. It reopened generation `7e9bfcc3` from its
+frozen evidence, verified all 62,950 literal rows, and reported
+`verify: OK (complete frozen generation)`. Its supplied absent Store path
+`/tmp/athletic-work-20261021/absent-store-address-cold-verify-884` was not created.
+The exact terminal receipt is
+`worksheet-address-publication-cold-verify-result-retry-884.json`.
+
+**Metadata-only wrapper failure:** after that native success, orchestration
+looked for `normalized/schools.csv`; the actual normalized files are at the
+generation root, including `schools.csv`. The wrapper's ENOENT failure receipt
+remains preserved. Corrected summary 907 records the actual path, native exit
+and absent-Store check without rerunning publication or verification and without
+changing an artifact. This correction does not turn the wrapper exit into zero.
+
+**PASS copy 907:** a new separate file was copied exclusively to
+`/home/lewis/Downloads/Recruiting-Class-of-2027-MI-MN-IA-IL-CO-Address-Update-7e9bfcc3.xlsx`.
+Its 10,462,770 bytes and SHA256 `48f08b76c393d8303705fdeb75a8b4bb51220a93e0fde52bb57ece2b82bdcbb6`
+match the verified original. The existing `Single-Sheet.xlsx` copy remained
+9,554,529 bytes / SHA256 `1d9387b5c5722ded4d24448e049cf1e96101da71cc1e4df3c8532d908a01aab4`.
+This is the partial reported workbook with 32,436 address cells; the zero
+accepted-athlete, grade, declared-PR, eligible-best and recruit-coach counts
+above still apply. No full five-state acceptance is claimed.
+
+**PASS build 902:** portable executables built from clean commit
+`135094116a07e7033898c99112fe673dbffe4bcc` in 4m44.204s. Release 903 binds
+8,476 tracked files, inventory SHA256
+`75b0660a6995b2bf986c95c7d7a051f114b91eac1e8b9d1ddfff1f7e05667a52`,
+serve SHA256 `96dd8e31a6ff432799d78e51eec95962872dfc90e69b269f45b01bafce212aae`
+and CLI SHA256 `93e352fbb42f75f4e6b5755f4904a132caaac0f99b2a38572948ae2795f9baca`.
+Guarded original source-cohort retry 904 started at 05:34:19.590 UTC with the
+same operation and preserved Store, bound to backup 889 and the unchanged three
+paused Native invocation IDs/pins. It remains running at this checkpoint;
+apply, replay and cold acceptance remain unclaimed.
+
+**FAIL inventory 908:** a read-only retained-roster inventory on the unowned
+restored Store exited 1 after 173,287 ms. Its team scan required 268,437,966
+encoded bytes against its unchanged 268,435,456-byte bound. No roster review,
+capability enrollment or original-Store operation was performed by this probe;
+it supplies no complete packet/program inventory or membership acceptance.
