@@ -83,6 +83,16 @@ approval refuses; distinct school/program owners cannot be combined.
 This accepts scoped source representations, not a verified athlete affiliation
 or eligible mark. Local-operator provenance is explicitly unauthenticated.
 
+Roster inspection retains the complete physical Schools, Teams, Conflicts and
+SourceObservations inventory: at most 4,194,304 rows and 8 GiB of cumulative keys
+and values, with a 64 KiB per-row limit. Its physical manifest allows 2 GiB;
+authority components allow that manifest plus 8 MiB, and the retained closure
+allows 16 GiB and at most the physical row bound plus 64 objects. These are
+inspection allowances. The separate saved-review, resulting protected-store and
+frozen-bundle limits still apply; a preview does not establish commit, reopen or
+publication capacity. Measure distinct retained objects and the resulting costs
+before treating a preview as evidence for those later stages.
+
 Replay a committed review without preparing a new approval, including after
 later valid reviews advance the authority head:
 

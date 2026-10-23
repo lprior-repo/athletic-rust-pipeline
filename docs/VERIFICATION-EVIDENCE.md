@@ -5211,3 +5211,54 @@ Original-key normal apply/replay, acquisition continuation, eligibility, frozen
 publication and normalized outputs remain outstanding. The preserved Downloads
 workbook SHA256 `48f08b76c393d8303705fdeb75a8b4bb51220a93e0fde52bb57ece2b82bdcbb6`
 was rechecked unchanged. The fully populated workbook is not complete.
+
+### 2026-10-23 original cohort replay and roster inspection capacity
+
+**PASS 1038:** current main `e7b7aed4` applied the original operation
+`five-state-co2027-source-cohort-20261022`, then replayed that same key in a fresh
+process. Both accepted 66,075 source-bound identities and returned registry head
+sequence 66,075 with digest
+`772b77fa1d8c205a2035627f6adca3206204cfcfe66143cd857f383d5e7b82fc`.
+Apply and replay exited zero without signals or protective stops after
+1,516,036 and 1,951,883 ms. All three original paused invocation IDs and deployment
+pins were unchanged afterward. This is identity evidence, not five-state
+membership, result eligibility or workbook acceptance.
+
+**FAIL 1043:** the original Quincy girls XC roster preview exited one after
+582,460 ms with zero approval bytes. Physical capture-byte admission needed
+2,126,471,675 bytes with only 2,126,467,694 remaining. No approval or membership
+was applied. The older successful preview on restored Store 844 does not qualify
+this original Store operation.
+
+**PASS 1050:** the existing normal roster-inventory command on the original Store
+exited zero after 591,123 ms, snapshot sequence 3,771,035. It read 8,718 physical
+school rows / 21,015,954 encoded bytes and 1,050,405 physical team rows /
+4,788,849,707 encoded bytes. These two tables alone exceed the old 2 GiB roster
+inspection allowance. Their sum plus the earlier body-verified source-observation
+raw-byte baseline is 5,704,950,862 bytes. Historical physical row counts total
+3,026,632 before conflicts; this is arithmetic, not an executed row-limit refusal
+or a distinct-object count. Inventory reported 2,743 unreviewed packets: MI 894,
+MN 589, IA 410, IL 850 and CO 0. Those are retained packets, not accepted members
+or source-declared PR coverage.
+
+The candidate changes only finite physical rows/bytes, manifest/component and
+closure allowances, and the exact compiled semantic-source digest. It retains
+all four tables and all ownership, conflict and observation checks. Review,
+protected-store, frozen-bundle, per-row and generic-record limits remain intact.
+**PASS 1055/1056:** 33 domain, 63 Store, 171 crawl and 21 service tests, plus
+workspace fmt/check/lint-src, exited zero without signals. The cumulative
+inventory regression bills positive keys as well as values, admits the exact
+limit and rejects one further key byte without changing prior inventory/grant
+totals. The compiled source inventory matched all 210 ordered source entries;
+its new digest is
+`a3205427f65bb04e178421e434f1a0a9326b6a49742c88833cf27a83afaa8dfa`.
+No old kernel digest is reused for the changed closure.
+
+Independent review identified further active limits on the saved review and
+resulting protected inventory. Physical row counts do not establish distinct
+object digests; a proposed inference to that effect was rejected and the
+unmeasured saved-review increase was reverted before build or application.
+Original preview/apply/replay with this candidate remains **NOT RUN**. Commit,
+reopen, memory and frozen-publication fit are not established by the capacity
+constants or focused tests. Full native continuation, five-state eligibility and
+the requested populated workbook remain unfinished.
