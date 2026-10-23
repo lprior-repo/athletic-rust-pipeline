@@ -4,6 +4,26 @@ use std::io::Write;
 type TestResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
 #[test]
+fn observed_quincy_saved_record_measure_admits_footprint_and_keeps_finite_limit() -> TestResult {
+    let required = 1_166_405_967_usize;
+    let mut measure = Measure {
+        bytes: required.checked_sub(1).ok_or("record size")?,
+        maximum: MAX_REVIEW_COMPOSITE_BYTES,
+    };
+    measure.write_all(b"a")?;
+    check!(eq; measure.bytes, required);
+    measure.bytes = MAX_REVIEW_COMPOSITE_BYTES
+        .checked_sub(1)
+        .ok_or("composite limit")?;
+    measure.write_all(b"a")?;
+    check!(eq; measure.bytes, MAX_REVIEW_COMPOSITE_BYTES);
+    check!(measure.write(b"b").is_err());
+    check!(eq; measure.bytes, MAX_REVIEW_COMPOSITE_BYTES.checked_add(1).ok_or("limit overflow")?);
+    check!(measure.write(b"").is_err());
+    Ok(())
+}
+
+#[test]
 fn production_measure_admits_exact_ceiling_then_refuses_one_more() -> TestResult {
     let mut measure = Measure {
         bytes: MAX_BYTES - 1,

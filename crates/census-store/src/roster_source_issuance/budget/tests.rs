@@ -4,6 +4,55 @@ use census_domain::roster_affiliation_authority::MAX_ROSTER_PROTECTED_BYTES;
 type TestResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
 #[test]
+fn observed_quincy_resulting_rows_and_bytes_fit_with_finite_headroom() -> TestResult {
+    let required_rows = 3_026_662_usize;
+    let required_bytes = 7_965_132_570_usize;
+    let mut budget = RosterStartupValidationBudgetV1::new();
+    budget.charge(required_bytes)?;
+    for _ in 1..required_rows {
+        budget.charge(0)?;
+    }
+    check!(budget.rows > 0);
+    check!(budget.bytes > 0);
+    budget.charge(usize::try_from(budget.bytes)?)?;
+    check!(eq; budget.bytes, 0);
+    for _ in 0..budget.rows {
+        budget.charge(0)?;
+    }
+    check!(eq; budget.rows, 0);
+    check!(matches!(
+        budget.charge(1),
+        Err(crate::StoreError::RosterSourceIssuance(
+            Error::BudgetExceeded
+        ))
+    ));
+    check!(matches!(
+        budget.charge(0),
+        Err(crate::StoreError::RosterSourceIssuance(
+            Error::BudgetExceeded
+        ))
+    ));
+    Ok(())
+}
+
+#[test]
+fn ten_review_sized_additions_fit_aggregate_budget_without_allocating_records() -> TestResult {
+    let mut budget = RosterStartupValidationBudgetV1::new();
+    budget.charge(7_965_132_570)?;
+    for _ in 1..3_026_662 {
+        budget.charge(0)?;
+    }
+    for _ in 0..10 {
+        budget.charge(2_105_035_353)?;
+        budget.charge(0)?;
+        budget.charge(0)?;
+    }
+    check!(eq; budget.bytes, MAX_ROSTER_PROTECTED_BYTES.checked_sub(29_015_486_100).ok_or("headroom")?);
+    check!(budget.rows > 0);
+    Ok(())
+}
+
+#[test]
 fn configured_byte_budget_is_exact_and_overage_permanently_refuses() -> TestResult {
     let mut budget = RosterStartupValidationBudgetV1::new();
     budget.charge(usize::try_from(MAX_ROSTER_PROTECTED_BYTES)?)?;
