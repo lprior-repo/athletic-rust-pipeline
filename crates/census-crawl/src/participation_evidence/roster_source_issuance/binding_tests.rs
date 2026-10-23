@@ -155,3 +155,6 @@ fn inventory_bytes_reference_rejects_tampered_payload() -> TestResult {
     .is_err());
     Ok(())
 }
+
+#[path = "binding_budget_tests.rs"]
+mod budget_tests;

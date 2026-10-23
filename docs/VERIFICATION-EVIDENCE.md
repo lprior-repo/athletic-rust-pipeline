@@ -5294,3 +5294,46 @@ The original failure's exact debit site remains unattributed. Whether this
 correction unblocks the original preview is **NOT RUN** at this checkpoint.
 Original review apply/replay, general participation eligibility, Colorado
 continuation and the fully populated five-state workbook remain unfinished.
+
+### 2026-10-23: Original binding refusal and borrowed merge accounting
+
+Original Quincy preview 1075 ran main `3e0ad4a7b29acf5ac4ec92687059c0f4e0d10d54`
+with immutable CLI `6db191dc4b2ed3a6a0ef5591d0cd2631a9705149274b6463e2defa0f3656e48e`.
+It exited 1 without a signal or protective stop after 798,968 ms at
+14:55:29.030 UTC. Preparation completed; the final binding assessment refused
+aggregate encoded bytes: needed 274,877,967,586, available 274,877,906,944.
+Output was empty. No approval digest, source authority or membership was applied.
+
+The next correction changes only three borrowed merge/publish size checks.
+The existing bounded counting serializer still checks each merged object against
+4 MiB and charges a traversal step before serialization. It poisons the original
+grant on measurement failure, but no longer charges encoded bytes when producing
+no encoded buffer. Physical-row decoding and actual output serialization retain
+their byte precharges; all source, conflict, owner, snapshot and continuation
+checks remain. No resource ceiling, schema or interpretation version changes.
+
+**RED 1079:** two tests compiled and failed against unchanged production:
+exact raw-parent decode capacity and one-byte-short refusal. **PASS 1083/1085:**
+176 crawl, 21 service and 65 Store tests; workspace format/check/source lint
+exited zero. Source lint still emitted its configured advisory argument-count
+warnings; this is not a warning-free or full release-gate claim. **PASS 1088:**
+all seven final accounting tests and final format. Two additional cases admit an
+exact 4-MiB object then refuse one further byte, and merge 70 individually
+sub-64-KiB physical school versions into an oversized object. The latter refuses
+through the public parent reader, poisons the original grant, and preserves the
+Store sequence and receipt count. Escaping, traversal exhaustion, real output
+precharge and repeated exact-parent checks are covered as well.
+
+The first growth fixture in 1087 was refused by the existing 64-KiB physical-row
+limit before reaching the merge check; its six passes and one failure are retained.
+The corrected 1088 fixture reaches the intended merged-object refusal. Earlier
+1081 harness input enumeration and 1082 test-only integer-type errors are also
+retained; neither is counted as behavioral evidence. Compiled check 1084 matched
+all 210 ordered source entries to the new digest
+`eee76a575b1840d537340c3019e6dd7645cf688b691b580ad1d2215d30b6cd80`.
+The exact current kernel pin rotates with the two changed production sources.
+
+The original failure's exact debit call site is still unattributed. Original
+preview with this correction, review apply/replay, protected review-record fit,
+full native continuation, general eligibility and accepted workbook publication
+remain unqualified. Focused tests do not establish full five-state delivery.
