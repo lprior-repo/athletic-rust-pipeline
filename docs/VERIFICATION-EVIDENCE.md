@@ -4352,3 +4352,45 @@ sole endpoint received SIGTERM. At this checkpoint its started blocking work is
 still draining: no process-exit, cold-backup, new live owner, deployment rewrite,
 profile population or new workbook result is claimed. CO/national remain paused
 and preserved. No invocation was killed and no logical identity was replaced.
+
+### Full NCES inputs and selected-scope correction (2026-10-23 UTC)
+
+Candidate source `0346ebaf0acc4d23739b32cc4355aaf7279ae996` retains the complete
+national CCD/PSS captures while applying the already validated selected run scope
+before the common school-directory publisher. Unscoped callers retain all captured
+entries. No source CSV is edited or filtered to impersonate the downloaded bytes.
+
+The new foreign-state regression **failed before the fix** (835) with
+`NCES address generation contains a row outside its selected run scope`.
+After the fix, `pipeline:tests-scoped -- -p census-service --lib -E
+'test(school_address::)' --no-tests fail` **passed 101/101** (838).
+The strengthened regression separately **passed 1/1** (843), checking complete
+retained CCD/PSS bytes, all six source rows per lane, original hashes and capture
+dates, ten selected projected entries, exact replay sequence stability and cold
+reopen. Independent static review found no actionable correctness issue.
+`pipeline:fmt pipeline:check pipeline:lint-src` **passed** (839; existing forced
+arity advisories remain). `pipeline:build-portable` **passed** (844, 4m34s).
+
+Official NCES archives were actually retrieved once with HTTP 200 and no redirects
+on 2026-10-23 UTC. Retained raw CSV hashes are
+`d1473136285b5994b73a1a8b640757811eb81e0ae770953bcf915ee8c422386e`
+and `14a2f9e600a492940fd57646792b4b5163ea9d03b8015a7df1135066bcec3b8b`.
+Native no-Store full-input publication (834) passed with 122,692 directory entries.
+Independent readback (846) found 16,504 school records in MI/MN/IA/IL/CO, all with
+published street and city. These are all-grade directory records, not matched
+recruiting-school addresses or an accepted athlete population. Raw archives,
+headers, response metadata and capture times remain in cache
+`nces-public-inputs-834/capture-manifest.json`. Full-input selected intake in an
+isolated restored historical Store remains pending at this checkpoint.
+
+The clean candidate artifacts (847) are retained under release
+`2e178cbd08d84784a7d86397fb3b4e63040fd29af2c491fa96b02a059deb9389`;
+the CLI SHA256 is `a44ec877c06a6f07741fc500ef8313fb596c36b6021cf211d2d6a96a529dc8cb`.
+No candidate runtime activation or original-Store address admission is claimed.
+The original owner remains physically active after its drain grace expired.
+Read-only sampling (842) observed new meet 700748 captures at 03:07:30--34 UTC,
+matching original-plan entry 1,120 of 1,602, compared with entry 847 at 02:30 UTC.
+This proves activity, not result eligibility, step completion or an ETA. Guarded
+cold backup/publication 831 still waits for actual owner exit. Existing Downloads
+and its reported-unverified workbook remain preserved; full workbook acceptance
+and repository-wide release qualification remain open.
