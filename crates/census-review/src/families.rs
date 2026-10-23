@@ -1,9 +1,12 @@
 use census_domain::model::{
-    ATHLETE_IDENTITY_FAMILY, SCHOOL_IDENTITY_FAMILY, UNRESOLVED_SCHOOL_FAMILY,
+    ATHLETE_GENDER_UNVERIFIED_FAMILY, ATHLETE_IDENTITY_FAMILY, SCHOOL_ADDRESS_UNVERIFIED_FAMILY,
+    SCHOOL_IDENTITY_FAMILY, TRANSFER_AMBIGUOUS_FAMILY, UNRESOLVED_SCHOOL_FAMILY,
     UNRESOLVED_VENUE_FAMILY,
 };
 
 pub const IDENTITY_FIELD: &str = "identity";
+pub const GENDER_FIELD: &str = "gender";
+pub const SCHOOL_ADDRESS_FIELD: &str = "school_address";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReviewFamily {
@@ -11,6 +14,9 @@ pub enum ReviewFamily {
     MeetJurisdiction,
     AthleteIdentity,
     SchoolLink,
+    AthleteGender,
+    SchoolAddress,
+    TransferAmbiguous,
 }
 
 impl ReviewFamily {
@@ -20,6 +26,9 @@ impl ReviewFamily {
             Self::MeetJurisdiction => UNRESOLVED_VENUE_FAMILY,
             Self::AthleteIdentity => ATHLETE_IDENTITY_FAMILY,
             Self::SchoolLink => SCHOOL_IDENTITY_FAMILY,
+            Self::AthleteGender => ATHLETE_GENDER_UNVERIFIED_FAMILY,
+            Self::SchoolAddress => SCHOOL_ADDRESS_UNVERIFIED_FAMILY,
+            Self::TransferAmbiguous => TRANSFER_AMBIGUOUS_FAMILY,
         }
     }
 
@@ -27,6 +36,9 @@ impl ReviewFamily {
         match self {
             Self::SchoolJurisdiction | Self::MeetJurisdiction => "state",
             Self::AthleteIdentity | Self::SchoolLink => IDENTITY_FIELD,
+            Self::AthleteGender => GENDER_FIELD,
+            Self::SchoolAddress => SCHOOL_ADDRESS_FIELD,
+            Self::TransferAmbiguous => IDENTITY_FIELD,
         }
     }
 
@@ -39,16 +51,24 @@ impl ReviewFamily {
             Some(Self::AthleteIdentity)
         } else if label == SCHOOL_IDENTITY_FAMILY {
             Some(Self::SchoolLink)
+        } else if label == ATHLETE_GENDER_UNVERIFIED_FAMILY {
+            Some(Self::AthleteGender)
+        } else if label == SCHOOL_ADDRESS_UNVERIFIED_FAMILY {
+            Some(Self::SchoolAddress)
+        } else if label == TRANSFER_AMBIGUOUS_FAMILY {
+            Some(Self::TransferAmbiguous)
         } else {
             None
         }
     }
 
-    pub const fn askable() -> [Self; 3] {
+    pub const fn askable() -> [Self; 5] {
         [
             Self::SchoolJurisdiction,
             Self::MeetJurisdiction,
             Self::AthleteIdentity,
+            Self::AthleteGender,
+            Self::SchoolAddress,
         ]
     }
 
@@ -69,6 +89,9 @@ impl ReviewFamily {
             }
             "athlete identity" | "athlete" | "identity" => Some(Self::AthleteIdentity),
             "school identity" | "school link" => Some(Self::SchoolLink),
+            "athlete gender unverified" | "athlete gender" | "gender" => Some(Self::AthleteGender),
+            "school address unverified" | "school address" | "address" => Some(Self::SchoolAddress),
+            "transfer ambiguous" | "transfer" => Some(Self::TransferAmbiguous),
             _ => None,
         }
     }

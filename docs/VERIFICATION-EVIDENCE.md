@@ -5131,3 +5131,27 @@ combined-source qualification before the next build. Original-key native demand,
 apply/replay, acquisition continuation, eligibility, publication, normalized
 outputs and the populated five-state workbook remain outstanding. Downloads
 generation `7e9bfcc3` remains the preserved partial artifact.
+
+**PASS combined 1024:** preserved upstream `90833346` worksheet/review work
+and local capacity candidate `05584d38` together. Default-feature Moon scopes,
+four compiler jobs and two test threads: crawl 38/38 (68,803 ms wall),
+service 23/23 (71,811 ms), Store 107/107 (40,502 ms), workbook/report 172/172
+(50,879 ms), and all review tests 154/154 (23,262 ms). Workspace fmt/check/lint-src
+passed in 45,376 ms; canonical production scan passed in 299,225 ms. These are
+494 focused tests, not the full workspace/release/fault/fuzz suite.
+
+The sole merge conflict was the current-source digest. Pin 1023 recomputes all
+210 ordered combined source entries as
+`1e591ea412e9e433a5f221c80acbe8b88011288b16e4bceb1e69fb504d234f21`.
+Compiled comparison 1025 matches every entry, digest and length; actual debug
+kernel SHA256 is
+`17fe8e90a4ab19dfcb2c1cf072d9d952e4813244666077d71960fdb7a07c280a`.
+Neither predecessor's source pin is reused as the merged closure, and retained
+historical kernel documents are unchanged. Both local GPU 1026 static reviews
+completed HTTP 200/stop: 5090 3,294 ms, 3090 4,135 ms. The 5090 missing-Event
+claim was rejected because index 7 correctly selects the Event header; 3090
+reported no concrete defect in its narrow quarantine scope.
+
+Combined-source qualification does not establish native demand/apply/replay,
+physical memory fit, source acquisition, eligibility or populated workbook
+acceptance. Those original-operation runs remain the next execution step.

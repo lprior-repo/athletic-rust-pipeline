@@ -1,17 +1,18 @@
 use census_domain::model::{
-    CanonicalAthlete, GradYear, ReviewState, ReviewVerdictRecord, ATHLETE_IDENTITY_FAMILY,
-    COHORT_EVIDENCE_FAMILY, COHORT_UNVERIFIED_FAMILY, CONTACT_CONFLICT_FAMILY,
-    IDENTITY_UNVERIFIED_FAMILY, SCHOOL_IDENTITY_FAMILY, UNRESOLVED_SCHOOL_FAMILY,
+    CanonicalAthlete, ReviewState, ReviewVerdictRecord, ATHLETE_GENDER_UNVERIFIED_FAMILY,
+    ATHLETE_IDENTITY_FAMILY, COHORT_EVIDENCE_FAMILY, COHORT_UNVERIFIED_FAMILY,
+    CONTACT_CONFLICT_FAMILY, IDENTITY_UNVERIFIED_FAMILY, SCHOOL_ADDRESS_UNVERIFIED_FAMILY,
+    SCHOOL_IDENTITY_FAMILY, TRANSFER_AMBIGUOUS_FAMILY, UNRESOLVED_SCHOOL_FAMILY,
     UNRESOLVED_VENUE_FAMILY, UNSUPPORTED_GRADUATION_FAMILY,
 };
 use census_domain::public_identity_history::PublicResolution;
 use census_review::ReviewFamily;
 use std::collections::HashMap;
 
-use crate::report::{ReportResult, Scope};
+use crate::report::ReportResult;
 use crate::workbook::cells::{row, Cell};
 
-use super::{school_name_index, Family, QueueRow, StoreRows, SubjectIndex};
+use super::{Family, QueueRow, StoreRows, SubjectIndex};
 
 mod candidates;
 mod catalog;
@@ -21,7 +22,10 @@ mod review;
 pub(super) mod bounded;
 
 use conflicts::{athlete_identity, cohort_evidence, contact_conflicts, school_identity};
-use review::{cohort_unverified, identity_unverified, unresolved_schools, unresolved_venues};
+use review::{
+    address_unverified, cohort_unverified, gender_unverified, identity_unverified,
+    transfer_ambiguous, unresolved_schools, unresolved_venues,
+};
 
 pub(super) const CONFLICT_WIDTHS: [u16; 5] = [34, 12, 34, 44, 96];
 
@@ -123,6 +127,11 @@ fn verdict_subject(verdict: &ReviewVerdictRecord, index: &SubjectIndex<'_>) -> S
             .meet(&verdict.subject_id)
             .map_or_else(|| verdict.subject_id.clone(), |meet| meet.name.clone()),
         Some(ReviewFamily::AthleteIdentity) => index.subject(&verdict.subject_id),
+        Some(
+            ReviewFamily::AthleteGender
+            | ReviewFamily::SchoolAddress
+            | ReviewFamily::TransferAmbiguous,
+        ) => index.subject(&verdict.subject_id),
         None => verdict.subject_id.clone(),
     }
 }
@@ -134,6 +143,11 @@ fn state_for_subject(family: &str, subject_id: &str, index: &SubjectIndex<'_>) -
         }
         Some(ReviewFamily::MeetJurisdiction) => index.meet_state(subject_id),
         Some(ReviewFamily::AthleteIdentity) => index.athlete_state(subject_id),
+        Some(
+            ReviewFamily::AthleteGender
+            | ReviewFamily::SchoolAddress
+            | ReviewFamily::TransferAmbiguous,
+        ) => index.athlete_state(subject_id),
         None => None,
     };
     state.map_or(Cell::Empty, |state| Cell::text(state.code()))
@@ -147,6 +161,9 @@ pub(super) const COHORT_UNVERIFIED: &str = COHORT_UNVERIFIED_FAMILY;
 pub(super) const IDENTITY_UNVERIFIED: &str = IDENTITY_UNVERIFIED_FAMILY;
 pub(super) const UNRESOLVED_VENUE: &str = UNRESOLVED_VENUE_FAMILY;
 pub(super) const UNRESOLVED_SCHOOL: &str = UNRESOLVED_SCHOOL_FAMILY;
+pub(super) const ATHLETE_GENDER: &str = ATHLETE_GENDER_UNVERIFIED_FAMILY;
+pub(super) const SCHOOL_ADDRESS: &str = SCHOOL_ADDRESS_UNVERIFIED_FAMILY;
+pub(super) const TRANSFER: &str = TRANSFER_AMBIGUOUS_FAMILY;
 
 pub(in crate::workbook) fn conflict_families(
     rows: &StoreRows,
@@ -172,6 +189,9 @@ pub(in crate::workbook) fn review_families(
     Ok(vec![
         cohort_unverified(cohort, names),
         identity_unverified(rows, cohort, names)?,
+        gender_unverified(cohort, names),
+        address_unverified(cohort, rows.schools, names),
+        transfer_ambiguous(cohort, rows.source, names)?,
         unresolved_venues(rows.meets),
         unresolved_schools(rows.schools),
         school_links(rows),
@@ -241,46 +261,4 @@ fn queue_row(id: &str, subject: String, detail: String) -> QueueRow {
         subject,
         detail,
     }
-}
-
-pub fn retained_records(
-    dataset: &crate::export::ExportDataset,
-    school_year: census_domain::model::SchoolYear,
-    jurisdictions: &[census_domain::UsJurisdiction],
-) -> ReportResult<RetainedRecords> {
-    let admission = crate::report::EventAdmission::of(dataset)?;
-    let derivation = crate::report::Derivation::for_publication(
-        dataset,
-        Scope::AllSources,
-        None,
-        jurisdictions,
-    )?;
-    let rows = StoreRows::of(&derivation, school_year)?;
-    let cohort = crate::report::cohort_candidates(
-        dataset,
-        Scope::AllSources,
-        Some(GradYear::CO2027.get()),
-        jurisdictions,
-    )?;
-    let names = school_name_index(rows.schools);
-    Ok(RetainedRecords {
-        conflicts: labelled(conflict_families(&rows, &cohort, &names)?),
-        reviews: labelled(review_families(&rows, &cohort, &names, &admission)?),
-    })
-}
-
-#[derive(Debug, Default)]
-pub struct RetainedRecords {
-    pub conflicts: Vec<(&'static str, QueueRow)>,
-    pub reviews: Vec<(&'static str, QueueRow)>,
-}
-
-fn labelled(families: Vec<Family>) -> Vec<(&'static str, QueueRow)> {
-    let mut out = Vec::new();
-    for family in families {
-        for row in family.rows {
-            out.push((family.label, row));
-        }
-    }
-    out
 }

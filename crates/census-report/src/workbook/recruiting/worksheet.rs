@@ -15,7 +15,7 @@ mod profile_prs;
 #[cfg(test)]
 mod tests;
 
-const HEADERS: [&str; 24] = [
+const HEADERS: [&str; 25] = [
     "Athlete ID",
     "Name",
     "Gender",
@@ -31,6 +31,7 @@ const HEADERS: [&str; 24] = [
     "Current school",
     "Current state",
     "Current school as-of",
+    "Transfer",
     "Head TF Coach",
     "Head XC Coach",
     "Observed bests",
@@ -42,8 +43,9 @@ const HEADERS: [&str; 24] = [
     "Verification Status",
 ];
 
-const WIDTHS: [u16; 24] = [
-    24, 28, 12, 18, 16, 18, 32, 24, 24, 14, 52, 30, 32, 14, 24, 28, 28, 80, 80, 64, 64, 64, 24, 44,
+const WIDTHS: [u16; 25] = [
+    24, 28, 12, 18, 16, 18, 32, 24, 24, 14, 52, 30, 32, 14, 24, 12, 28, 28, 80, 80, 64, 64, 64, 24,
+    44,
 ];
 
 #[derive(Clone, Copy)]
@@ -61,6 +63,7 @@ pub(super) fn write(
     let schools = SelectedSchools::of(dataset.source)?;
     let mut accepted = dataset.athletes.iter().collect::<Vec<_>>();
     accepted.sort_by_key(|athlete| athletes::display_key(dataset, athlete));
+    let verified: BTreeSet<&str> = accepted.iter().map(|athlete| athlete.id.as_str()).collect();
     let rows = std::iter::once(Ok(HEADERS.into_iter().map(Cell::text).collect()))
         .chain(
             accepted
@@ -71,6 +74,7 @@ pub(super) fn write(
             reported
                 .into_iter()
                 .flat_map(|projection| projection.athletes.iter())
+                .filter(|athlete| !verified.contains(athlete.id.as_str()))
                 .map(|athlete| row(dataset, athlete, Basis::Reported, reported, &schools)),
         );
     write_sheet_rows(
@@ -188,7 +192,7 @@ fn school(
     )?;
     let address = addresses
         .remove(athlete.id.as_str())
-        .ok_or_else(|| invalid("worksheet school address is absent"))?;
+        .map_or(String::new(), core::convert::identity);
     Ok(vec![
         school.map_or(Cell::Empty, |school| Cell::text(&school.name)),
         Cell::text(athlete.school.as_str()),
@@ -210,15 +214,22 @@ fn current_school(
     schools: &SelectedSchools<'_>,
     athlete: &CanonicalAthlete,
     basis: Basis,
-) -> ReportResult<[Cell; 3]> {
+) -> ReportResult<[Cell; 4]> {
     match basis {
-        Basis::Reported => Ok([Cell::text("Unknown"), Cell::text("Unknown"), Cell::Empty]),
+        Basis::Reported => Ok([
+            Cell::text("Unknown"),
+            Cell::text("Unknown"),
+            Cell::Empty,
+            Cell::Empty,
+        ]),
         Basis::Accepted => {
             let fields = schools.fields(athlete.id.as_str())?;
+            let transfer = athlete.school.as_str() != fields.current_school_id;
             Ok([
                 Cell::text(fields.current_school),
                 Cell::text(fields.current_state),
                 Cell::text(fields.current_school_as_of),
+                crate::workbook::recruiting::columns::flag(transfer),
             ])
         }
     }

@@ -10,7 +10,7 @@ use std::collections::BTreeSet;
 mod marks;
 mod profile_prs;
 
-const HEADERS: [&str; 24] = [
+const HEADERS: [&str; 25] = [
     "Athlete ID",
     "Name",
     "Gender",
@@ -26,6 +26,7 @@ const HEADERS: [&str; 24] = [
     "Current school",
     "Current state",
     "Current school as-of",
+    "Transfer",
     "Head TF Coach",
     "Head XC Coach",
     "Observed bests",
@@ -56,9 +57,17 @@ pub(super) fn verify(
         &expected.admission,
         &expected.bests,
     )?;
+    let verified: BTreeSet<&str> = accepted.iter().map(|athlete| athlete.id.as_str()).collect();
+    let reported_athletes = reported.as_ref().map_or(Vec::new(), |rows| {
+        rows.athletes
+            .iter()
+            .filter(|athlete| !verified.contains(athlete.id.as_str()))
+            .copied()
+            .collect::<Vec<_>>()
+    });
     let total = accepted
         .len()
-        .checked_add(reported.as_ref().map_or(0, |rows| rows.athletes.len()))
+        .checked_add(reported_athletes.len())
         .ok_or_else(|| invalid("single worksheet population overflow"))?;
     let affiliations = AffiliationExpectations::of(expected.dataset)?;
     super::reported::rows::verify(
@@ -73,12 +82,9 @@ pub(super) fn verify(
                     let index = position
                         .checked_sub(accepted.len())
                         .ok_or_else(|| invalid("worksheet position underflow"))?;
-                    let athlete = reported
-                        .as_ref()
-                        .and_then(|rows| rows.athletes.get(index))
-                        .ok_or_else(|| {
-                            invalid("worksheet subject absent from frozen population")
-                        })?;
+                    let athlete = reported_athletes.get(index).copied().ok_or_else(|| {
+                        invalid("worksheet subject absent from frozen population")
+                    })?;
                     Subject::Reported(athlete)
                 }
             };
@@ -165,7 +171,7 @@ fn school(
         postal::athlete_address_index(expected.dataset, std::slice::from_ref(athlete))?;
     let address = addresses
         .remove(athlete.id.as_str())
-        .ok_or_else(|| invalid("frozen worksheet postal projection absent"))?;
+        .map_or(String::new(), core::convert::identity);
     Ok([
         Value::optional(school.map(|school| school.name.as_str())),
         Value::text(athlete.school.as_str()),
@@ -187,12 +193,23 @@ fn current(
     affiliations: &AffiliationExpectations<'_>,
     athlete: &CanonicalAthlete,
     subject: Subject<'_>,
-) -> ReportResult<[Value; 3]> {
+) -> ReportResult<[Value; 4]> {
     match subject {
-        Subject::Reported(_) => Ok([Value::text("Unknown"), Value::text("Unknown"), Value::Empty]),
+        Subject::Reported(_) => Ok([
+            Value::text("Unknown"),
+            Value::text("Unknown"),
+            Value::Empty,
+            Value::Empty,
+        ]),
         Subject::Accepted(_) => {
-            let [_, name, state, as_of] = affiliations.values(athlete.id.as_str())?;
-            Ok([Value::text(name), Value::text(state), Value::text(as_of)])
+            let [id, name, state, as_of] = affiliations.values(athlete.id.as_str())?;
+            let transfer = athlete.school.as_str() != id;
+            Ok([
+                Value::text(name),
+                Value::text(state),
+                Value::text(as_of),
+                Value::flagged(transfer),
+            ])
         }
     }
 }

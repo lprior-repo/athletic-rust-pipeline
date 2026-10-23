@@ -11,6 +11,7 @@ use census_store::Store;
 use census_store::{StoreResult, Table};
 
 use super::athlete_packet::{self, AthleteIndex};
+use super::families::{GENDER_FIELD, SCHOOL_ADDRESS_FIELD};
 use super::ReviewFamily;
 #[cfg(test)]
 use super::ReviewOptions;
@@ -84,7 +85,14 @@ impl SubjectIndex {
         )?;
         let athlete_ids: HashSet<&str> = pending
             .iter()
-            .filter(|(_, family)| *family == ReviewFamily::AthleteIdentity)
+            .filter(|(_, family)| {
+                matches!(
+                    family,
+                    ReviewFamily::AthleteIdentity
+                        | ReviewFamily::AthleteGender
+                        | ReviewFamily::SchoolAddress
+                )
+            })
             .flat_map(|(case, _)| {
                 std::iter::once(case.subject_id.as_str())
                     .chain(case.member_ids.iter().map(|member| member.as_str()))
@@ -114,86 +122,123 @@ impl SubjectIndex {
         let subject_id = case.subject_id.clone();
         let packet = match family {
             ReviewFamily::SchoolJurisdiction | ReviewFamily::SchoolLink => {
-                let Some(school) = self.schools.get(&subject_id) else {
-                    return Ok(None);
-                };
-                Some(school_packet(case, subject_id, school))
+                self.school_subject_packet(case, &subject_id)
             }
-            ReviewFamily::MeetJurisdiction => {
-                let Some(meet) = self.meets.get(&subject_id) else {
-                    return Ok(None);
-                };
-                let mut packet = ReviewPacket::new(subject_id, meet.name.clone())
-                    .with_case(case_fact(case))
-                    .with_evidence(fact("name", &meet.name))
-                    .with_evidence(fact("date", &meet.date))
-                    .with_evidence(fact(
-                        "location",
-                        meet.location
-                            .as_deref()
-                            .map_or(Default::default(), core::convert::identity),
-                    ));
-                if let Some(state) = meet.state {
-                    packet = packet.with_evidence(fact("state", state.code()));
-                }
-                Some(packet)
+            ReviewFamily::MeetJurisdiction => self.meet_subject_packet(case, &subject_id),
+            ReviewFamily::AthleteIdentity => self.identity_subject_packet(case, &subject_id)?,
+            ReviewFamily::AthleteGender | ReviewFamily::SchoolAddress => {
+                self.single_subject_packet(case, &subject_id, family)?
             }
-            ReviewFamily::AthleteIdentity => {
-                let Some((subject, other, group)) =
-                    self.athletes.compare_members(&subject_id, &case.member_ids)
-                else {
-                    return Ok(None);
-                };
-                let represented = [subject.id.as_str(), other.id.as_str()];
-                let complete = if case.member_ids.is_empty() {
-                    group.len() == represented.len()
-                } else {
-                    case.member_ids.len() == represented.len()
-                        && represented
-                            .iter()
-                            .all(|id| case.member_ids.iter().any(|member| member.as_str() == *id))
-                };
-                if !complete {
-                    return Ok(None);
-                }
-                let mut members = [subject.id.to_string(), other.id.to_string()];
-                members.sort();
-                Some(athlete_packet::packet(case, subject, other, &members)?)
-            }
+            ReviewFamily::TransferAmbiguous => None,
         };
         Ok(packet)
     }
-}
 
-fn school_packet(case: &ReviewCase, subject_id: String, school: &CanonicalSchool) -> ReviewPacket {
-    let mut packet = ReviewPacket::new(subject_id, school.name.clone())
-        .with_case(case_fact(case))
-        .with_evidence(fact("name", &school.name))
-        .with_evidence(fact(
-            "city",
-            school
-                .city
-                .as_deref()
-                .map_or(Default::default(), core::convert::identity),
-        ))
-        .with_evidence(fact(
-            "association",
-            school
-                .association
-                .as_deref()
-                .map_or(Default::default(), core::convert::identity),
-        ))
-        .with_evidence(fact(
-            "athletics_website",
-            school
-                .athletics_website
-                .as_deref()
-                .map_or(Default::default(), core::convert::identity),
-        ));
-    if let Some(state) = school.state {
-        packet = packet.with_evidence(fact("state", state.code()));
+    fn school_subject_packet(&self, case: &ReviewCase, subject_id: &str) -> Option<ReviewPacket> {
+        let school = self.schools.get(subject_id)?;
+        let mut packet = ReviewPacket::new(subject_id.to_string(), school.name.clone())
+            .with_case(case_fact(case))
+            .with_evidence(fact("name", &school.name))
+            .with_evidence(fact(
+                "city",
+                school
+                    .city
+                    .as_deref()
+                    .map_or(Default::default(), core::convert::identity),
+            ))
+            .with_evidence(fact(
+                "association",
+                school
+                    .association
+                    .as_deref()
+                    .map_or(Default::default(), core::convert::identity),
+            ))
+            .with_evidence(fact(
+                "athletics_website",
+                school
+                    .athletics_website
+                    .as_deref()
+                    .map_or(Default::default(), core::convert::identity),
+            ));
+        if let Some(state) = school.state {
+            packet = packet.with_evidence(fact("state", state.code()));
+        }
+        Some(packet)
     }
-    packet
+
+    fn meet_subject_packet(&self, case: &ReviewCase, subject_id: &str) -> Option<ReviewPacket> {
+        let meet = self.meets.get(subject_id)?;
+        let mut packet = ReviewPacket::new(subject_id.to_string(), meet.name.clone())
+            .with_case(case_fact(case))
+            .with_evidence(fact("name", &meet.name))
+            .with_evidence(fact("date", &meet.date))
+            .with_evidence(fact(
+                "location",
+                meet.location
+                    .as_deref()
+                    .map_or(Default::default(), core::convert::identity),
+            ));
+        if let Some(state) = meet.state {
+            packet = packet.with_evidence(fact("state", state.code()));
+        }
+        Some(packet)
+    }
+
+    fn identity_subject_packet(
+        &self,
+        case: &ReviewCase,
+        subject_id: &str,
+    ) -> StoreResult<Option<ReviewPacket>> {
+        let Some((subject, other, group)) =
+            self.athletes.compare_members(subject_id, &case.member_ids)
+        else {
+            return Ok(None);
+        };
+        let represented = [subject.id.as_str(), other.id.as_str()];
+        let complete = if case.member_ids.is_empty() {
+            group.len() == represented.len()
+        } else {
+            case.member_ids.len() == represented.len()
+                && represented
+                    .iter()
+                    .all(|id| case.member_ids.iter().any(|member| member.as_str() == *id))
+        };
+        if !complete {
+            return Ok(None);
+        }
+        let mut members = [subject.id.to_string(), other.id.to_string()];
+        members.sort();
+        Ok(Some(athlete_packet::packet(
+            case, subject, other, &members,
+        )?))
+    }
+
+    fn single_subject_packet(
+        &self,
+        case: &ReviewCase,
+        subject_id: &str,
+        family: ReviewFamily,
+    ) -> StoreResult<Option<ReviewPacket>> {
+        let (question, field, values) = match family {
+            ReviewFamily::AthleteGender => (
+                "what is the athlete competition gender?",
+                GENDER_FIELD,
+                "boys | girls",
+            ),
+            ReviewFamily::SchoolAddress => (
+                "what is the school postal address?",
+                SCHOOL_ADDRESS_FIELD,
+                "one postal address line",
+            ),
+            _ => return Ok(None),
+        };
+        let Some(subject) = self.athletes.member(subject_id) else {
+            return Ok(None);
+        };
+        Ok(Some(athlete_packet::single_packet(
+            case, subject, question, field, values,
+        )?))
+    }
 }
 
 pub(super) fn fact(field: &str, value: &str) -> ReviewEvidenceFact {

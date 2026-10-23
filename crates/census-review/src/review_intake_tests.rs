@@ -5,6 +5,10 @@ use census_store::{Store, StoreError, StoreResult, Table};
 
 use crate::consensus::tests::support::{client, TestResult};
 use crate::{ReviewFamily, ReviewOptions};
+use census_domain::model::{
+    CanonicalAthlete, CanonicalSchool, Gender, GradYear, SourceIdentity, SourceNamespace,
+};
+use census_domain::UsJurisdiction;
 
 thread_local! {
     static DECODES: Cell<usize> = const { Cell::new(0) };
@@ -134,6 +138,99 @@ fn selection_fixture_preserves_exact_bytes_and_persisted_conflict_precedence() -
         "selection_fixture_digest={}",
         census_domain::model::serialized_digest(&selected)?
     );
+    Ok(())
+}
+
+#[test]
+fn quarantine_synthesis_routes_unknown_gender_and_missing_address_to_lanes() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let store = Store::open(dir.path())?;
+    let (mut addressed, _) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Madison West",
+        "madisonwest",
+        Some("Madison"),
+    );
+    let owner = SourceIdentity::new(
+        SourceNamespace::AssociationSchool {
+            association: "wiaa".to_string(),
+        },
+        "sch-west-1",
+    );
+    addressed.source_identities.push(owner.clone());
+    let claim = census_domain::model::SchoolPostalAddress::new(
+        census_domain::school_directory::PostalAddress::line(
+            census_domain::school_directory::StreetLine::parse("30 Ash Street")?,
+        ),
+        owner,
+        census_domain::school_directory::SourceLabel::AthleticAssociation {
+            state: UsJurisdiction::Wisconsin,
+        },
+        census_domain::model::Evidence::parsed(
+            census_domain::model::SourceRef::new("wiaa", Some("https://wiaawi.org/schools".into())),
+            "2026-10-01",
+        ),
+        "b".repeat(64),
+    )?;
+    addressed.add_postal_address(claim)?;
+    let addressed_id = addressed.id.clone();
+    let (unaddressed, _) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Madison East",
+        "madisoneast",
+        Some("Madison"),
+    );
+    let unaddressed_id = unaddressed.id.clone();
+    store.append_many(Table::Schools, &[addressed, unaddressed])?;
+    let unknown = CanonicalAthlete::new(
+        &unaddressed_id,
+        "Casey Runner",
+        GradYear::CO2027,
+        Gender::Unknown,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "ath-1"),
+    )?;
+    let known = CanonicalAthlete::new(
+        &addressed_id,
+        "Robin Runner",
+        GradYear::CO2027,
+        Gender::Girls,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "ath-2"),
+    )?;
+    let relocated = CanonicalAthlete::new(
+        &unaddressed_id,
+        "Jordan Runner",
+        GradYear::CO2027,
+        Gender::Unknown,
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, "ath-3"),
+    )?;
+    store.append_many(Table::Athletes, &[unknown, known, relocated])?;
+    let options = ReviewOptions {
+        families: vec![ReviewFamily::AthleteGender, ReviewFamily::SchoolAddress],
+        limit: 256,
+        dry_run: false,
+    };
+    let snapshot = store.snapshot();
+    let mut corpus = super::CorpusIndex::new(&snapshot);
+    let intake = super::next(&store, &mut corpus, &options, None)?;
+    let mut labels: Vec<_> = intake
+        .cases
+        .iter()
+        .map(|(case, family)| (family.label().to_string(), case.subject_id.clone()))
+        .collect();
+    labels.sort();
+    check!(eq; labels.len(), 4, "two unknown genders plus two missing addresses");
+    check!(eq;
+        labels
+            .iter()
+            .filter(|(family, _)| family == ReviewFamily::AthleteGender.label())
+            .count(),
+        2);
+    check!(eq;
+        labels
+            .iter()
+            .filter(|(family, _)| family == ReviewFamily::SchoolAddress.label())
+            .count(),
+        2);
     Ok(())
 }
 

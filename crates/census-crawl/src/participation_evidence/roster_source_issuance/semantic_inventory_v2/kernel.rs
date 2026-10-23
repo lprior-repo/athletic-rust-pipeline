@@ -86,7 +86,7 @@ pub(super) fn require_current_owned(
 const SCHEMA: &str = "roster-semantic-kernel-dependencies/v13";
 const MAX_DOCUMENT: usize = 64 * 1024;
 const EXPECTED_SOURCE_DIGEST: &str =
-    "a4299d2a8e6fbad998ffc7c97d42175c3a06e45afbfee8f1486616246da969cc";
+    "1e591ea412e9e433a5f221c80acbe8b88011288b16e4bceb1e69fb504d234f21";
 const COMPILED: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/roster-semantic-kernel-v13.json"));
 

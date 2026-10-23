@@ -12,6 +12,8 @@ mod flags;
 mod group;
 #[path = "athlete_packet_tests/identity.rs"]
 mod identity;
+#[path = "athlete_packet_tests/single.rs"]
+mod single;
 
 fn school() -> SchoolId {
     CanonicalSchool::new(

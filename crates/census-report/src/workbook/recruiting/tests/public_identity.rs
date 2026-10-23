@@ -23,7 +23,7 @@ async fn selected_recruiting_csv_and_sheets_publish_public_ids_with_explicit_can
         .public_id(candidate)
         .ok_or("public identity")?;
     check!(ne; public_id.as_str(), candidate);
-    let rows = athletes::rows(&dataset).collect::<Result<Vec<_>, _>>()?;
+    let rows = athletes::rows(&dataset, None).collect::<Result<Vec<_>, _>>()?;
     check!(eq; rows.len(), 2);
     let header = rows.first().ok_or("athlete headers")?;
     check!(eq; header.len(), athletes::HEADERS.len() + 2);

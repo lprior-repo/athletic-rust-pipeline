@@ -55,6 +55,9 @@ pub const UNRESOLVED_SCHOOL_FAMILY: &str = "School jurisdiction unresolved";
 pub const CONTACT_CONFLICT_FAMILY: &str = "Recruiting contact conflict";
 pub const RELAY_MEMBER_NAME_FAMILY: &str = "Relay member name conflict";
 pub const RELAY_RESULT_SCALAR_FAMILY: &str = "Relay result scalar conflict";
+pub const ATHLETE_GENDER_UNVERIFIED_FAMILY: &str = "Athlete gender unverified";
+pub const SCHOOL_ADDRESS_UNVERIFIED_FAMILY: &str = "School address unverified";
+pub const TRANSFER_AMBIGUOUS_FAMILY: &str = "Transfer ambiguous";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ReviewCase {

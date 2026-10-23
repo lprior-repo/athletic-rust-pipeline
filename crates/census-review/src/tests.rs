@@ -79,6 +79,74 @@ fn link_proposal(field: &str, value: &str) -> ReviewVerdict {
     }
 }
 
+fn quarantine_proposal(field: &str, value: &str) -> ReviewVerdict {
+    ReviewVerdict {
+        case_id: "Athlete gender unverified:ath:1:p2:abc".to_string(),
+        kind: ReviewVerdictKind::ValueProposed,
+        field: Some(field.to_string()),
+        value: Some(value.to_string()),
+        confidence: 70,
+        rationale: "the packet names the competition category".to_string(),
+    }
+}
+
+#[test]
+fn quarantine_answers_validate_field_shape_and_value_domain() {
+    let packet = school_packet(None);
+    let admitted = validate(
+        ReviewFamily::AthleteGender,
+        &quarantine_proposal("gender", "girls"),
+        &packet,
+    );
+    assert_eq!(
+        admitted
+            .admitted()
+            .map(|answer| (answer.field.as_str(), answer.value.as_str())),
+        Some(("gender", "Girls"))
+    );
+    let normalized = validate(
+        ReviewFamily::AthleteGender,
+        &quarantine_proposal("gender", "F"),
+        &packet,
+    );
+    assert_eq!(
+        normalized
+            .admitted()
+            .map(|answer| (answer.field.as_str(), answer.value.as_str())),
+        Some(("gender", "Girls"))
+    );
+    let wrong_field = validate(
+        ReviewFamily::AthleteGender,
+        &quarantine_proposal("state", "girls"),
+        &packet,
+    );
+    assert_eq!(wrong_field.admitted(), None);
+    let unknown_value = validate(
+        ReviewFamily::AthleteGender,
+        &quarantine_proposal("gender", "unknown"),
+        &packet,
+    );
+    assert_eq!(unknown_value.admitted(), None);
+    let address = validate(
+        ReviewFamily::SchoolAddress,
+        &quarantine_proposal("school_address", "30 Ash Street, Madison, WI"),
+        &packet,
+    );
+    assert!(address.admitted().is_some());
+    let empty_address = validate(
+        ReviewFamily::SchoolAddress,
+        &quarantine_proposal("school_address", "   "),
+        &packet,
+    );
+    assert_eq!(empty_address.admitted(), None);
+    let transfer = validate(
+        ReviewFamily::TransferAmbiguous,
+        &quarantine_proposal("identity", "ath:1"),
+        &packet,
+    );
+    assert_eq!(transfer, Adjudication::Undecided);
+}
+
 #[test]
 fn a_school_link_answers_a_directory_label_and_refuses_anything_else() {
     let packet = school_packet(None);
@@ -185,7 +253,7 @@ fn a_family_parses_from_the_cli_spelling() {
     );
     assert_eq!(ReviewFamily::SchoolLink.field(), "identity");
     assert_eq!(ReviewFamily::parse("cohort"), None);
-    assert_eq!(ReviewFamily::askable().len(), 3);
+    assert_eq!(ReviewFamily::askable().len(), 5);
     assert!(
         !ReviewFamily::askable().contains(&ReviewFamily::SchoolLink),
         "school links are mapped by the school-directory rules, not asked about"
@@ -193,6 +261,15 @@ fn a_family_parses_from_the_cli_spelling() {
     assert!(
         ReviewFamily::askable().contains(&ReviewFamily::AthleteIdentity),
         "the lane must offer the athlete family, or it is asked about by nobody"
+    );
+    assert!(
+        ReviewFamily::askable().contains(&ReviewFamily::AthleteGender)
+            && ReviewFamily::askable().contains(&ReviewFamily::SchoolAddress),
+        "quarantined unknowns must reach the model lanes"
+    );
+    assert!(
+        !ReviewFamily::askable().contains(&ReviewFamily::TransferAmbiguous),
+        "transfers need performance evidence in the packet before they are askable"
     );
 }
 

@@ -41,11 +41,14 @@ pub(super) fn values(
     athlete: &CanonicalAthlete,
     projection: Option<&Projection<'_>>,
 ) -> ReportResult<[Value; 3]> {
-    let accepted = expected.prs_of(athlete.id.as_str()).map(|pr| {
-        let values = prs::values(pr, expected, Some(affiliations))?.collect::<Vec<_>>();
-        let text = format(&values, 0, "verified_eligible_best")?;
-        comparison(text, &pr.key)
-    });
+    let accepted = expected
+        .prs_of(athlete.id.as_str())
+        .filter(|pr| !pr.key.event_kind.is_relay())
+        .map(|pr| {
+            let values = prs::values(pr, expected, Some(affiliations))?.collect::<Vec<_>>();
+            let text = format(&values, 0, "verified_eligible_best")?;
+            comparison(text, &pr.key)
+        });
     let bests = projection.into_iter().flat_map(|projection| {
         projection.bests_for(&athlete.id).map(move |best| {
             reported::prs::best::values(projection, best, expected)

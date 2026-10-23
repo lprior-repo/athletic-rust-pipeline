@@ -60,6 +60,13 @@ impl<'a> Recruiting<'a> {
     }
 
     pub(super) fn write_athletes(&self, book: &mut Workbook, path: &Path) -> ReportResult<()> {
+        let schools = if self.dataset.source.selected_profile_id().is_some() {
+            Some(crate::export::current_school::SelectedSchools::of(
+                self.dataset.source,
+            )?)
+        } else {
+            None
+        };
         let mut widths = self.identity_widths(&athletes::WIDTHS);
         if self.reported.is_some() {
             widths.splice(0..0, [24, 36]);
@@ -73,7 +80,7 @@ impl<'a> Recruiting<'a> {
                 widths: &widths,
                 chrome: SheetChrome::Filtered,
             },
-            athletes::rows_with_reported(&self.dataset, self.reported.as_ref()),
+            athletes::rows_with_reported(&self.dataset, self.reported.as_ref(), schools.as_ref()),
         )
     }
 

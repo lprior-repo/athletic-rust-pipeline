@@ -16,6 +16,7 @@ mod coverage;
 mod inventory;
 pub(in crate::workbook) mod metrics;
 pub mod queues;
+mod retained;
 mod schools;
 mod sheets;
 mod sources;
@@ -24,7 +25,7 @@ use metrics::metrics_sheet;
 use queues::{cohort_of, conflict_families, review_families};
 use sheets::meta_sheets;
 
-pub use queues::retained_records;
+pub use retained::retained_records;
 
 type Sheet = (&'static str, Vec<Vec<Cell>>, &'static [u16], SheetChrome);
 

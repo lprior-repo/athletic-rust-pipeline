@@ -1,8 +1,12 @@
 use super::super::{school_of, subject_of, Family, StoreRows};
+
+mod quarantine;
+
 use super::{
     queue_row, COHORT_UNVERIFIED, IDENTITY_UNVERIFIED, UNRESOLVED_SCHOOL, UNRESOLVED_VENUE,
 };
 use census_domain::model::{CanonicalAthlete, CanonicalMeet, CanonicalSchool, Confidence};
+pub(super) use quarantine::{address_unverified, gender_unverified, transfer_ambiguous};
 use std::collections::HashMap;
 
 pub(super) fn cohort_unverified(
@@ -144,7 +148,7 @@ fn source_count(athlete: &CanonicalAthlete) -> usize {
 mod tests {
     use super::*;
     use census_domain::model::{
-        GradYear, PublishedGraduation, SchoolId, SourceIdentity, SourceNamespace, SourceRef,
+        Gender, GradYear, PublishedGraduation, SchoolId, SourceIdentity, SourceNamespace, SourceRef,
     };
 
     type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -155,6 +159,16 @@ mod tests {
             "Published Cohort Runner",
             GradYear::CO2027,
             census_domain::model::Gender::Girls,
+            SourceIdentity::new(SourceNamespace::MilesplitAthlete, id),
+        )?)
+    }
+
+    fn unknown_gender_athlete(school: &SchoolId, id: &str) -> TestResult<CanonicalAthlete> {
+        Ok(CanonicalAthlete::new(
+            school,
+            "Unknown Gender Runner",
+            GradYear::CO2027,
+            Gender::Unknown,
             SourceIdentity::new(SourceNamespace::MilesplitAthlete, id),
         )?)
     }
@@ -190,6 +204,32 @@ mod tests {
             expected,
         );
         check!(eq; family.findings, 2);
+        Ok(())
+    }
+
+    #[test]
+    fn quarantine_families_cover_unknown_gender_missing_address_and_unresolved_current_school(
+    ) -> TestResult {
+        use census_domain::UsJurisdiction;
+        let (school, _) = CanonicalSchool::new(
+            UsJurisdiction::Wisconsin,
+            "Madison East",
+            "madisoneast",
+            Some("Madison"),
+        );
+        let known = athlete("3001")?;
+        let unknown = unknown_gender_athlete(&school.id, "3002")?;
+        let cohort = vec![known, unknown];
+        let gender = gender_unverified(&cohort, &HashMap::new());
+        check!(eq; gender.findings, 1, "only the unknown gender is quarantined");
+        check!(eq; gender.rows[0].subject_id, cohort[1].id.to_string());
+        let address = address_unverified(&cohort, std::slice::from_ref(&school), &HashMap::new());
+        check!(eq; address.findings, 2, "the fixture school carries no postal claim");
+        let dir = tempfile::tempdir()?;
+        let store = census_store::Store::open(dir.path())?;
+        let dataset = crate::export::ExportDataset::load(&store)?;
+        let transfer = transfer_ambiguous(&cohort, &dataset, &HashMap::new())?;
+        check!(eq; transfer.findings, 0, "no selected profile means no transfer check");
         Ok(())
     }
 
