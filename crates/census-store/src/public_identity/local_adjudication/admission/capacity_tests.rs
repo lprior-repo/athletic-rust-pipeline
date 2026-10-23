@@ -32,7 +32,13 @@ fn capacity_accepts_zero_and_exact_limits() -> TestResult {
 #[test]
 fn byte_capacity_admits_measured_canonical_cohort_total() -> TestResult {
     require_capacity(4_640_733_426, MAX_ROOTS, MAX_RESERVATIONS)?;
-    check!(eq; MAX_BYTES, 8_589_934_592);
+    Ok(())
+}
+
+#[test]
+fn byte_capacity_admits_measured_retained_full_corpus_total() -> TestResult {
+    require_capacity(28_363_480_485, MAX_ROOTS, MAX_RESERVATIONS)?;
+    check!(eq; MAX_BYTES, 34_359_738_368);
     Ok(())
 }
 

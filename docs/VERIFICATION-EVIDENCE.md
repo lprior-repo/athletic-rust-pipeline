@@ -4669,3 +4669,43 @@ restored Store exited 1 after 173,287 ms. Its team scan required 268,437,966
 encoded bytes against its unchanged 268,435,456-byte bound. No roster review,
 capability enrollment or original-Store operation was performed by this probe;
 it supplies no complete packet/program inventory or membership acceptance.
+
+### Measured retained-corpus byte admission (2026-10-23 UTC)
+
+**FAIL native 904:** the original source-cohort operation
+`five-state-co2027-source-cohort-20261022` exited 1 at 05:42:23.507 UTC after
+483,917 ms. The new descriptor bound let its complete graph plan reach byte
+admission: proposed cumulative usage was 28,363,480,485 bytes against
+8,589,934,592 available. Reservation capacity was checked before committing
+the graph reservation or staging graph bodies. The failure and retained
+capture remain recoverable under the same operation; no successful apply,
+replay, eligibility or publication is claimed.
+
+The sole production change raises the shared manual-admission byte ceiling
+to 34,359,738,368 (32 GiB). The measured cumulative proposal is 26.41555 GiB,
+leaving 5,996,257,883 bytes. This accounts for reservation metadata and encoded
+physical keys/values, including nested base64 representations; it is neither
+raw corpus size nor an eager 32-GiB allocation. Existing descriptor/root,
+physical-row, metadata, reservation and per-object limits, validators,
+encodings, policy identities and persisted counters remain unchanged.
+The exact 904 graph passed descriptor and metadata planning before this
+refusal. Future disk use also includes WAL, SST and compaction overhead outside
+this logical admission ledger. Old 8-GiB binaries can refuse a subsequently
+valid larger header and must not be restarted against new larger state.
+
+**RED 911:** the new exact measured-byte regression executed against 8 GiB
+and failed with needed 28,363,480,485 / available 8,589,934,592. **PASS 912:**
+all 73 focused tests passed, 394.500s test / 399.833s task / 403.558s wall.
+Coverage retains exact limits, one-byte-over typed refusal, checked overflow,
+corrupt-header preservation, physical tamper, cumulative reservation
+exhaustion, large capture and zero-new-charge replay, and crash recovery.
+The former 4,640,733,426-byte positive regression remains. Independent static
+review of the actual two-file diff found no actionable findings; it does not
+certify native graph persistence or workbook acceptance. RTX 3090 probe 910
+found foreign work active and submitted no request; both foreign GPU jobs
+were preserved. Original native same-key apply, fresh-process replay and cold
+reopen remain required. The partial Downloads workbook is unchanged.
+
+**PASS 914:** workspace fmt/check/lint-src completed in 38.569s with existing
+forced arity advisories. The qualified capacity change is ready for an
+immutable portable build; no native retry result is inferred from these checks.
