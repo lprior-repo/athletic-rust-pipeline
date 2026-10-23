@@ -6,7 +6,8 @@ use crate::report::ReportResult;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::model::{ProfileSelectionV1, QueryProfileV1};
 use census_store::{
-    FrozenPublicIdentityBundleV2, ReplayedResultSchoolCorrespondencesV1, Store, StoreSnapshot,
+    CapturedFrozenPublicIdentityV2, FrozenPublicIdentityBundleV2,
+    ReplayedResultSchoolCorrespondencesV1, Store, StoreSnapshot,
 };
 use std::path::Path;
 
@@ -33,12 +34,11 @@ impl ExportDataset {
         job: Option<&str>,
     ) -> ReportResult<Self> {
         let (profile, authority, accepted) = selected_authority(store, snapshot, selection)?;
-        let mut loaded = read::all(snapshot)?;
         let mut lineage = frozen::lineage(store, snapshot)?;
         lineage.export_job = job.map(str::to_owned);
-        let identity = snapshot.freeze_public_identity_v2()?;
+        let identity = snapshot.capture_frozen_public_identity_v2()?;
         let mut grant = AttachmentReplayGrantV1::new();
-        let school_closure = capture_school(snapshot, &identity, &mut grant)?;
+        let school_closure = capture_school(snapshot, identity.bundle(), &mut grant)?;
         let replayed_school = school_closure
             .as_ref()
             .map(|closure| {
@@ -49,8 +49,9 @@ impl ExportDataset {
                 )
             })
             .transpose()?;
-        let calendar_closure = capture_calendar(snapshot, &identity, &mut grant)?;
+        let calendar_closure = capture_calendar(snapshot, identity.bundle(), &mut grant)?;
         let replayed_calendar = replay_calendar(calendar_closure.as_ref(), &lineage, &mut grant)?;
+        let mut loaded = read::all(snapshot)?;
         extend_school(&mut loaded, replayed_school.as_ref(), &mut grant)?;
         super::super::reported_profile_prs::ReportedProfilePrs::extend_selected(
             &mut loaded,
@@ -69,7 +70,7 @@ impl ExportDataset {
                 snapshot,
                 profile: &profile,
                 objects_directory,
-                identity: &identity,
+                identity,
                 grant: &mut grant,
                 closure: school_closure.as_ref(),
                 source: replayed_school.as_ref(),
@@ -87,7 +88,7 @@ struct SelectedProofInputs<'a, 'store, 'source> {
     snapshot: &'a StoreSnapshot<'store>,
     profile: &'a QueryProfileV1,
     objects_directory: &'a Path,
-    identity: &'a FrozenPublicIdentityBundleV2,
+    identity: CapturedFrozenPublicIdentityV2,
     grant: &'a mut AttachmentReplayGrantV1,
     closure: Option<&'a archive::SchoolClosure>,
     source: Option<&'a ReplayedResultSchoolCorrespondencesV1<'source>>,

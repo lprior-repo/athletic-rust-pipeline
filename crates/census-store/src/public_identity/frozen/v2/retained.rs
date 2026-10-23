@@ -20,9 +20,13 @@ pub(super) struct Retained<'a> {
 }
 
 impl<'a> Retained<'a> {
-    pub(super) fn new(bundle: &'a wire::Bundle) -> StoreResult<Self> {
+    pub(super) fn new(
+        revision: Revision,
+        operations: &'a [wire::Operation],
+        objects: Vec<wire::Object>,
+    ) -> StoreResult<Self> {
         let mut reader = Self {
-            revision: bundle.revision,
+            revision,
             witnesses: BTreeMap::new(),
             receipts: BTreeMap::new(),
             decisions: BTreeMap::new(),
@@ -31,14 +35,12 @@ impl<'a> Retained<'a> {
             physical: BTreeMap::new(),
             objects: BTreeMap::new(),
         };
-        bundle
-            .operations
+        operations
             .iter()
             .enumerate()
             .try_for_each(|(index, operation)| reader.operation(index, operation))?;
-        bundle
-            .objects
-            .iter()
+        objects
+            .into_iter()
             .try_for_each(|object| reader.object(object))?;
         Ok(reader)
     }
@@ -90,7 +92,7 @@ impl<'a> Retained<'a> {
         Ok(())
     }
 
-    fn object(&mut self, object: &wire::Object) -> StoreResult<()> {
+    fn object(&mut self, object: wire::Object) -> StoreResult<()> {
         let root = object.reference.root().as_str();
         if self
             .objects
@@ -101,7 +103,7 @@ impl<'a> Retained<'a> {
         }
         object
             .rows
-            .iter()
+            .into_iter()
             .try_fold(None, |previous: Option<Vec<u8>>, row| {
                 let (key, value) = row.decode()?;
                 if previous.as_ref().is_some_and(|prior| prior >= &key) || !owns(root, &key)? {

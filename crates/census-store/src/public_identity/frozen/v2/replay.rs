@@ -37,7 +37,7 @@ pub(super) fn replay(
     {
         return Err(PublicIdentityError::Corrupt("frozen graph operation inventory").into());
     }
-    let retained = Retained::new(&bundle)?;
+    let retained = Retained::new(bundle.revision, &bundle.operations, bundle.objects)?;
     let source = FrozenRawObjectSource::new(
         &bundle.store_identity,
         &retained.bindings,

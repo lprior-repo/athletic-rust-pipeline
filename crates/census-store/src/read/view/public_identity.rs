@@ -100,6 +100,13 @@ impl StoreSnapshot<'_> {
         }))
     }
     pub fn freeze_public_identity_v2(&self) -> StoreResult<crate::FrozenPublicIdentityBundleV2> {
+        let (bundle, accepted) = self.capture_frozen_public_identity_v2()?.into_parts();
+        drop(accepted);
+        Ok(bundle)
+    }
+    pub fn capture_frozen_public_identity_v2(
+        &self,
+    ) -> StoreResult<crate::CapturedFrozenPublicIdentityV2> {
         let accepted = self
             .accepted_public_identity_snapshot()?
             .ok_or(PublicIdentityError::OptInRequired)?;

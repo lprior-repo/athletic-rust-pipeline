@@ -1,4 +1,4 @@
-use super::{walk, wire, FrozenPublicIdentityBundleV2};
+use super::{walk, wire, CapturedFrozenPublicIdentityV2, FrozenPublicIdentityBundleV2};
 use crate::public_identity::{
     codec,
     paged_generation::{graph_physical_rows, ObjectRefV2},
@@ -17,7 +17,7 @@ pub(crate) fn capture(
     journal: &Keyspace,
     receipts: &Keyspace,
     accepted: &AcceptedPublicIdentitySnapshot,
-) -> StoreResult<FrozenPublicIdentityBundleV2> {
+) -> StoreResult<CapturedFrozenPublicIdentityV2> {
     require_snapshot(snapshot, accepted)?;
     let reader = Live::new(snapshot, entities, meta, journal, receipts)?;
     let mut bundle = empty_bundle(&reader, meta, accepted)?;
@@ -129,17 +129,21 @@ fn physical_object(
 fn finish(
     bundle: wire::Bundle,
     accepted: &AcceptedPublicIdentitySnapshot,
-) -> StoreResult<FrozenPublicIdentityBundleV2> {
+) -> StoreResult<CapturedFrozenPublicIdentityV2> {
     bundle.bounds()?;
     let bytes = codec::encode_with_context(
         &bundle,
         super::super::MAX_FROZEN_PUBLIC_IDENTITY_BYTES,
         "frozen public identity bundle JSON bytes",
     )?;
+    drop(bundle);
     let digest = super::super::digest(&bytes);
     let replayed = super::replay::replay(&bytes, &digest)?;
     accepted.require_same_projection(&replayed)?;
-    Ok(FrozenPublicIdentityBundleV2 { bytes, digest })
+    Ok(CapturedFrozenPublicIdentityV2 {
+        bundle: FrozenPublicIdentityBundleV2 { bytes, digest },
+        accepted: replayed,
+    })
 }
 fn metadata(
     snapshot: &Snapshot,

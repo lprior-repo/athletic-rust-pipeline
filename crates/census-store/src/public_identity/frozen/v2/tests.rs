@@ -41,7 +41,10 @@ fn frozen_graph_replays_offline_after_live_changes_with_identical_projection() -
         .accepted_public_identity_snapshot()?
         .ok_or("snapshot")?;
     let before = retained_state(&store)?;
+    let captured = snapshot.capture_frozen_public_identity_v2()?;
     let frozen = snapshot.freeze_public_identity_v2()?;
+    check!(eq; captured.bundle().bytes(), frozen.bytes());
+    check!(eq; captured.bundle().digest(), frozen.digest());
     check!(eq; retained_state(&store)?, before);
     let later = subject("graph-frozen-later", "703")?;
     store.append(Table::Athletes, &later)?;
@@ -55,7 +58,9 @@ fn frozen_graph_replays_offline_after_live_changes_with_identical_projection() -
     drop(snapshot);
     drop(writer);
     drop(store);
-    let replayed = replay_frozen_public_identity_v2(frozen.bytes(), frozen.digest())?;
+    let (paired, captured_accepted) = captured.into_parts();
+    let replayed = replay_frozen_public_identity_v2(paired.bytes(), paired.digest())?;
+    captured_accepted.require_same_projection(&replayed)?;
     accepted.require_same_projection(&replayed)?;
     check!(eq; replayed.qualification_version(), PublicIdentityQualificationVersion::RetainedAuthorityGraphV3);
     check!(eq; replayed.resolve_candidate(&first)?, accepted.resolve_candidate(&first)?);

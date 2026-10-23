@@ -5627,3 +5627,80 @@ the observed old prefix, accepts exactly 128 GiB and rejects one extra byte
 without mutation. Qualification 1231 passed all 48 scoped Store tests and
 format/check/source lint. Actual full demand, memory fit and workbook acceptance
 remain open; this change does not repair normal publication capacity.
+
+### 2026-10-23: captured identity ownership and selected export lifetimes
+
+On base `bb7869e9`, the same Store capture path now returns an opaque owned pair
+of the frozen V2 artifact and its verified accepted projection. Construction
+still follows full independent replay and `require_same_projection`. Ordinary
+freeze consumes the same path. Capture drops the typed encoded bundle before
+replay; retained replay consumes object and base64-row storage progressively,
+keeping operation evidence borrowed and all duplicate/owner/order checks.
+Selected export uses the verified projection from that pair, defers loading its
+entity dataset until after proof closure capture, and releases artifact bytes
+after chunk capture. Independent cold hydration still fully replays retained
+identity chunks. All inputs remain bound to one held Store snapshot. The
+lineage clock stays before freeze; byte equality across a midnight boundary is
+not claimed.
+
+Qualification source pin 1247 covers 13 files. Store run 1246 passed all 48
+focused tests, including populated capture/ordinary-freeze byte and digest
+equality, later live mutation, dropped Store and complete independent offline
+projection equality. Report run 1246 ran 86 selected tests: 74 passed and 12
+failed with `DiskBudgetExceeded`. The omitted owned `TMPDIR` put those tests on
+a 66.25-GB tmpfs below the unchanged 64-GiB staging allowance. The failed
+receipts remain failed. Run 1249 reran exactly those 12 names on owned SSD
+scratch with unchanged source and limits; all 12 passed. Thus 86 distinct
+selected report tests passed across the two runs, not in one all-pass run.
+Foreign/stale captured-pair rejection checks exact errors, no proof writes and
+unchanged dataset bytes; all five independent physical-root refusal controls
+remain. Kernel 5/5, roster inventory/review CLI 21/21 and format/check/source
+lint passed. Configured argument-count advisories remain.
+
+Only Store `lib.rs` intersects the 210 ordered kernel source inputs. The
+independently recomputed closure is
+`3e847686e4c77a12d9920b838416ccf8a7b12b42a5430ec4db1536ae6462c174`;
+compiled manifest 1250 matches every input. Independent CODE and TEST 1247
+approved the exact pinned slice; final qualification receipt 1251 rechecks
+source, raw logs, terminal results, the 86-test union and reviews. Local
+evidence prefixes are `/tmp/athletic-work-20261021/worksheet-ownership-`.
+Bounded RTX 5090/3090 drafts required Main corrections; the uncorrected drafts
+are not accepted implementation or review evidence.
+
+These are focused correctness results. The normal identity cap remains 4 GiB.
+Actual peak RAM or latency improvement, full release gate, original-job
+publication, replay and the populated five-state/UP workbook remain unqualified.
+
+### 2026-10-23: complete original-Store JSON count and monitor reconciliation
+
+Immutable release 1238 from clean merged main `bb7869e9` ran the read-only
+original-Store measurement 1239 from 22:54:08.482Z to 23:21:07.101Z. The child
+exited 0 without a signal after 26m58.619s. Its sole typed COMPLETE document
+reports 38022727922 canonical JSON bytes, approximately 35.41 GiB, at snapshot
+3771068 and accepted head 66075/
+`772b77fa1d8c205a2035627f6adca3206204cfcfe66143cd857f383d5e7b82fc`.
+It counted 66075 operations, 9783 objects and 82194 physical rows. Exact
+accounting is 61560035 empty-bundle bytes plus 161806568 operation-array content
+bytes plus 37799361319 object-array content bytes. Array content already
+includes commas. Normal 4-GiB exhaustion records a complete physical-row JSON
+length of 932507 bytes with 297982 available. Diagnostic 128 GiB was sufficient
+for this count.
+
+The wrapper incorrectly marked that successful terminal result as protective
+failure: its final process sample has no RSS/HWM fields, and its guard treats
+missing RSS as the same failure as exceeding 28 GiB. This proves a classification
+defect, not an actual RSS breach. A process-exit sampling race is an inference;
+the reason those fields were absent is unknown. Original protective, refusal,
+result, log and runner bytes remain unchanged. Host watch 1240 confirmed the
+owner absent. Maximum sampled RSS/HWM was 8072632 KiB; the actual final peak is
+unknown. Whole-filesystem growth was 8714399744 bytes and is not attributed to
+this process alone.
+
+Separate offline readback 1253 validates the single document's exact schema,
+status, keys, safe integers, caps, accounting, original Store identity, immutable
+CLI digest, start/terminal/host bindings and unchanged original receipts. It
+also finds the original promoted input and publication absent and pending proof
+directory empty, without opening the Store. This qualifies the complete
+authenticated canonical JSON demand only. It does not qualify normal capture
+at a larger cap, RAM/disk/time fit, final encoding, frozen replay, identical
+accepted projection, eligibility, publication or workbook completion.

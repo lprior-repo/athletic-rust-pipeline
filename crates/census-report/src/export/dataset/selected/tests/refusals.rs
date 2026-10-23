@@ -60,7 +60,10 @@ async fn all_independent_physical_roots_are_enforced_on_capture_and_replay() -> 
             &profile,
             &roots,
             fresh.path(),
-            &fixture.store.snapshot().freeze_public_identity_v2()?,
+            fixture
+                .store
+                .snapshot()
+                .capture_frozen_public_identity_v2()?,
             None,
         )
         .is_err());
@@ -78,6 +81,54 @@ async fn all_independent_physical_roots_are_enforced_on_capture_and_replay() -> 
     dataset.verified_participation()?;
     dataset.verified_current_affiliations()?;
     dataset.verified_public_identities()?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn foreign_and_stale_captured_identity_refuse_before_writing_chunks() -> TestResult {
+    let fixture = Fixture::new().await?;
+    let stale = fixture
+        .store
+        .snapshot()
+        .capture_frozen_public_identity_v2()?;
+    fixture.append_second_meet().await?;
+    let foreign = Fixture::new().await?;
+    let foreign = foreign
+        .store
+        .snapshot()
+        .capture_frozen_public_identity_v2()?;
+    let objects = super::temporary()?;
+    let mut dataset = fixture.capture(objects.path())?;
+    let profile = dataset.selected_authority()?.profile().clone();
+    let fingerprints = dataset.selected_authority()?.fingerprints().clone();
+    let unchanged = dataset.archive_digest()?;
+    for (captured, expected) in [
+        (foreign, "selected public identity authority changed"),
+        (
+            stale,
+            "public identity view differs from the exact dataset lineage or registry head",
+        ),
+    ] {
+        let fresh = super::temporary()?;
+        let result = SelectedProofs::capture(
+            &mut dataset,
+            &fixture.store.snapshot(),
+            &profile,
+            &fingerprints,
+            fresh.path(),
+            captured,
+            None,
+        );
+        let detail = result
+            .err()
+            .ok_or("captured identity unexpectedly accepted")?
+            .to_string();
+        if !detail.contains(expected) {
+            return Err(format!("unexpected captured identity refusal: {detail}").into());
+        }
+        check!(std::fs::read_dir(fresh.path())?.next().is_none());
+        check!(eq; dataset.archive_digest()?, unchanged);
+    }
     Ok(())
 }
 

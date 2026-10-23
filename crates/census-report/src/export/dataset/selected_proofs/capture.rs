@@ -18,7 +18,7 @@ impl SelectedProofs {
         profile: &QueryProfileV1,
         expected_fingerprints: &BTreeMap<String, String>,
         directory: &Path,
-        identity: &census_store::FrozenPublicIdentityBundleV2,
+        identity: census_store::CapturedFrozenPublicIdentityV2,
         school: Option<crate::export::qualification::participation::SchoolContext<'_, '_>>,
     ) -> ReportResult<(Self, HydratedProofs)> {
         require_binding(dataset, profile, expected_fingerprints)?;
@@ -26,8 +26,10 @@ impl SelectedProofs {
         dataset
             .reported_profile_prs
             .require_initial_objects(directory)?;
-        dataset.prepare_selected_public_identities(identity.replay()?)?;
-        let public_identity = identity::Bundle::capture(directory, identity)?;
+        let (identity, accepted) = identity.into_parts();
+        dataset.prepare_selected_public_identities(accepted)?;
+        let public_identity = identity::Bundle::capture(directory, &identity)?;
+        drop(identity);
         let (affiliation, affiliations) =
             current_affiliation::capture_frozen(dataset, snapshot, directory)?;
         let affiliation_digest = affiliation.digest()?;
