@@ -5704,3 +5704,46 @@ directory empty, without opening the Store. This qualifies the complete
 authenticated canonical JSON demand only. It does not qualify normal capture
 at a larger cap, RAM/disk/time fit, final encoding, frozen replay, identical
 accepted projection, eligibility, publication or workbook completion.
+
+### 2026-10-23: finite normal identity capacity and retained-format preflight
+
+The complete original-Store measurement above is 38022727922 bytes. The shared
+normal frozen identity JSON limit is now 68719476736 bytes (64 GiB), consumed by
+capture, cold replay, diagnostic normal-limit classification and report proof
+inventory validation. Diagnostic counting remains 128 GiB. Wire/schema/hash,
+per-record, object, history, projection and replay contracts are unchanged.
+
+Qualification 1257 passed 48 Store, 90 report, 5 kernel and 12 CLI tests, followed
+by fmt/check/lint. Before implementation, RED 1256 failed the two changed scalar
+tests against the old 4-GiB constant. Exact boundary tests admit the measured
+length and 64 GiB, refuse one extra byte, and retain diagnostic 128-GiB refusal
+without mutation. Metadata tests validate 9065 full 4-MiB chunks plus a 1362162
+byte final chunk, missing/wrong final chunks, and the derived maximum 16384
+chunks. They allocate descriptors, not a multi-GiB payload. Independent CODE
+and TEST reviews 1257 approve the exact four-file pin; receipt 1263 binds the
+actual qualification results and unchanged 210-entry semantic kernel closure.
+
+The existing local identity CLI now accepts `inspect-store-format`, using its
+explicit existing stopped V3 qualification opener and existing `StoreFormat`
+serialization. It does not invoke the returned writer or change enrollment.
+Generic `fjall-stats` uses legacy execution admission and cannot inspect this V3
+Store. RED 1263 first failed on the absent subcommand. The subsequent 13 CLI
+tests and fmt/check/lint passed. The new test exercises explicit-root refusal,
+V3 execution, and unchanged retained format/head; it does not capture stdout.
+Actual emitted-format readback remains an immutable-binary preflight obligation.
+Evidence prefixes are `/tmp/athletic-work-20261021/worksheet-normal-capacity-`
+and `worksheet-store-format-`.
+
+School/calendar closures retain separate 8-MiB limits and embed the identity
+archive when enrolled. Valid school enrollment requires lifecycle 9 or 10;
+calendar requires 10. The original Store's current lifecycle is not yet observed
+by this qualification. A different lifecycle excludes valid activation of that
+closure path, but does not certify empty namespaces or overall export validity.
+Do not interpret the larger identity cap as proof those closures fit.
+
+These results qualify finite scalar admission, descriptor accounting and small
+behavioral replay controls. They do not prove large-payload RAM/disk/time fit,
+normal original-job capture or publication, the full release gate, source-backed
+eligibility, five-state/UP coverage, replay/cold-read acceptance, or a completed
+populated recruiting workbook. The original failed native invocation, pending
+job, supported backup, and existing Downloads workbook remain preserved.

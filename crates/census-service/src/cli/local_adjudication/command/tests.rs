@@ -6,6 +6,45 @@ use clap::{error::ErrorKind, Parser};
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 #[test]
+fn store_format_inspection_requires_explicit_v3_store_and_preserves_state() -> TestResult {
+    let cli = Cli::try_parse_from([
+        "census-service",
+        "local-identity-adjudication",
+        "inspect-store-format",
+    ])?;
+    let Command::LocalIdentityAdjudication(ref args) = cli.command else {
+        return Err("wrong inspection command".into());
+    };
+    check!(run(&cli, args)
+        .err()
+        .ok_or("implicit store accepted")?
+        .to_string()
+        .contains("requires explicit --store"));
+    let directory = tempfile::tempdir()?;
+    let root = directory.path().join("qualified");
+    Store::create_public_identity_qualification_v3(&root)?;
+    let (store, writer) = open(&root)?;
+    let format = store.store_format()?;
+    let head = writer.head(&store)?;
+    drop(store);
+    let cli = Cli::try_parse_from([
+        "census-service",
+        "--store",
+        root.to_str().ok_or("test root is not UTF-8")?,
+        "local-identity-adjudication",
+        "inspect-store-format",
+    ])?;
+    let Command::LocalIdentityAdjudication(ref args) = cli.command else {
+        return Err("wrong inspection command".into());
+    };
+    run(&cli, args)?;
+    let (store, writer) = open(&root)?;
+    check!(eq; store.store_format()?, format);
+    check!(eq; writer.head(&store)?, head);
+    Ok(())
+}
+
+#[test]
 fn frozen_identity_demand_cli_is_explicitly_offline_and_has_no_cap_override() -> TestResult {
     let cli = Cli::try_parse_from([
         "census-service",
