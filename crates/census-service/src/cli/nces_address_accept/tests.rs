@@ -61,13 +61,20 @@ fn nces_cli_opens_existing_current_qualification_and_replays_without_new_writes(
         store_identity: store.store_identity()?.as_str().to_string(),
         run: CensusRun::new(SchoolYear::new(2026).ok_or("school year")?, 1).ok_or("run")?,
         cohort: GradYear::CO2027,
-        jurisdictions: vec![
-            UsJurisdiction::Michigan,
-            UsJurisdiction::Minnesota,
-            UsJurisdiction::Iowa,
-            UsJurisdiction::Illinois,
-            UsJurisdiction::Colorado,
-        ],
+        jurisdictions: UsJurisdiction::CENSUS_SCOPE
+            .iter()
+            .copied()
+            .filter(|state| {
+                [
+                    UsJurisdiction::Michigan,
+                    UsJurisdiction::Minnesota,
+                    UsJurisdiction::Iowa,
+                    UsJurisdiction::Illinois,
+                    UsJurisdiction::Colorado,
+                ]
+                .contains(state)
+            })
+            .collect(),
     };
     store.bind_run(&manifest)?;
     drop((store, writer));

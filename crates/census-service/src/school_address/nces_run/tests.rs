@@ -8,6 +8,14 @@ mod selected_scope;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+const FIVE_STATE_SCOPE: [UsJurisdiction; 5] = [
+    UsJurisdiction::Michigan,
+    UsJurisdiction::Minnesota,
+    UsJurisdiction::Iowa,
+    UsJurisdiction::Illinois,
+    UsJurisdiction::Colorado,
+];
+
 const CCD: &[u8] = include_bytes!("../../../tests/fixtures/nces_run/ccd_synthetic.csv");
 const PSS: &[u8] = include_bytes!("../../../tests/fixtures/nces_run/pss_synthetic.csv");
 
