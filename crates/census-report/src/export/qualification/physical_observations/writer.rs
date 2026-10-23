@@ -128,7 +128,10 @@ impl<'a> Writer<'a> {
             return Ok(());
         }
         if self.chunks.len() >= MAX_CHUNKS {
-            return Err(invalid("physical row chunk inventory exceeds 1024 objects").into());
+            return Err(invalid(&format!(
+                "physical row chunk inventory exceeds {MAX_CHUNKS} objects"
+            ))
+            .into());
         }
         let bytes = u64::try_from(self.buffer.len()).map_err(|_| StoreError::CounterOverflow)?;
         let digest = proof_objects::install(&self.directory, &self.buffer)?;

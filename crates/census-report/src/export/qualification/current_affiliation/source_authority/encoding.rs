@@ -1,13 +1,12 @@
 use super::*;
-use crate::export::qualification::physical_observations::OBSERVATION_BUDGET;
+use crate::export::proof_objects::MAX_OBJECT_BYTES;
 use std::io::Write;
 
 pub(super) fn encode(
     value: &impl serde::Serialize,
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<Vec<u8>> {
-    let ceiling =
-        usize::try_from(OBSERVATION_BUDGET.bytes).map_err(|_| StoreError::CounterOverflow)?;
+    let ceiling = usize::try_from(MAX_OBJECT_BYTES).map_err(|_| StoreError::CounterOverflow)?;
     let expected = measure(value, ceiling, grant)?;
     let mut bytes = Vec::new();
     bytes

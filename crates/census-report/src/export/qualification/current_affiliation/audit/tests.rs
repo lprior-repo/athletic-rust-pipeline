@@ -72,13 +72,13 @@ fn aggregate_admission_failure_preserves_all_existing_audit_state() -> TestResul
     check!(reasons.unavailable.is_empty());
     check!(eq; reasons.reason_count, OBSERVATION_BUDGET.rows);
     let mut bytes = RetainedAudit {
-        bytes: OBSERVATION_BUDGET.bytes,
+        bytes: MAX_OBJECT_BYTES,
         ..Default::default()
     };
     check!(matches!(
         bytes.reference(&id, "x"),
         Err(StoreError::BudgetExceeded { needed, available, .. })
-            if available == OBSERVATION_BUDGET.bytes
+            if available == 4 * 1024 * 1024 * 1024
                 && needed.checked_sub(available) == Some(1)
     ));
     check!(bytes.references.is_empty());
@@ -86,7 +86,7 @@ fn aggregate_admission_failure_preserves_all_existing_audit_state() -> TestResul
     check!(matches!(
         bytes.gap(id, Gap::ArchiveUnavailable),
         Err(StoreError::BudgetExceeded { needed, available, .. })
-            if available == OBSERVATION_BUDGET.bytes && needed > available
+            if available == 4 * 1024 * 1024 * 1024 && needed > available
     ));
     check!(bytes.unavailable.is_empty());
     check!(eq; bytes.reason_count, 0);

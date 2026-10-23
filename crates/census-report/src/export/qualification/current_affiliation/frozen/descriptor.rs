@@ -103,7 +103,7 @@ impl FrozenAffiliationDescriptor {
                 digest: family.digest.clone(),
                 bytes: family.bytes,
             }
-            .validate(physical_observations::OBSERVATION_BUDGET.bytes)?;
+            .validate(crate::export::proof_objects::MAX_OBJECT_BYTES)?;
         }
         Ok(())
     }

@@ -11,6 +11,9 @@ mod object;
 mod reader;
 mod writer;
 
+#[cfg(test)]
+mod tests;
+
 use closure::Closure;
 pub(crate) use descriptor::PhysicalObservationDescriptor;
 use object::ObjectRef;
@@ -18,9 +21,9 @@ pub(super) use writer::Writer;
 
 const CHUNK_BYTES: usize = 4 * 1024 * 1024;
 const RECORD_BYTES: usize = 1024 * 1024;
-const MAX_CHUNKS: usize = 1024;
+const MAX_CHUNKS: usize = 8192;
 const INVENTORY_BYTES: u64 = 4 * 1024 * 1024;
-const MAX_BYTES: u64 = 4 * 1024 * 1024 * 1024;
+const MAX_BYTES: u64 = 16 * 1024 * 1024 * 1024;
 
 pub(crate) const OBSERVATION_BUDGET: ReadBudget = ReadBudget {
     rows: 4_000_000,
