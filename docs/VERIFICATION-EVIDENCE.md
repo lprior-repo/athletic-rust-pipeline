@@ -5355,8 +5355,8 @@ approval's decimal-byte expansion and repeated basis require a saved ReviewRecor
 of 1,166,405,957-1,166,405,967 bytes, depending on the commit timestamp. Both the
 old 512-MiB record cap and 2,097,152 protected-row cap would refuse this review.
 Those are size proofs, not executed approval failures. Conditional first-review
-analysis 1098 uses the successfully validated ordinal-one ledger and existing
-metadata/lineage bounds to obtain at most 3,026,662 protected rows and
+analysis 1098 uses the validated prior ordinal-zero ledger, proposed next ordinal
+one, and existing metadata/lineage bounds to obtain at most 3,026,662 protected rows and
 7,965,132,570 bytes. This is not an independent exact measurement of old metadata
 or proof of postcommit open, frozen output, memory use or subsequent-review fit.
 
