@@ -4523,3 +4523,45 @@ Restored-copy workbook qualification 884 registered immutable October-23 profile
 Its first invocation refused an overlong generation label before opening the
 Store; the corrected invocation uses `co2027-address-readback-884`. No completed
 publication or independent postal readback is claimed at this checkpoint.
+
+### Original cold backup repaired; original cohort resumed (888--893)
+
+**PASS 888:** clean `98880f661ba58c2071c2cf5798c8c88199f38fab` portable
+build, 267.844s task / 272.644s wall. Immutable endpoint SHA256 is
+`08511cea62b047b9f009f3ee9d8281f009db03d12ec77472f9c1343e9c0a6a5f`;
+CLI SHA256 is `51ff1515413521d09b7296dfd7a5f73f164a05b7f9db62e9ec176d81fce46f41`.
+The 8,476-file tracked-source inventory digest is
+`66d2586bda1ed4c720c2d91fb1679572b3023d8101671891720904ec89521b40`.
+
+**PASS 889:** normal native cold backup of the original stopped Store exited
+zero at 2026-10-23 05:01:36.750 UTC in 616,098 ms. The original physical owner
+was absent, all three original invocations were paused with unchanged pins,
+and 299,268,599,808 bytes were available before execution. The same destination
+that failed in 831 and 883 now publishes 207,907 files / 42,466,708,784 bytes /
+zero links. Its `backup.json` SHA256 is
+`148cf35b22d4ff38e081b8dc273d0df16b6a1ac63d3bb9277cbfd4204494817e`.
+Cold staging validation retained all existing checks. Physical table counts
+include athletes 1,796,172, performances 1,220,513, schools 8,718 and athlete
+identity decisions zero; these are archive rows, not eligible recruiting counts.
+Bead `athletic-rust-pipeline-i91w` is closed for this demonstrated backup repair.
+
+**RUNNING 892:** after verifying successful backup 889 and its manifest hash,
+absence of an original Store owner, and unchanged paused invocation IDs/pins,
+the same immutable CLI resumed original operation
+`five-state-co2027-source-cohort-20261022`, graduation year 2027. Its existing
+Rust source-bound identity writer remains authoritative. The wrapper will run
+the identical command in a fresh process and compare count and registry head
+only after success. No original cohort completion, affiliation, eligibility or
+workbook acceptance is claimed yet.
+
+**LIMITED ADVISORY 890:** RTX 5090 reviewed preserved, uncommitted worksheet
+changes without editing files, HTTP 200 / finish `stop`, 27,531 ms. Two suggested
+compile defects were disproved by complete imports and callers; a suggested
+missing-address refusal contradicts the explicit blank-for-unknown contract.
+No source change or review approval was adopted. **INCONCLUSIVE 893:** RTX 3090
+guard review reached 4,096 tokens / finish `length` with empty final content,
+60,853 ms; HTTP 200 is not review acceptance. Request/response receipts remain.
+
+Workbook qualification 884 still runs on the separate restored Store. No
+Downloads replacement, full workbook completion, Native/browser backup,
+original nonempty-journal upgrade qualification or full release pass is claimed.
