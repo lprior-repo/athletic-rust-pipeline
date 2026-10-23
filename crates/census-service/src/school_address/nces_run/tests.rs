@@ -287,8 +287,10 @@ fn accepted_nces_run_joins_into_canonical_schools_and_survives_frozen_dataset_re
     let joined = super::super::join_generation_pinned(
         &fixture.store,
         &generation,
+        None,
         overrides,
         receipt.address_generation_digest(),
+        super::super::Mode::Apply,
     )?;
     check!(eq; (joined.counters.already_linked, joined.counters.backfilled,
         joined.counters.postal_filled, joined.counters.postal_remaining), (10, 10, 10, 0));

@@ -15,10 +15,11 @@ mod report;
 
 pub use generation_error::GenerationError;
 pub use join::{
-    build_lane_evidence, join_generation, preflight_generation, process, Acquisition, JoinError,
-    JoinReport, LaneEvidence, LaneSelection, LaneSet, Mode, OutcomeRow, Overrides,
+    build_lane_evidence, join_generation, join_generation_pinned, preflight_generation, process,
+    Acquisition, JoinError, JoinReport, LaneEvidence, LaneSelection, LaneSet, Mode, OutcomeRow,
+    Overrides,
 };
-pub(crate) use join::{join_generation_pinned, EvidenceField, EvidenceFields};
+pub(crate) use join::{EvidenceField, EvidenceFields};
 pub use manifest::{verify_current, VerifiedGeneration};
 pub use nces_run::{NcesSelectedArtifactV1, NcesSelectedInputV1};
 pub use report::{

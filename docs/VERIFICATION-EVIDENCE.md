@@ -4394,3 +4394,51 @@ This proves activity, not result eligibility, step completion or an ETA. Guarded
 cold backup/publication 831 still waits for actual owner exit. Existing Downloads
 and its reported-unverified workbook remain preserved; full workbook acceptance
 and repository-wide release qualification remain open.
+
+### Qualified NCES intake, replay and address-join repair (2026-10-23 UTC)
+
+The first actual selected intake refused the generic Store opener (849). Commit
+`4522c865b20a9778ca37b1051d93a312b161ddef` uses the existing explicit Graph-V3
+opener without initialization, enrollment or migration. Its three CLI regressions
+passed (852). The subsequent real-input retry (857) exposed a second defect:
+the immutable run uses normal `CENSUS_SCOPE` ordering while NCES compared a
+different five-state vector order. Commit
+`99439817935a4f53c7f32d1762900b0cba04650e` shares exact-five-state validation
+without changing persisted order, exact run/selection equality, season or cohort.
+The runtime-order regression failed before that fix (859); domain 2/2 (861),
+service 104/104 (862), format/check/source lint (863) and portable build (864)
+passed afterward. Both commits are on remote main.
+
+**PASS 869:** full original official CCD/PSS inputs were admitted through the
+native CLI on isolated restored Store `probes/nces-real-source-selected-scope-844`,
+exit 0 in 168,543 ms. Its immutable CLI SHA256 is
+`1a851cc4d199f81604f20a3d0c3b00a4bd530702bd576ebc91ab1445dabf5b36`.
+The run digest is `622ab59c1c137e8a40e5b2bd70695240c18a713a3942be7accd0b127d6908e8d`;
+address generation is `15d8f9a9170e19e65f63a3087abbd2f69cbd960eb0ab7596f20200762f8b0705`.
+Independent readback **866 passed**: exactly 16,504 selected directory records
+(CO 2,181; IL 5,490; IA 1,525; MI 4,064; MN 3,244), declared artifact hashes,
+complete retained original CSV bytes and actual October-23 capture dates.
+These are all-grade school-directory records, not athlete/address matches.
+**PASS 871:** a fresh CLI process replayed the identical command, exit 0 in
+185,578 ms, with all four run/generation/input-manifest/scope bindings unchanged.
+Native Store sequence stability was not independently measured.
+
+The selected `school-address-join` CLI separately reproduced both generic-opener
+refusal and unintended missing-root creation (872). The repair composes the
+existing qualified opener, verified stored NCES receipt and original capture
+URLs/dates with the existing digest-pinned join engine. Dry-run and output-directory
+selection remain explicit. Loose `replay-evidence.json` is not trusted.
+**PASS 874:** 108/108 address and CLI tests, including exact URL/date/hash
+attribution, dry-run/replay sequence stability and refusal of a changed retained
+capture or another valid generation before postal writes. Independent static
+review found no actionable blocker; it ran no Store or native commands.
+**PASS 875:** format-write/check/source lint, 35.199 s, with existing forced
+arity advisories. Logs and native JSON receipts use these numeric suffixes under
+`/tmp/athletic-work-20261021/`.
+
+The original owner physically exited at 04:00:55 UTC. Its final report retained
+timeout 1 and unknown attempt 1, and systemd recorded exit 1; this is not clean
+shutdown acceptance. Guarded runner 831 then began the cold Store backup with
+the original invocations paused and pins preserved. At this checkpoint actual
+address joining, refreshed workbook publication, full population eligibility and
+repository-wide release acceptance remain outstanding. Downloads is preserved.

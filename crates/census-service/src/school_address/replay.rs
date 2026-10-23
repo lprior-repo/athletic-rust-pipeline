@@ -116,8 +116,10 @@ impl Replay {
         Ok(super::join_generation_pinned(
             store,
             &self.generation,
+            None,
             self.overrides.clone(),
             &self.digest,
+            super::Mode::Apply,
         )?)
     }
 }
