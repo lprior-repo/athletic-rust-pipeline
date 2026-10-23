@@ -114,3 +114,60 @@ async fn frozen_resume_refuses_live_route_before_network_submission() -> TestRes
     check!(error.to_string().contains("requires explicit --store"));
     Ok(())
 }
+
+#[test]
+fn job_recovery_requires_original_selection_output_and_excludes_other_publication_routes(
+) -> TestResult {
+    let recovery = [
+        "--recover-job",
+        "workbook:original-failed",
+        "--out",
+        "/original/publication",
+    ];
+    check!(eq; parsed(&recovery)?.recover_job.as_deref(), Some("workbook:original-failed"));
+    check!(Cli::try_parse_from(arguments(&["--recover-job", "workbook:original-failed"])).is_err());
+    for incompatible in [
+        vec!["--generation", "new-generation"],
+        vec!["--resume-frozen", "--generation", "old-generation"],
+        vec!["--derive-out", "/other/publication"],
+        vec!["--ingress", "http://127.0.0.1:8080"],
+    ] {
+        let extra: Vec<_> = recovery.iter().copied().chain(incompatible).collect();
+        check!(Cli::try_parse_from(arguments(&extra)).is_err());
+    }
+    let mut missing_selection = arguments(&recovery);
+    missing_selection.drain(6..10);
+    check!(Cli::try_parse_from(missing_selection).is_err());
+    for invalid in [
+        "",
+        "workbook:",
+        "foreign:job",
+        &format!("workbook:{}", "x".repeat(4096)),
+    ] {
+        check!(recovery_job(invalid).is_err());
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn job_recovery_refuses_live_route_before_network_or_store_access() -> TestResult {
+    let mut argv = arguments(&[
+        "--recover-job",
+        "workbook:original-failed",
+        "--out",
+        "/original/publication",
+    ]);
+    argv.drain(1..3);
+    let cli = Cli::try_parse_from(argv)?;
+    let crate::cli::command::Command::Workbook(args) = &cli.command else {
+        return Err("wrong command".into());
+    };
+    let error = run_workbook(&cli, args)
+        .await
+        .err()
+        .ok_or("live recovery accepted")?;
+    check!(error
+        .to_string()
+        .contains("--recover-job requires explicit --store"));
+    Ok(())
+}

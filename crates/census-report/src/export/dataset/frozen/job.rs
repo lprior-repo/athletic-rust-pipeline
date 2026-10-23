@@ -9,6 +9,7 @@ pub(in crate::export::dataset) use selected::freshness::Freshness as SelectedJob
 enum InputMode {
     CaptureOrResume,
     ResumeOnly,
+    RecoverExisting,
 }
 
 pub(in crate::export::dataset) fn capture(
@@ -25,6 +26,14 @@ pub(in crate::export::dataset) fn resume(
     request: &ExportJobRequest,
 ) -> ReportResult<ExportDataset> {
     open(store, job, request, InputMode::ResumeOnly)
+}
+
+pub(in crate::export::dataset) fn recover(
+    store: &Store,
+    job: &str,
+    request: &ExportJobRequest,
+) -> ReportResult<ExportDataset> {
+    open(store, job, request, InputMode::RecoverExisting)
 }
 
 fn open(

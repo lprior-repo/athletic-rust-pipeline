@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 
 mod commitment;
 pub(super) mod freshness;
+mod staging;
 use commitment::Commitment;
 
 pub(super) fn present(path: &Path) -> ReportResult<bool> {
@@ -44,8 +45,9 @@ pub(super) fn capture(
             "resuming publication requires an existing frozen input; no new input was captured",
         ));
     }
-    let (dataset, archive_digest) = if !present(&pending)? {
-        let (mut prepared, archive_digest) = prepare(store, job, selection, &pending)?;
+    let stage = staging::preparation(&pending, mode)?;
+    let (dataset, archive_digest) = if let staging::Input::Prepare(stage) = stage {
+        let (mut prepared, archive_digest) = prepare(store, job, selection, &pending, stage)?;
         super::super::archive::verify_retained(
             &pending.join("input.json"),
             &archive_digest,
@@ -76,19 +78,13 @@ fn prepare(
     job: &str,
     selection: &ProfileSelectionV1,
     pending: &Path,
+    stage: staging::Preparation,
 ) -> ReportResult<(ExportDataset, String)> {
     let snapshot = store.snapshot();
     let profile = snapshot.selected_profile(selection)?;
     let freshness = freshness::capture(&snapshot, &profile)?;
-    std::fs::create_dir(pending).map_err(|source| io_error(pending, source))?;
-    super::sync_directory(
-        pending
-            .parent()
-            .ok_or_else(|| invalid("pending selected job has no parent"))?,
-    )?;
+    let objects = staging::directories(pending, stage)?;
     let archive = pending.join("input.json");
-    let objects = super::super::proof_directory(&archive)?;
-    std::fs::create_dir(&objects).map_err(|source| io_error(&objects, source))?;
     let dataset =
         ExportDataset::selected_snapshot_for_job(store, &snapshot, selection, &objects, Some(job))?;
     let commitment = Commitment::new(job, selection, &dataset, freshness)?;

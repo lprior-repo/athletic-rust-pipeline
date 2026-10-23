@@ -93,6 +93,13 @@ fn selected_job_refuses_legacy_retained_freeze_even_without_legacy_json() -> Tes
     };
     check!(ExportDataset::for_job_request(&store, job, &request).is_err());
     check!(path.is_dir());
+    let error = ExportDataset::recover_job_request(&store, job, &request)
+        .err()
+        .ok_or("recovery admitted a legacy freeze")?;
+    check!(error
+        .to_string()
+        .contains("legacy export job cannot become selected publication"));
+    check!(path.is_dir());
     check!(ExportDataset::for_job_request(&store, job, &request).is_err());
     Ok(())
 }
