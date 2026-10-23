@@ -4766,3 +4766,44 @@ Canonical formatting 924 completed. **PASS 925:** workspace fmt/check/lint-src
 completed in 33.945s with the existing forced arity advisories. Native inventory
 against the preserved unowned restored Store remains the next qualification;
 the original Store continues under the separate source-cohort 917 owner.
+
+**PASS build 926:** clean commit `4d5c6b6db109e1463047fed8ba52c564cfab1925`
+built the portable executables in 273.293s wall. Immutable paired release 927
+is `02c936517e9f7af2415c91cdeefaada6b6bfee57061d1d1111b0f124e636c76e`,
+binding serve SHA256
+`8c588a150e73aa025ce0f8fbd76ae8d3fa111482dfa6e427c39e9743d106a123`,
+CLI SHA256 `24fb1bc52303995b1bc929e3c7cb5d70946c9133a953f61caf1f762733c36e08`
+and 8,476 tracked source files / inventory SHA256
+`e9c65869a75e4cd3a2723e1f02bb8c411cf950b6db1afecc25513a67ace273a6`.
+
+**PASS native inventory 928:** the retained restored-844 Store completed normal
+`capture-protocol roster-inventory`, exit 0 / no signal, in 167,029 ms at
+06:28:00.332 UTC. At snapshot 1,097,164 it read 10,115 physical school rows /
+30,607,479 encoded bytes / 3,485 merged schools and 99,589 physical team rows /
+362,093,026 encoded bytes / 16,054 merged teams. This restored copy predates
+backup 889's larger original corpus; these read counts do not qualify the
+1,050,405 original Team observations. Its 4,916,895-byte JSON output has SHA256
+`61dd85ddc14668244df3bfcfb61c122a25629f74a0310e3de59e96cf1dc1aceb`.
+
+Unreviewed hints identify 2,741 schools / 2,743 original roster packets /
+12,972 matching programs: IL 848/850/3,854; MI 894/894/3,575;
+IA 410/410/3,472; MN 589/589/2,071. No Colorado packet is present in this
+inventory. Every packet hint records capture on 2026-10-22 UTC; this does not
+establish current membership on another selected as-of date. Packet discovery
+does not qualify authority, cohort, grade, current school, participation,
+eligible marks, coach contacts or the workbook.
+
+### Actual paused acquisition journal baseline (2026-10-23 UTC)
+
+**LIMITED inspection 930:** read-only Native admin queries retained the complete
+nonempty journals of the three exact original paused invocation IDs/pins,
+checking row totals and final indices across 32-entry pages. CO has 259 entries /
+64,765,465 serialized bytes, MI 817 / 112,186,413 and National 333 / 1,372,660.
+MI's unfinished `results-v2-execute` is index 816; CO's is index 258.
+All three IDs/pins/statuses were unchanged before/after inspection. Response
+pages are bounded at 256 MiB and aggregate serialized rows at 512 MiB.
+The previous unpaged inspection 929 refused its 32-MiB response bound; that
+failure is retained and is not a compatibility result. Native/browser cold
+backup, restored populated-journal continuation and actual resume remain
+unqualified. Source-cohort 917 still owns the original Fjall Store; no second
+owner, live-directory copy, replacement invocation or retry reset was used.
