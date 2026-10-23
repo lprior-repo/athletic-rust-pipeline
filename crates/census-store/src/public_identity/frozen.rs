@@ -13,7 +13,7 @@ pub use v2::{
 };
 pub use v2::{FrozenPublicIdentityDemandV2, MAX_FROZEN_PUBLIC_IDENTITY_DEMAND_JSON_BYTES};
 
-pub const MAX_FROZEN_PUBLIC_IDENTITY_BYTES: usize = 4 * 1024 * 1024 * 1024;
+pub const MAX_FROZEN_PUBLIC_IDENTITY_BYTES: usize = 64 * 1024 * 1024 * 1024;
 
 fn bound(bytes: usize, max: usize) -> StoreResult<()> {
     if bytes > max {

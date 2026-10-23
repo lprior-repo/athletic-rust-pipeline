@@ -116,7 +116,9 @@ fn object_metadata_limits_are_admitted_before_read() -> TestResult {
 fn identity_bundle_chunk_count_and_boundaries_are_exact() -> TestResult {
     let chunk_bytes = 4 * 1024 * 1024;
     let max_bytes = census_store::MAX_FROZEN_PUBLIC_IDENTITY_BYTES;
+    check!(eq; max_bytes, 68_719_476_736);
     let max_chunks = max_bytes.checked_div(chunk_bytes).ok_or("chunk division")?;
+    check!(eq; max_chunks, 16_384);
     let chunk = json!({ "digest": "a".repeat(64), "bytes": chunk_bytes });
     let boundary = json!({ "digest": "b".repeat(64), "bytes": max_bytes, "chunks": vec![chunk.clone(); max_chunks] });
     let valid: identity::Bundle = serde_json::from_value(boundary.clone())?;
@@ -143,6 +145,35 @@ fn identity_bundle_chunk_count_and_boundaries_are_exact() -> TestResult {
     check!(serde_json::from_value::<identity::Bundle>(changed)?
         .validate()
         .is_err());
+    Ok(())
+}
+
+#[test]
+fn measured_identity_length_has_exact_partial_chunk_inventory() -> TestResult {
+    let bytes = 38_022_727_922_usize;
+    let chunk_bytes = 4_194_304;
+    let full_chunks = bytes.checked_div(chunk_bytes).ok_or("chunk division")?;
+    let remainder = bytes.checked_rem(chunk_bytes).ok_or("chunk remainder")?;
+    check!(eq; full_chunks, 9065);
+    check!(eq; remainder, 1_362_162);
+    let mut chunks = vec![json!({ "digest": "a".repeat(64), "bytes": chunk_bytes }); full_chunks];
+    chunks.push(json!({ "digest": "b".repeat(64), "bytes": remainder }));
+    check!(eq; chunks.len(), 9066);
+    let decode = |chunks: Vec<serde_json::Value>| {
+        serde_json::from_value::<identity::Bundle>(json!({
+            "digest": "c".repeat(64), "bytes": bytes, "chunks": chunks
+        }))
+    };
+    decode(chunks.clone())?.validate()?;
+    let mut missing = chunks.clone();
+    missing.pop().ok_or("partial chunk absent")?;
+    check!(matches!(decode(missing)?.validate(),
+        Err(crate::report::ReportError::Invariant { detail })
+        if detail == "selected identity bundle version-independent bounds differ"));
+    *chunks.last_mut().ok_or("partial chunk absent")? = json!({ "digest": "b".repeat(64), "bytes": remainder.checked_add(1).ok_or("chunk overflow")? });
+    check!(matches!(decode(chunks)?.validate(),
+        Err(crate::report::ReportError::Invariant { detail })
+        if detail == "selected identity bundle chunk boundary differs"));
     Ok(())
 }
 

@@ -19,6 +19,8 @@ pub(in crate::cli) struct LocalAdjudicationArgs {
 
 #[derive(Debug, Subcommand)]
 enum LocalCommand {
+    #[command(about = "Inspect the retained format of an existing stopped V3 qualification store")]
+    InspectStoreFormat,
     #[command(
         about = "Measure complete frozen identity JSON demand without creating a frozen bundle or publication"
     )]
@@ -119,6 +121,10 @@ enum LocalCommand {
 pub(in crate::cli) fn run(cli: &crate::cli::Cli, args: &LocalAdjudicationArgs) -> Result<()> {
     let root = require_root(cli.store.as_deref())?;
     match &args.command {
+        LocalCommand::InspectStoreFormat => {
+            let (store, _writer) = open(root)?;
+            emit(&store.store_format()?)
+        }
         LocalCommand::MeasureFrozenPublicIdentity => demand::run(root),
         LocalCommand::EnrollGraphAdmission => {
             let (store, writer) = open(root)?;
