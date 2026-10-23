@@ -5337,3 +5337,70 @@ The original failure's exact debit call site is still unattributed. Original
 preview with this correction, review apply/replay, protected review-record fit,
 full native continuation, general eligibility and accepted workbook publication
 remain unqualified. Focused tests do not establish full five-state delivery.
+
+### 2026-10-23: Original preview succeeds; saved-review capacity and finite headroom
+
+Original Quincy preview 1093 used main 77aa5b67 and immutable CLI
+a532c479fe5fd7bc1f1c7a6973d54228c974cf7b6cea513e0457fe1e18d8d40b.
+It exited zero without a signal or protective stop after 1,025,232 ms at
+15:44:30.594 UTC. Its complete approval output is 273,438,928 bytes, SHA256
+b0a67c9392a6510d0d76462cf569a6e1d43c16832c8cab20c57bcc3b56dbf954.
+This establishes the full preview, including final source and binding checks.
+No approval was applied. The exact capture is dated October 22; its day-scoped
+representation does not establish October 23 membership, identity or eligibility.
+
+Read-only decoding 1094-1096 measured 3,026,656 distinct sorted closure references,
+6,498,964,491 object-value bytes and 296,612,288 object-key bytes. The actual
+approval's decimal-byte expansion and repeated basis require a saved ReviewRecord
+of 1,166,405,957-1,166,405,967 bytes, depending on the commit timestamp. Both the
+old 512-MiB record cap and 2,097,152 protected-row cap would refuse this review.
+Those are size proofs, not executed approval failures. Conditional first-review
+analysis 1098 uses the validated prior ordinal-zero ledger, proposed next ordinal
+one, and existing metadata/lineage bounds to obtain at most 3,026,662 protected rows and
+7,965,132,570 bytes. This is not an independent exact measurement of old metadata
+or proof of postcommit open, frozen output, memory use or subsequent-review fit.
+
+The capacity correction raises saved reviews to 2 GiB, protected rows to
+16,777,216, protected bytes to 32 GiB and frozen bundles to 48 GiB. Physical rows,
+raw-row size, physical manifest, authority component, closure, retained object,
+generic record, shared 256-GiB grant and authenticity checks remain unchanged.
+The frozen record reader's minimum of retained-object and review caps remains
+2 GiB. No schema, lifecycle, review semantics, migration or retry identity changes.
+
+RED 1100 compiled two measured-footprint tests against unchanged main and both
+failed. Intermediate qualification 1101 passed 299 distinct focused tests and
+workspace format/check/source lint with the smaller first-review-only patch; its
+exact patch is retained separately. It does not qualify the later larger limits.
+RED 1106 compiled two additional headroom tests against that intermediate patch
+and both failed: ten review-sized numerical additions exceed 8 GiB, and a
+30-GiB frozen length exceeds 16 GiB. The tests allocate no large records. Final
+qualification 1107 and compiled-closure check 1108 belong to the larger candidate.
+
+The added headroom is not full-bulk acceptance. Using the measured first review
+as a model, retaining a new manifest plus a new ReviewRecord for each of 2,743
+packets would total roughly 5.8 TB before other costs; those writes have not been
+performed. Available disk was about 620 GiB and available RAM about 54 GiB during
+this assessment. Current readers retain and clone material, so neither a byte
+limit nor shared traversal allowance certifies resident memory. The global Store
+sequence in the existing manifest and repeated basis/approval in ReviewRecord
+prevent a transparent wire-preserving elimination of all repeated proof material.
+Original approval apply, fresh-process replay, cold read, actual frozen output,
+general eligibility, Colorado/UP coverage and the full workbook remain unqualified.
+The earlier 1093 approval cannot authorize a proposal under the changed kernel.
+
+Final 1107 qualification passed 301 distinct focused tests (69 Store, 33 domain,
+178 crawl, 21 service), plus workspace format/check/source lint. The four new
+tests are included in the 69 Store tests. Source lint retains configured advisory
+argument-count warnings; the full release gate has not passed. Compiled check
+1108 matched all 210 ordered inputs and current source digest
+1690f689e723933acc3dad5e66f28d0b91d0e5ae0b212a19138f9351979b9bb4.
+Independent static review matched all five Rust hashes and found no concrete
+defect in this capacity-only scope. The ten-addition test models aggregate
+accounting only; it does not execute ten reviews or qualify their extra objects.
+The 30-GiB test exercises the actual frozen counter and length guard without
+allocation; it is not actual frozen replay. A 48-GiB replay precharge uses
+192 GiB of the shared grant before other work, so the maximum-size bundle is
+not guaranteed to complete. Larger accepted data may refuse under older readers;
+rollback and postcommit cold-open behavior have not been qualified. Bulk review
+materialization is held pending a storage-efficient proof contract and disk
+qualification; increased limits are not permission to consume the SSD.

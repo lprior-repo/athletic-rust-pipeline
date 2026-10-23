@@ -4,6 +4,16 @@ use std::io::Write;
 type TestResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 
 #[test]
+fn frozen_counter_and_replay_length_admit_thirty_gib_without_allocation() -> TestResult {
+    let required = 30_usize * 1024 * 1024 * 1024;
+    admit_bundle_length(required)?;
+    let mut count = Count(required.checked_sub(1).ok_or("frozen size")?);
+    count.write_all(b"a")?;
+    check!(eq; count.0, required);
+    Ok(())
+}
+
+#[test]
 fn actual_replay_length_guard_admits_exact_and_refuses_one_extra_numerically() -> TestResult {
     admit_bundle_length(MAX_BUNDLE)?;
     check!(matches!(
