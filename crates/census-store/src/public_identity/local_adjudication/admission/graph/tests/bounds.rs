@@ -32,6 +32,23 @@ fn descriptor_decoder_accepts_cumulative_bound_and_refuses_the_next_descriptor()
     Ok(())
 }
 
+#[test]
+fn descriptor_decoder_admits_retained_full_corpus_minimum() -> TestResult {
+    let (_directory, store, _writer) = enrolled()?;
+    let (_generation, plan) = Generation::new(&store, 0)?;
+    let reservation = reserve(&store, "retained-corpus-descriptors", plan)?;
+    let descriptor = reservation.descriptors.first().ok_or("page descriptor")?;
+    let mut raw = serde_json::to_value(&reservation)?;
+    *raw.get_mut("descriptors").ok_or("descriptors")? =
+        serde_json::Value::Array(vec![serde_json::to_value(descriptor)?; 9_783]);
+    let before = retained_state(&store)?;
+    let decoded: GraphReservation = serde_json::from_slice(&serde_json::to_vec(&raw)?)?;
+    check!(eq; decoded.descriptors.len(), 9_783);
+    check!(validate::validate(&decoded, &store.store_identity()?).is_err());
+    check!(eq; retained_state(&store)?, before);
+    Ok(())
+}
+
 fn descriptor_decoder_bound(padding: usize) -> TestResult {
     let (_directory, store, _writer) = enrolled()?;
     let (_generation, plan) = Generation::new(&store, padding)?;

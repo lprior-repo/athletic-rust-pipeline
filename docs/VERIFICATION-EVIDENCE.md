@@ -4565,3 +4565,64 @@ guard review reached 4,096 tokens / finish `length` with empty final content,
 Workbook qualification 884 still runs on the separate restored Store. No
 Downloads replacement, full workbook completion, Native/browser backup,
 original nonempty-journal upgrade qualification or full release pass is claimed.
+
+### Full-corpus graph capacity and literal address publication (2026-10-23 UTC)
+
+**FAIL 892:** the original source-cohort operation exited 1 after 382,408 ms
+at 05:08:15.753 UTC. Graph admission required descriptor 4,097 against a 4,096
+ceiling. It did not complete identity acceptance or execute its planned replay.
+The original operation, paused invocations, Store and failed receipts remain.
+
+The three nonempty authority-table physical counts from cold backup 889 total
+4,984,194 rows. At 512 rows/page they require at least 9,736 pages, 40 blocks,
+six table manifests and one seal: 9,783 graph descriptors. Both the descriptor
+and cumulative admitted-root ceilings now allow 16,384. The 8 GiB byte ceiling,
+262,144 physical-row ceiling, 128 MiB metadata ceiling, 4,096 reservation
+ceiling, encodings, policy identities, validators and persisted counters remain.
+No quotas or work keys were reset. Older binaries enforcing 4,096 may refuse
+new larger reservations; this is no authorization to restart an old endpoint.
+
+An independent static calculation bounds this corpus at 10,332 descriptors
+conditional on its complete graph fitting 8 GiB. Incremental zero-charge reuse
+does not establish that full-byte condition. Existing cumulative charges still
+consume capacity. Exact full-corpus byte admission, apply, replay and cold
+reopen therefore remain native obligations; the calculation is not acceptance.
+
+**RED 895:** both new 9,783-object regressions failed against the old limits:
+root capacity reported needed 9,783 / available 4,096, and the decoder refused
+descriptor count. The initial 894 attempt had a test-return-type compile error,
+corrected before that executed red result. **PASS 896:** 72 focused tests,
+389.104s test / 394.332s task / 397.553s wall. Coverage includes count and
+physical/metadata boundaries, no-mutation refusals, cumulative reservation
+exhaustion, source-cohort receipts, partial recovery, replay, crash and tamper.
+The decoder regression deliberately repeats descriptors to exercise decoding
+capacity, then requires semantic validation to reject that invalid graph.
+
+Formatting 899 reported test wrapping; canonical fmt-write 900 corrected it
+without changing behavior. **PASS 901:** workspace fmt/check/lint-src, 37.808s,
+with the existing forced arity advisories. Independent static final-diff review
+found no actionable blocker. **LIMITED ADVISORY 897:** RTX 5090 HTTP 200,
+finish `stop`, 44,810 ms, `NO ACTIONABLE FINDING`; it did not run tests or
+certify the actual corpus. RTX 3090 had foreign work active and was preserved.
+
+**PASS native publication 884:** the restored-copy address workbook exited zero
+at 05:17:20.278 UTC after 2,808,136 ms. Its owned generation is
+`7e9bfcc3de4002d783c0618b3bf86fd3a13849c906105c7eda48cf1d26b8cc07`
+under `probes/address-workbook-884`; the workbook is 10,462,770 bytes with
+independently checked SHA256
+`48f08b76c393d8303705fdeb75a8b4bb51220a93e0fde52bb57ece2b82bdcbb6`.
+Built-in frozen readback verified 62,950 rows. Separate Store-absent cold
+verification is still running at this checkpoint and is not yet a PASS.
+
+**PASS literal readback 898:** `unzip` and namespace-aware `xmlstarlet` XPath
+read the actual worksheet cells: 62,950 subjects, 32,436 school-address cells,
+899 reported-best rows, zero observed-best/grade/source-declared-PR/head-TF-
+coach/head-XC-coach cells, and 62,950 `UNVERIFIED` statuses. Address rows by
+represented school state: CO 5,667; IA 5,954; IL 7,337; MI 7,766; MN 5,712.
+Twenty-four Quincy (Sr.) rows contain `3322 Maine St`, matching the normalized
+NCES CCD school claim and its captured-source URL, SHA256 and actual date.
+These are reported affiliation addresses, not current-school acceptance.
+Normalized accepted athletes, eligible best marks and comparison classes remain
+zero. Its 10,108 global coach-contact rows do not fill recruit coach cells.
+The original Store and Downloads file remain unchanged; the full goal remains
+incomplete and no release or selected-publication acceptance is claimed.

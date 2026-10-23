@@ -18,7 +18,7 @@ const HEADER: &str = "manual-context-admission-v1\0header";
 const RESERVATIONS: &str = "manual-context-admission-v1\0reservation\0";
 const POLICY: &str = "manual-context-admission/v2";
 const MAX_BYTES: u64 = 8 * 1024 * 1024 * 1024;
-const MAX_ROOTS: u64 = 4096;
+const MAX_ROOTS: u64 = 16_384;
 const MAX_RESERVATIONS: u64 = 4096;
 const HEADER_MARGIN: u64 = 4096;
 
