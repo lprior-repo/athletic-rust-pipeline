@@ -4,6 +4,7 @@ use crate::acquisition::{AcquisitionReadBudget, CaptureError};
 use crate::{StoreError, StoreFormat};
 use fjall::{Keyspace, Readable, Snapshot};
 
+#[tracing::instrument(name = "public_resource_startup", level = "debug", skip_all, err)]
 pub(crate) fn validate_format(
     snapshot: &Snapshot,
     meta: &Keyspace,

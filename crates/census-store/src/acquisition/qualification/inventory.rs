@@ -8,6 +8,7 @@ mod manifest;
 mod scope;
 use scope::{require_supported_work, validate_manifest};
 
+#[tracing::instrument(name = "acquisition_inventory", level = "debug", skip_all, err)]
 pub(super) fn inventory(
     root: &Path,
     snapshot: &Snapshot,

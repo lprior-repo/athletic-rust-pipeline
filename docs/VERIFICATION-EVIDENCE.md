@@ -4442,3 +4442,44 @@ shutdown acceptance. Guarded runner 831 then began the cold Store backup with
 the original invocations paused and pins preserved. At this checkpoint actual
 address joining, refreshed workbook publication, full population eligibility and
 repository-wide release acceptance remain outstanding. Downloads is preserved.
+
+### Native postal application and blocked original backup (878--880)
+
+**PASS 877:** portable build from clean source
+`2339c95b759fdc4abeba9085f7542a14456184e1`, 4m14.962s task, 4m19.792s wall.
+Immutable endpoint SHA256 is
+`8c7cedecdbe8d0db73d0d79f7fa36c476c8d650f119a8b7b8667c17caf96d65f`;
+CLI SHA256 is `79f5dd540be487471e10942c5c82c857d3f356a7b1aff7c27c81ac12bc3ba28f`.
+Tracked-source inventory binds 8,476 files with digest
+`7baf82e7a3e4761638364ae4dab688e529897c8b1d8457428aec1e1c31b9a720`.
+
+**PASS 878 apply:** the native selected address join on restored probe 844
+exited zero in 177,367 ms at 04:17:19 UTC. Its report binds generation
+`15d8f9a9170e19e65f63a3087abbd2f69cbd960eb0ab7596f20200762f8b0705`:
+3,485 schools scanned, 1,397 linked/postal-filled (1,265 CCD and 132 PSS),
+2,088 remaining (17 ambiguous review and 2,071 unmatched), zero refused or
+missing-evidence outcomes. These are join-report counters, not independently
+reopened postal-claim counts or athlete/workbook counts. Fresh-process replay
+is running at this checkpoint. No original Store postal writes are claimed.
+
+**FAIL 831:** the cold Store backup exited 1 at 04:10:04 UTC. It copied to
+staging but refused publication during acquisition validation:
+`acquisition read for encoded bytes requires 23682, exceeding its limit of 8809`.
+The runner stopped before the artifact marker, workbook publication or cold
+verification. Native staging cleanup remains unchanged; logs/request/exit/failure
+receipts are retained. The original Store and previous Downloads remain preserved.
+
+Static tracing establishes that 8,809 is remaining cumulative encoded allowance,
+not a per-record maximum. The log alone does not establish the failing pass or
+key, and does not establish corruption. Child startup and general acquisition
+inventory repeatedly read shared closures, but their role in this actual failure
+still needs native attribution. Bead `athletic-rust-pipeline-i91w` owns the repair.
+The diagnostic-only change adds named debug validation spans and refused-record
+key/length fields without changing any limits, data, errors or integrity checks.
+The diagnostic native invocation must enable `census_store::acquisition=debug`.
+**PASS 879:** format-write/check/source lint, 38.115s, with existing forced
+arity advisories. **PASS 880:** 18/18 existing acquisition/backup regressions,
+13.114s tests, 36.574s task, including the 100-child cold-open fixture and profile
+backup corruption/preservation refusals. Independent static review found no
+blocker when debug logging is explicitly enabled. None of these receipts is a
+successful original backup or refreshed workbook claim.
