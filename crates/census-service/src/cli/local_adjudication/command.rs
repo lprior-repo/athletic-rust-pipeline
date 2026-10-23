@@ -186,13 +186,9 @@ fn split(root: &Path, operation: &str, file: &Path) -> Result<()> {
     let request = input::read_request(file)?;
     let (store, writer) = open(root)?;
     let head = writer.head(&store)?;
-    let prepared = writer.prepare_local_adjudication(
-        &store,
-        operation,
-        request,
-        store.snapshot().revision(),
-        &head,
-    )?;
+    let revision = store.snapshot().revision();
+    let prepared =
+        writer.prepare_local_adjudication(&store, operation, request, revision, &head)?;
     let approved = approve_prepared(prepared.approval_bytes()?, prepared.approval_digest()?)?;
     let (approved_bytes, approval_digest) = approved.into_approved_record();
     let outcome = writer.apply_local_adjudication(

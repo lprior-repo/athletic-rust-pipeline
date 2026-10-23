@@ -13,6 +13,7 @@ mod owned_child;
 mod process_crash;
 mod recovery;
 mod refusal;
+mod short_snapshots;
 
 fn enrolled() -> TestResult<(tempfile::TempDir, Store, PublicIdentityWriterV1)> {
     let (directory, store, writer) = fixture()?;

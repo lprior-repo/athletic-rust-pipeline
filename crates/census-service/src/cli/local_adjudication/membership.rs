@@ -11,13 +11,9 @@ pub(super) fn withhold(root: &Path, operation: &str, path: &Path) -> Result<()> 
         serde_json::from_slice(&bytes).context("decoding exact membership withholding request")?;
     let (store, writer) = super::command::open(root)?;
     let head = writer.head(&store)?;
-    let prepared = writer.prepare_membership_withholding(
-        &store,
-        operation,
-        request,
-        store.snapshot().revision(),
-        &head,
-    )?;
+    let revision = store.snapshot().revision();
+    let prepared =
+        writer.prepare_membership_withholding(&store, operation, request, revision, &head)?;
     let approved =
         super::approve_prepared(prepared.approval_bytes()?, prepared.approval_digest()?)?;
     let (bytes, digest) = approved.into_approved_record();

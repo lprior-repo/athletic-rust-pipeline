@@ -20,6 +20,23 @@ pub enum PhysicalObservationPage<'a> {
 }
 
 impl StoreSnapshot<'_> {
+    pub(crate) fn scan_physical_observation_page_from_key<T: Entity>(
+        &self,
+        table: Table,
+        budget: ReadBudget,
+        start: Option<&[u8]>,
+        visit: impl FnMut(T, &[u8], &[u8], u64) -> StoreResult<()>,
+    ) -> StoreResult<(ReadCounts, Option<fjall::UserKey>)> {
+        if start.is_some_and(|key| !key.starts_with(&self.layout().prefix(table))) {
+            return Err(StoreError::Refused {
+                detail: "physical observation start belongs to another table or generation".into(),
+            });
+        }
+        let PhysicalScanResult { counts, next_key } =
+            self.scan_physical_observations(table, budget, PhysicalScan::Page(start), visit)?;
+        Ok((counts, next_key))
+    }
+
     pub fn for_each_physical_observation_page<'a, T: Entity>(
         &'a self,
         table: Table,

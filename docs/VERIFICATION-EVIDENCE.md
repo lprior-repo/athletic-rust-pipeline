@@ -4849,3 +4849,57 @@ No full workbook or release acceptance follows from these attempts. The
 Downloads generation `7e9bfcc3` remains the partial 62,950-row publication:
 32,436 addresses, 899 reported-best rows, no observed grade, declared PR,
 eligible observed best or recruiting coach cells, and all rows UNVERIFIED.
+
+### 2026-10-23: supported storage recovery and bounded capture snapshots
+
+Measurements 939/940 found 5,037 journal SSTs / 285,365,848,244 bytes.
+Checksum-validated current manifest v2132 references 307 SSTs /
+19,686,013,315 bytes; 4,730 additional SSTs total 265,679,834,929 bytes.
+Pinned lsm-tree 3.1.10 retains obsolete versions above the oldest live snapshot.
+The capture path held its planning snapshot across journal staging; caller
+inspection also found a named snapshot and three CLI argument temporaries
+lasting across capture. Logical admission did include encoded physical rows;
+this was not evidence of omitted base64 charging.
+
+**PASS 941:** ordinary current `capture-protocol show` reopened the stopped
+original Store and completed at 07:14:39.319 UTC, exit 0/no signal,
+267,110 ms. Supported vendor recovery validates referenced tables before
+removing unreferenced material. Available bytes increased from 58,424,856,576
+to 257,983,717,376. Store identity `fea26b14cb1bcac9807665773ae3db5559ddfe7cfea59cb457956f807bc59879`,
+capture protocol and exact three paused Native invocation IDs/pins remained
+unchanged. No manual database deletion, migration, reset, new operation key
+or cohort restart occurred. This supersedes the preceding 56-GiB checkpoint.
+
+The narrow repair drops planning snapshots before staging and reads each
+bounded owned raw page under a fresh append-locked snapshot after checking
+the original protected input revisions. It releases the snapshot and lock
+before journal callbacks, retaining original binding, raw bytes, page limits,
+reservation, seal and final checks. The ordinary public cursor remains bound
+to its exact snapshot/table. CLI cohort, split and withholding capture a
+revision in a preceding statement; graph inspection explicitly releases its
+snapshot before capture. No schema, admission budget or interpretation changed.
+
+**PASS 947:** 34 capture/reader tests, 334,947 ms wall, including partial
+close/reopen, same-key replay/overlap, mutation refusal and the existing large
+aggregate. **PASS 948:** 64 cohort/admission/reader tests, 247,091 ms wall,
+including owned-key byte-boundary/count parity and exhaustion. Scopes overlap.
+**PASS 950:** 18 graph/context/adjudication/withholding tests, 15,196 ms wall,
+after caller fixes. **PASS 949:** workspace fmt/check/lint-src, 38,268 ms wall,
+with existing arity advisories. Initial 944 configuration refusal and 945 test
+compilation failures were corrected; neither is counted as passing evidence.
+GPU 943 proposals were rejected; subsequent actual-diff GPU 946 reviews and
+independent final static review found no remaining actionable findings.
+
+**Diagnostic 938 completed:** exit 0/no signal at 07:36:29.886 UTC,
+1,921,681 ms wall. Eight child-projection predicates match; the sole mismatch
+is retained kernel `09a2757096e47bd8c3566a4d6c33395f4b79a528286fdeb292ce466489656066`
+versus native 927 kernel `bc39831f1a941e81534b1a1bd2656f26f1e51a50cc37bd8d7c85fb3087a2533f`.
+Team IDs/URLs, 850 parsed teams, row digest and directory capture hash match.
+Native and diagnostic builds have the same explicit production-source digest
+`821d84c35a0d0b3d6b620294b1695a24a1a14429f8c3aaec0bd292cb57c1235a`;
+their artifact-context kernel hashes differ, as recorded separately. The
+temporary excluded test source was preserved outside the repository and
+removed after this terminal diagnostic. This diagnosis does not approve the
+old packet under the current kernel or authorize a compatibility exception.
+Native full-corpus peak growth, original same-key apply/replay, roster approval
+and the complete populated workbook remain unqualified by these focused checks.

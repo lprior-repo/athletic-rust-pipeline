@@ -93,7 +93,9 @@ impl PublicIdentityWriterV1 {
             None => current,
         };
         let mut builder = GraphPlanBuilder::new(capture.clone());
-        let seal = scan::walk(&held, &capture, |node| builder.add(store, node))?;
+        let seal = scan::walk(scan::Input::Held(&held), &capture, |node| {
+            builder.add(store, node)
+        })?;
         let plan = builder.finish(store, &seal)?;
         let reserved = match reserved {
             Some(reserved) => {
@@ -102,10 +104,11 @@ impl PublicIdentityWriterV1 {
             }
             None => reserve_graph(store, operation, plan)?,
         };
+        drop(held);
         drop(guard);
         #[cfg(test)]
         rendezvous::checkpoint(rendezvous::Phase::AfterReservation)?;
-        stage(store, &held, &reserved)?;
+        stage(store, &reserved)?;
         #[cfg(test)]
         rendezvous::checkpoint(rendezvous::Phase::AfterSeal)?;
         finish_current(store, &reserved).map(RawGenerationCaptureOutcomeV2::Captured)
@@ -164,8 +167,8 @@ impl RequestFence<'_, '_> {
     }
 }
 
-fn stage(store: &Store, held: &StoreSnapshot<'_>, reserved: &GraphReservation) -> StoreResult<()> {
-    let seal = scan::walk(held, reserved.capture(), |node| {
+fn stage(store: &Store, reserved: &GraphReservation) -> StoreResult<()> {
+    let seal = scan::walk(scan::Input::Current(store), reserved.capture(), |node| {
         stage_node(store, reserved, node)
     })?;
     {

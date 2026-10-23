@@ -5,33 +5,65 @@ use super::super::{
     TableBindingV2, MAX_PAGE_RAW_BYTES, MAX_PAGE_ROWS, MAX_RAW_VALUE_BYTES, MAX_REFERENCE_FANOUT,
     MAX_TABLE_PAGES,
 };
-use crate::{Entity, PhysicalObservationPage, ReadBudget, StoreError, StoreResult, StoreSnapshot};
+use crate::{Entity, ReadBudget, Store, StoreError, StoreResult, StoreSnapshot};
 use census_domain::model::{
     CanonicalAthlete, CanonicalPerformance, RelayResult, ReviewCase, ReviewVerdictRecord,
     SourceObservation,
 };
 
+pub(super) enum Input<'a, 's> {
+    Held(&'a StoreSnapshot<'s>),
+    Current(&'a Store),
+}
+
+impl Input<'_, '_> {
+    fn read<R>(
+        &self,
+        original: &CaptureBindingV2,
+        read: impl FnOnce(&StoreSnapshot<'_>) -> StoreResult<R>,
+    ) -> StoreResult<R> {
+        match self {
+            Self::Held(snapshot) => read(snapshot),
+            Self::Current(store) => {
+                let _guard = store.lock_appends();
+                let snapshot = store.snapshot_locked();
+                super::binding::require_inputs(
+                    original,
+                    &super::binding::capture(store, &snapshot)?,
+                )?;
+                read(&snapshot)
+            }
+        }
+    }
+}
+
 pub(super) fn walk(
-    snapshot: &StoreSnapshot<'_>,
+    input: Input<'_, '_>,
     binding: &CaptureBindingV2,
     mut visit: impl FnMut(Node<'_>) -> StoreResult<ObjectRefV2>,
 ) -> StoreResult<RawGenerationSealV2> {
     let mut tables = reserve(6)?;
     for table in AuthorityTableV2::ALL {
-        let binding = binding.table_binding(table)?;
+        let table_binding = binding.table_binding(table)?;
         let reference = match table {
-            AuthorityTableV2::Athletes => scan::<CanonicalAthlete>(snapshot, &binding, &mut visit),
-            AuthorityTableV2::SourceObservations => {
-                scan::<SourceObservation>(snapshot, &binding, &mut visit)
+            AuthorityTableV2::Athletes => {
+                scan::<CanonicalAthlete>(&input, binding, &table_binding, &mut visit)
             }
-            AuthorityTableV2::ReviewCases => scan::<ReviewCase>(snapshot, &binding, &mut visit),
+            AuthorityTableV2::SourceObservations => {
+                scan::<SourceObservation>(&input, binding, &table_binding, &mut visit)
+            }
+            AuthorityTableV2::ReviewCases => {
+                scan::<ReviewCase>(&input, binding, &table_binding, &mut visit)
+            }
             AuthorityTableV2::IdentityVerdicts => {
-                scan::<ReviewVerdictRecord>(snapshot, &binding, &mut visit)
+                scan::<ReviewVerdictRecord>(&input, binding, &table_binding, &mut visit)
             }
             AuthorityTableV2::Performances => {
-                scan::<CanonicalPerformance>(snapshot, &binding, &mut visit)
+                scan::<CanonicalPerformance>(&input, binding, &table_binding, &mut visit)
             }
-            AuthorityTableV2::RelayResults => scan::<RelayResult>(snapshot, &binding, &mut visit),
+            AuthorityTableV2::RelayResults => {
+                scan::<RelayResult>(&input, binding, &table_binding, &mut visit)
+            }
         }?;
         tables.push(reference);
     }
@@ -44,7 +76,8 @@ pub(super) fn walk(
 }
 
 fn scan<T: Entity>(
-    snapshot: &StoreSnapshot<'_>,
+    input: &Input<'_, '_>,
+    capture: &CaptureBindingV2,
     binding: &TableBindingV2,
     visit: &mut impl FnMut(Node<'_>) -> StoreResult<ObjectRefV2>,
 ) -> StoreResult<RawTableReferenceV2> {
@@ -53,19 +86,21 @@ fn scan<T: Entity>(
     let mut ordinal = 0_u64;
     for index in 0..MAX_TABLE_PAGES {
         let mut rows = reserve(usize::from(MAX_PAGE_ROWS))?;
-        let outcome = snapshot.for_each_physical_observation_page::<T>(
-            binding.table().table(),
-            ReadBudget {
-                rows: u64::from(MAX_PAGE_ROWS),
-                bytes: u64::from(MAX_PAGE_RAW_BYTES),
-                record_bytes: MAX_RAW_VALUE_BYTES,
-            },
-            cursor.as_ref(),
-            |_, key, value, _| {
-                rows.push(RawPhysicalRowV2::new(binding, key, value)?);
-                Ok(())
-            },
-        )?;
+        let (_, next) = input.read(capture, |snapshot| {
+            snapshot.scan_physical_observation_page_from_key::<T>(
+                binding.table().table(),
+                ReadBudget {
+                    rows: u64::from(MAX_PAGE_ROWS),
+                    bytes: u64::from(MAX_PAGE_RAW_BYTES),
+                    record_bytes: MAX_RAW_VALUE_BYTES,
+                },
+                cursor.as_deref(),
+                |_, key, value, _| {
+                    rows.push(RawPhysicalRowV2::new(binding, key, value)?);
+                    Ok(())
+                },
+            )
+        })?;
         if !rows.is_empty() {
             let count = u64::try_from(rows.len()).map_err(|_| StoreError::CounterOverflow)?;
             let page = RawPageV2::new(binding, RawPagePositionV2::new(index, ordinal)?, rows)?;
@@ -75,9 +110,9 @@ fn scan<T: Entity>(
                 .checked_add(count)
                 .ok_or(StoreError::CounterOverflow)?;
         }
-        match outcome {
-            PhysicalObservationPage::Continue { cursor: next, .. } => cursor = Some(next),
-            PhysicalObservationPage::Exhausted { .. } => return directory.finish(binding, visit),
+        match next {
+            Some(next) => cursor = Some(next),
+            None => return directory.finish(binding, visit),
         }
     }
     Err(invalid("capture page ceiling reached before exhaustion"))

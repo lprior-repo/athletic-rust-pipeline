@@ -5,6 +5,80 @@ use serde::{Deserialize, Serialize};
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 type Rows = Vec<(Row, Vec<u8>, Vec<u8>)>;
 
+#[test]
+fn raw_page_start_refuses_foreign_table_before_visiting() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let store = Store::open(directory.path())?;
+    seed(&store)?;
+    let start = crate::keys::observation_key(Table::Teams, "alpha", 0);
+    let snapshot = store.snapshot();
+    let mut calls = 0;
+    let result = snapshot.scan_physical_observation_page_from_key::<Row>(
+        Table::Schools,
+        budget(3, 4096),
+        Some(&start),
+        |_, _, _, _| {
+            calls += 1;
+            Ok(())
+        },
+    );
+    check!(matches!(result, Err(StoreError::Refused { .. })));
+    check!(eq;calls, 0);
+    Ok(())
+}
+
+#[test]
+fn owned_key_pages_preserve_byte_limited_boundaries_and_read_counts() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let store = Store::open(directory.path())?;
+    seed(&store)?;
+    let limits = budget(3, 100);
+    let mut expected = Vec::new();
+    {
+        let snapshot = store.snapshot();
+        let mut cursor = None;
+        for _ in 0..3 {
+            let (outcome, rows) = page(&snapshot, limits, cursor.as_ref())?;
+            match outcome {
+                PhysicalObservationPage::Continue {
+                    counts,
+                    cursor: next,
+                } => {
+                    expected.push((counts, rows));
+                    cursor = Some(next);
+                }
+                PhysicalObservationPage::Exhausted { counts } => {
+                    expected.push((counts, rows));
+                    break;
+                }
+            }
+        }
+    }
+    check!(expected.len() > 1);
+    let mut actual = Vec::new();
+    let mut cursor: Option<fjall::UserKey> = None;
+    for _ in 0..3 {
+        let mut rows = Vec::new();
+        let (counts, next) = store.snapshot().scan_physical_observation_page_from_key(
+            Table::Schools,
+            limits,
+            cursor.as_deref(),
+            |row: Row, key, raw, _| {
+                rows.push((row, key.to_vec(), raw.to_vec()));
+                Ok(())
+            },
+        )?;
+        actual.push((counts, rows));
+        cursor = next;
+        if cursor.is_none() {
+            break;
+        }
+    }
+    check!(cursor.is_none());
+    check!(eq;actual, expected);
+    Ok(())
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct Row {
     id: String,
