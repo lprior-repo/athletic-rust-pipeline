@@ -68,8 +68,8 @@ pub(super) fn scan<T: Entity>(
             .as_mut()
             .filter(|item| item.entity_id() == row.entity_id())
         {
-            budget::charge(existing, grant)?;
-            budget::charge(&row, grant)?;
+            budget::inspect_borrowed(existing, grant)?;
+            budget::inspect_borrowed(&row, grant)?;
             existing.merge(row);
             evidence.require_original_grant(grant)?;
         } else if let Some(prior) = current.replace(row) {
@@ -90,7 +90,7 @@ pub(super) fn publish<T: Entity>(
     visit: &mut impl FnMut(T) -> StoreResult<()>,
 ) -> StoreResult<()> {
     evidence.require_original_grant(grant)?;
-    budget::charge(&row, grant)?;
+    budget::inspect_borrowed(&row, grant)?;
     row.publish();
     inspect(&row, ScanPhase::Published)?;
     visit(row)?;

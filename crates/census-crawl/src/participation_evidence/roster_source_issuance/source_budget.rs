@@ -22,6 +22,19 @@ pub(in crate::participation_evidence::roster_source_issuance) fn charge_bounded(
     grant.charge_bytes(bytes).map_err(domain)
 }
 
+pub(in crate::participation_evidence::roster_source_issuance) fn inspect_borrowed(
+    value: &impl Serialize,
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<()> {
+    grant.ensure_available().map_err(domain)?;
+    grant.charge_steps(1).map_err(domain)?;
+    let result = measure(value, MAX_PACKET);
+    if result.is_err() {
+        grant.poison();
+    }
+    result.map(|_| ())
+}
+
 fn measure(value: &impl Serialize, limit: usize) -> StoreResult<usize> {
     let mut sink = Counter {
         bytes: 0,
