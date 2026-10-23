@@ -31,6 +31,7 @@ pub use state::{
 pub(crate) use sweep::access;
 pub use sweep::access::{combined_failure as access_failure, SourceAccessFailure};
 pub(crate) use sweep::index::{inspect_rosters, RosterIndexEvidence};
+pub use sweep::profiles;
 pub(crate) use sweep::retain_team_index_failure;
 
 pub use sweep::index::team_index_report;

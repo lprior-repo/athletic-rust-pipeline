@@ -24,9 +24,11 @@ mod athleticlive;
 mod athleticlive_tests;
 #[cfg(test)]
 mod binding_tests;
+mod bound_run;
 pub(in crate::restate_services) mod capture_admission;
 mod pacing;
 mod pipeline;
+mod public_profiles;
 mod report;
 mod results_work;
 mod stage_runs;
@@ -136,18 +138,6 @@ impl JurisdictionCensus {
         Ok(true)
     }
 
-    fn require_bound_run(&self, request: &JurisdictionRequest) -> Result<(), HandlerError> {
-        let manifest = self.store.run_manifest().map_err(|error| {
-            jobs::invariant(&format!("the store run manifest is unreadable: {error}"))
-        })?;
-        capture_admission::require_bound_manifest(&self.capture, manifest.as_ref(), request)
-            .map_err(capture_admission::handler_error)?;
-        match bound_run_refusal(manifest.as_ref(), request.season, request.revision) {
-            Some(refusal) => Err(TerminalError::new(refusal).into()),
-            None => Ok(()),
-        }
-    }
-
     async fn run_owed_stages_resilient(
         &self,
         ctx: &ObjectContext<'_>,
@@ -187,6 +177,15 @@ impl JurisdictionCensus {
     )
 )]
 impl JurisdictionCensus {
+    #[handler]
+    async fn public_profiles(
+        &self,
+        ctx: ObjectContext<'_>,
+        Json(request): Json<public_profiles::Request>,
+    ) -> Result<Json<crate::census::profiles::Progress>, HandlerError> {
+        self.collect_public_profiles(ctx, request).await.map(Json)
+    }
+
     #[handler]
     async fn reconcile_teams(
         &self,

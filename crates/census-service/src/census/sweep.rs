@@ -14,6 +14,7 @@ mod collect;
 pub(crate) mod index;
 pub(crate) use index::retain_failure as retain_team_index_failure;
 mod owned;
+pub mod profiles;
 pub use collect::{collect_owned_state_rosters, collect_state_rosters};
 pub(super) mod roster;
 mod units;

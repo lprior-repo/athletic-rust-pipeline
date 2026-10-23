@@ -9,6 +9,26 @@ mod bounds;
 mod checked;
 
 impl JurisdictionCensus {
+    pub(super) async fn require_profile_collection_owner(
+        &self,
+        ctx: &ObjectContext<'_>,
+        request: &JurisdictionRequest,
+        state: &JurisdictionState,
+    ) -> Result<(), HandlerError> {
+        let identity = census_reconcile::identity::WorkflowIdentity::jurisdiction(
+            request.jurisdiction,
+            request.season,
+            request.revision,
+        );
+        if state.identity != identity.as_str() || state.history_window != Some(request.history) {
+            return Err(refusal("profile parent identity or history differs"));
+        }
+        let mut budget = bounds::Budget::new();
+        budget.parent(state, request)?;
+        self.require_team_continuation_owner(ctx, request, state, &mut budget)
+            .await
+    }
+
     pub(super) async fn consume_team_continuation(
         &self,
         ctx: &ObjectContext<'_>,

@@ -9,6 +9,7 @@ mod controlled_capture;
 mod exercise;
 mod fixture;
 mod parent;
+mod profiles;
 mod receipts;
 mod transport;
 

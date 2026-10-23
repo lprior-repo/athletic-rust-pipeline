@@ -4222,3 +4222,65 @@ or live identity mutation is part of this source slice. The preserved Downloads
 workbook is unchanged (SHA256
 `1d9387b5c5722ded4d24448e049cf1e96101da71cc1e4df3c8532d908a01aab4`).
 The fully populated five-state workbook remains unfinished.
+
+## 2026-10-22 — bounded roster-owned profile collection
+
+The current `JurisdictionCensus` now has an exclusive `public_profiles` handler
+on its original key. It checks the full original national/jurisdiction request,
+retained source plan and Store owner, then walks closed roster packets and calls
+the existing public-profile capture lane for the selected cohort. Packet/member
+progress is durable. Inventory exhaustion with unfinished roster obligations
+waits for a changed roster-state witness; rescanning reuses original profile work
+keys and retains refusal state, physical budgets and cumulative outcome counts.
+Blocking capture validation runs in the existing supervised region, with its
+admission permit owned through completion. No existing pass journal is changed.
+
+Canonical Moon receipts, logs under `/tmp/athletic-work-20261021/`:
+
+- **PASS 799:** `pipeline:tests-scoped -- -p census-service --lib --bins
+  --run-ignored all --no-tests fail -E 'test(owned_profile_bulk_) |
+  test(census::sweep::profiles::) |
+  test(native_current_census_profiles_resume_exact_owned_roster_without_http)'`;
+  13/13, Nextest `4ae63204-abe6-47c1-bb76-988da3c24833`, 623.227 s tests,
+  10m48.913s task. The native test uses the genuine retained Michigan index and
+  DCC roster: 146 valid rows, 18 rejected graduation years, 45 cohort members.
+  Controlled retained profile bodies exercise the actual handler, one-step and
+  bounded continuation, wrong-request refusal, node restart, exact output replay,
+  idempotency, same-parent waiting and changed-parent rescans. Final cumulative
+  counts are 135 processed targets and 54 gaps across three scans, with unchanged
+  Store sequence/receipt counts across replay, zero HTTP and zero canonical
+  performances. These are 45 targets replayed three times, not 135 unique captures
+  or genuine live PR facts.
+- **RED 788 / GREEN 799:** the native test initially expected zero source gaps;
+  the genuine roster has 18 retained rejections. The oracle now checks the exact
+  source verdict. **RED 792 / GREEN 799:** isolated admin `new_state` replaces the
+  entire object map; the parent-change fixture now preserves the actual prior
+  profile-state response bytes. No production reset or fabricated progress was
+  introduced to make that test pass.
+- **PASS 802:** existing profile-to-frozen publication regressions, 12/12,
+  Nextest `953ad129-8796-4df7-9895-a5fc3764307b`, 94.548 s tests,
+  1m54.738s task. Scope includes actual selected ExportJob worksheet/CSV output,
+  repeated publication, Store-absent frozen verification, missing/changed source
+  objects, cell/normalized-claim mutation refusal and profile-root boundaries.
+- **PASS 804:** `pipeline:fmt pipeline:check pipeline:lint-src`, 33.038 s;
+  existing forced arity advisories remain. **PASS 805:**
+  `pipeline:xtask -- scan`, 5m18.143s task, no production functions over 60 lines
+  and no strict unresolved sites. `git diff --check` also passes.
+
+An independent narrow static review found no concrete blocker in the supervised
+blocking boundary; it did not certify cancellation-fault or upgrade behavior.
+The local RTX 3090 review ran successfully (HTTP 200, 10.545 s, 5,850 tokens);
+its proposed witness-comparison change duplicated the existing guard and was
+rejected. All 25 owned Rust files match the frozen command-799 hash manifest.
+Nine unrelated report files and `xtask/src/perf/candidate.rs` remain untouched
+working changes and are excluded from this landing; the working-tree checks
+above included those files, so they do not certify an exact clean-main release.
+
+Live original MI591 remains running under owner 590 and its original deployment;
+readback 803 shows `results-v2-execute` at journal 816 without a new failure.
+No live handler activation, Store handoff, replacement key, identity acceptance
+or new workbook publication occurred. Same-build native restart is not an
+old-590-to-candidate in-flight upgrade. Runtime activation still requires the
+documented ownership boundary and appropriate compatibility evidence. Downloads
+SHA256 remains `1d9387b5c5722ded4d24448e049cf1e96101da71cc1e4df3c8532d908a01aab4`.
+The full workbook goal and repository-wide release obligations remain open.

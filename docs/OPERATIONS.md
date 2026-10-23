@@ -334,6 +334,29 @@ curl -sS -X POST http://127.0.0.1:19095/query -H 'content-type: application/json
   -d '{"query":"SELECT target, status, completion_failure FROM sys_invocation WHERE completion_failure IS NOT NULL"}'
 ```
 
+## Roster-owned public profile collection
+
+`JurisdictionCensus/<original-key>/public_profiles` accepts `original`, the complete
+unchanged bound `JurisdictionRequest`, and `max_steps` in `1..=128`. It verifies the
+original national request, Store/run, parent jurisdiction and retained source plan
+before collection. This exclusive handler shares the original jurisdiction key;
+an active or paused owner can block it. Deployments follow the ownership and
+in-flight compatibility requirements in [lifecycle](deployment-lifecycle.md).
+
+Each bounded call continues a durable packet/member cursor through original
+retained roster packets and acquires profiles for the selected cohort using the
+existing capture owner, work keys and physical budgets. Valid rows can be collected
+while roster obligations remain owed. At inventory end, `awaiting_rosters` waits
+for a changed original roster-state witness; changed progress rescans retained
+packets and reuses existing capture work. `exhausted` requires a terminal parent
+roster stage. Neither field certifies complete source coverage or eligible marks.
+
+`captured`, `not_found`, `failed` and `source_gaps` count processed outcomes across
+scan rounds, including replays; they are not unique acquired profiles. Rejected,
+unfinished and quarantined source obligations remain visible. The existing source
+refusal policy persists across calls and roster changes. Source-published PR facts
+remain distinct from accepted identities and eligible observed performances.
+
 ## School athletics site crawl (long tail)
 
 `census-service school-sites <queue.jsonl>` crawls the school websites that the directories and

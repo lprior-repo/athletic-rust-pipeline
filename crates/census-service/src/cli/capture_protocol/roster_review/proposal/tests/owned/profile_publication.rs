@@ -11,6 +11,7 @@ use census_store::{PublicSchoolIntakePacketV1, Table};
 use controlled_normalized_transport::ControlledNormalizedCapture;
 use std::time::Duration;
 
+mod bulk;
 mod publication;
 
 #[tokio::test]

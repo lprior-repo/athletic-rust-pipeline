@@ -27,13 +27,16 @@ pub(super) struct Fixture {
 
 impl Fixture {
     pub(super) async fn new() -> TestResult<Self> {
+        Self::new_for(request()?).await
+    }
+
+    pub(super) async fn new_for(mut request: TeamsSourceRequest) -> TestResult<Self> {
         let root = tempfile::tempdir()?;
         Store::create_current_qualification_v3(root.path().join("store"))?;
         let (store, writer) =
             Store::open_current_qualification_v3(root.path().join("store"))?.into_parts();
         let store = Arc::new(store);
         let writer = Arc::new(writer);
-        let mut request = request()?;
         request.source = "milesplit".into();
         super::super::public_resources_fixture::bind(&store, &request)?;
         let region = Arc::new(crate::spawn::Spawner::new());

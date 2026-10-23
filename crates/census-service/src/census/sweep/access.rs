@@ -10,8 +10,8 @@ pub use failure::SourceAccessFailure;
 
 pub(super) const FORBIDDEN_RUN: u32 = 5;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum Refusal {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub enum Refusal {
     Host,
     Page,
     None,
@@ -26,7 +26,7 @@ pub(super) fn refusal(error: &CrawlError) -> Refusal {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub(super) struct RefusalRun {
     consecutive: u32,
 }

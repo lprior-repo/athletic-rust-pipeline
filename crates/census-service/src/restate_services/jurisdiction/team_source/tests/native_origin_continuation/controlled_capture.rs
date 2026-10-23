@@ -2,7 +2,7 @@ use super::TestResult;
 use census_store::{CaptureWriterV1, PublicResourceRootKindV1, Store};
 
 #[path = "../../../../../../tests/common/controlled_public_capture.rs"]
-mod controlled_normalized_transport;
+pub(super) mod controlled_normalized_transport;
 
 pub(super) fn install(
     store: &Store,
