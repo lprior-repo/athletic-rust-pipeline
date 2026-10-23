@@ -116,7 +116,7 @@ Inspect `measurement.authority.status`, including when the command exits zero.
 `complete` covers the four authority sections; `stopped` retains a provisional
 prefix. Six body-verified inventories are reported separately. The diagnostic
 allows 32 GiB per scanned raw table and 32 GiB of cumulative serialized entries,
-separately from ordinary 8 GiB raw/section and 32 GiB aggregate admission limits.
+separately from ordinary 16 GiB raw/section and 64 GiB aggregate admission limits.
 The ordinary aggregate includes a 1 MiB header reserve. Its row and record caps
 remain 2,097,152 and 1 MiB; grade enrichment shares the normal read budget.
 Earlier reservation audits and graph verification have their own existing limits

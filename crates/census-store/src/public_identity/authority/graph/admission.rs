@@ -5,7 +5,7 @@ use census_domain::model::{CanonicalAthlete, ReviewCase, ReviewVerdictRecord, So
 use serde::Serialize;
 
 const CONTEXT_RECORD_BYTES: usize = BUDGET.record_bytes;
-const CONTEXT_TOTAL_BYTES: usize = 32 * 1024 * 1024 * 1024;
+const CONTEXT_TOTAL_BYTES: usize = 64 * 1024 * 1024 * 1024;
 
 pub(in crate::public_identity) mod demand;
 

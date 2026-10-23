@@ -55,7 +55,7 @@ fn measured_cohort_inventory_refuses_old_bytes_and_fits_production_budget() -> T
 
 #[test]
 fn production_inventory_bytes_are_inclusive_and_refuse_one_over() -> TestResult {
-    check!(eq; BUDGET.bytes, 8_589_934_592);
+    check!(eq; BUDGET.bytes, 17_179_869_184);
     preflight(inventory(1, BUDGET.bytes)?, BUDGET)?;
     let excess = BUDGET.bytes.checked_add(1).ok_or("byte overflow")?;
     exceeded(
@@ -125,11 +125,11 @@ fn measured_980_bytes_preserve_old_refusal_and_fit_current_normal_capacity() -> 
 #[test]
 fn normal_raw_capacity_covers_measured_archive_and_stays_finite() -> TestResult {
     preflight(inventory(1_796_172, 7_440_378_517)?, BUDGET)?;
-    preflight(inventory(1, 8_589_934_592)?, BUDGET)?;
+    preflight(inventory(1, 17_179_869_184)?, BUDGET)?;
     exceeded(
-        preflight(inventory(1, 8_589_934_593)?, BUDGET),
+        preflight(inventory(1, 17_179_869_185)?, BUDGET),
         "capture encoded bytes",
-        8_589_934_593,
-        8_589_934_592,
+        17_179_869_185,
+        17_179_869_184,
     )
 }

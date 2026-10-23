@@ -39,7 +39,7 @@ fn exceeded(
 
 #[test]
 fn diagnostic_and_normal_budgets_keep_independent_byte_ceilings() -> TestResult {
-    check!(eq; BUDGET.bytes, 8_589_934_592);
+    check!(eq; BUDGET.bytes, 17_179_869_184);
     check!(eq; BUDGET.rows, 2_097_152);
     check!(eq; BUDGET.record_bytes, 1_048_576);
     check!(eq; RAW_BUDGET.bytes, 34_359_738_368);

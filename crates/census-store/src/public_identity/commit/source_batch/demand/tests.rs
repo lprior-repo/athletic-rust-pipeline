@@ -67,7 +67,9 @@ fn complete_original_graph_measurement_matches_literal_entry_and_changes_no_stat
     check!(eq; report.pointer("/authority/sections/0/scan"), Some(&serde_json::json!("complete")));
     check!(eq; report.pointer("/authority/tables/0/body_verified_inventory/rows"), Some(&serde_json::json!(2)));
     check!(eq; report.get("requested_cohort"), Some(&serde_json::json!(2027)));
-    check!(eq; report.pointer("/authority/ordinary_raw_bytes_per_table"), Some(&serde_json::json!(8_589_934_592_u64)));
+    check!(eq; report.pointer("/authority/ordinary_raw_bytes_per_table"), Some(&serde_json::json!(17_179_869_184_u64)));
+    check!(eq; report.pointer("/authority/ordinary_total_with_header_bytes"), Some(&serde_json::json!(68_719_476_736_u64)));
+    check!(eq; report.pointer("/authority/diagnostic_total_entry_bytes"), Some(&serde_json::json!(34_359_738_368_u64)));
     check!(eq; writer.head(&store)?.sequence, 0);
     check!(eq; store.snapshot().sequence(), sequence);
     check!(eq; retained_state(&store)?, before);
