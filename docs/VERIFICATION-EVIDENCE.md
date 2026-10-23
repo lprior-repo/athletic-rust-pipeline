@@ -5404,3 +5404,49 @@ not guaranteed to complete. Larger accepted data may refuse under older readers;
 rollback and postcommit cold-open behavior have not been qualified. Bulk review
 materialization is held pending a storage-efficient proof contract and disk
 qualification; increased limits are not permission to consume the SSD.
+
+
+## 2026-10-23 retained proof writes and disk admission
+
+Candidate based on main 7ad8ba42. A roster review now skips an already retained
+identical content-addressed object and refuses a substituted existing body.
+Missing objects, review record, head and receipt still commit in one SyncData
+batch under the original append lock. Protected inventory, approval, grant,
+receipt and settled-replay checks remain; no persisted format changes.
+
+The review and withdrawal commit path samples the actual Store fjall filesystem
+using f_bavail times f_frsize. Checked logical key/value writes include missing
+objects plus record/head/receipt; admission requires a 64-GiB reserve plus three
+times those logical writes. Probe errors, overflow and shortages refuse before
+commit. This is a capacity sample and policy allowance, not a reservation or a
+measured physical compaction bound. Other Store write paths are not covered by
+this hook. Repeated global manifests and review records remain a bulk constraint.
+The recruiter writer also wraps the actual source-declared PR column after the
+existing Transfer column insertion; the 25-column contract is unchanged.
+
+RED 1113 executed three real-Fjall tests against the old staging behavior: one
+passed, identical-object suppression and substituted-body refusal failed.
+Initial 1112 stopped at the installed Moon version check before compilation.
+Final focused qualification passed 111 distinct tests: 82 Store and three report
+in 1117, five compiled-kernel tests in 1119 and 21 CLI/service tests in 1121.
+The added refusal control checks no change to Store sequence, objects, record,
+head or receipt. Existing report/service tests include source PR publication,
+replay, Store absence and tamper refusal on controlled fixtures.
+
+The initial 1117 service run refused a stale source pin. Recomputed closure 1124
+matches all 210 ordered compiled entries; only the existing Store lib.rs entry
+changed, yielding source digest
+53afac0f186a8649f5756f3f588a2acb133929b7d6323a39d88e59b43fb6c232.
+The 1119 service rerun then passed 20/21 and correctly refused an apply on /tmp's
+RAM filesystem with only about 44 GiB available. Final 1121 used privately owned
+SSD TMPDIR scratch and passed all 21 without disabling the production guard.
+Workspace format/check/source lint passed in 1121; configured argument-count
+advisories remain. Independent read-only review approved this bounded source
+change. RTX 5090/3090 supplied drafts/review; Main corrected or rejected unusable
+model output. These commands do not constitute the full release gate.
+
+No original-Store roster approval, new-cap binary deployment or full selected
+workbook acceptance is claimed by this source qualification. Original cold backup
+1118 is separate operational work. Eligibility, general participation, Colorado,
+UP authority, actual acquisition-to-frozen publication and original cold/replay
+acceptance remain open. The existing Downloads workbook remains partial.

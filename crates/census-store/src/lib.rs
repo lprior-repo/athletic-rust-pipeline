@@ -97,6 +97,8 @@ mod table;
 pub mod test_fixture;
 mod write;
 mod write_batch;
+mod write_space;
+pub use write_space::{WriteSpaceAdmissionV1, WriteSpaceEstimateV1};
 
 pub use backup::{BackupReport, IntegrityReport, IntegrityTable, RestoreReport};
 pub use derived::{DerivedStage, Publication, Reclaimed};

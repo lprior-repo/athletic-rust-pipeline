@@ -127,6 +127,16 @@ pub(super) fn seal_core(
 }
 
 pub(super) fn commit_review(store: &Store, sealed: &SealedRosterReview) -> StoreResult<()> {
+    commit_review_with_admission(store, sealed, |estimate| {
+        store.require_write_space(estimate).map(|_| ())
+    })
+}
+
+fn commit_review_with_admission(
+    store: &Store,
+    sealed: &SealedRosterReview,
+    admit: impl FnOnce(&crate::WriteSpaceEstimateV1) -> StoreResult<()>,
+) -> StoreResult<()> {
     let receipt_bytes = codec::encode(&sealed.receipt)?;
     super::preflight::postcommit(
         store,
@@ -138,13 +148,9 @@ pub(super) fn commit_review(store: &Store, sealed: &SealedRosterReview) -> Store
         &receipt_bytes,
     )?;
     let mut batch = store.db.batch();
-    for (digest, object) in &sealed.objects {
-        batch.insert(
-            &store.journal,
-            format!("{}{digest}", super::OBJECT_PREFIX),
-            object,
-        );
-    }
+    let missing_bytes = stage_objects(store, &mut batch, &sealed.objects)?;
+    let estimate = write_space_estimate(missing_bytes, sealed, &receipt_bytes)?;
+    admit(&estimate)?;
     batch.insert(&store.journal, &sealed.record_key, &sealed.bytes);
     batch.insert(&store.meta, super::super::HEAD, &sealed.head);
     batch.insert(
@@ -157,3 +163,55 @@ pub(super) fn commit_review(store: &Store, sealed: &SealedRosterReview) -> Store
         .commit()
         .map_err(|source| StoreError::Write { source })
 }
+
+fn stage_objects(
+    store: &Store,
+    batch: &mut fjall::OwnedWriteBatch,
+    objects: &super::objects::Objects,
+) -> StoreResult<u64> {
+    let snapshot = store.db.snapshot();
+    let mut bytes = 0_u64;
+    for (digest, body) in objects {
+        let key = format!("{}{digest}", super::OBJECT_PREFIX);
+        match snapshot
+            .get(&store.journal, &key)
+            .map_err(|source| StoreError::Read { source })?
+        {
+            Some(existing) if existing.as_ref() == body.as_slice() => {}
+            Some(_) => return Err(Error::Corrupt("object digest collision").into()),
+            None => {
+                bytes = add_bytes(bytes, key.len())?;
+                bytes = add_bytes(bytes, body.len())?;
+                batch.insert(&store.journal, key, body);
+            }
+        }
+    }
+    Ok(bytes)
+}
+
+fn write_space_estimate(
+    missing_bytes: u64,
+    sealed: &SealedRosterReview,
+    receipt: &[u8],
+) -> StoreResult<crate::WriteSpaceEstimateV1> {
+    let writes = [
+        sealed.record_key.len(),
+        sealed.bytes.len(),
+        super::super::HEAD.len(),
+        sealed.head.len(),
+        sealed.receipt.operation.len(),
+        receipt.len(),
+    ]
+    .into_iter()
+    .try_fold(missing_bytes, add_bytes)?;
+    crate::WriteSpaceEstimateV1::new(writes, writes, writes)
+}
+
+fn add_bytes(total: u64, bytes: usize) -> StoreResult<u64> {
+    total
+        .checked_add(u64::try_from(bytes).map_err(|_| StoreError::CounterExhausted)?)
+        .ok_or(StoreError::CounterExhausted)
+}
+
+#[cfg(test)]
+mod tests;
