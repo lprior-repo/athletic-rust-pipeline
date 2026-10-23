@@ -89,3 +89,6 @@ fn charge(current: u64, added: u64, maximum: u64, what: &'static str) -> StoreRe
     }
     Ok(needed)
 }
+
+#[cfg(test)]
+mod tests;

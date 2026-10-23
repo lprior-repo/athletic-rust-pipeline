@@ -1,5 +1,6 @@
 use super::super::AffiliationEvidenceAudit;
 use super::{charge, invalid, UnavailableAffiliation as Gap};
+use crate::export::proof_objects::MAX_OBJECT_BYTES;
 use crate::export::qualification::physical_observations::OBSERVATION_BUDGET;
 use census_domain::model::AthleteId;
 use census_store::{StoreError, StoreResult};
@@ -48,7 +49,7 @@ impl RetainedAudit {
         charge(
             &mut bytes,
             reference.len(),
-            OBSERVATION_BUDGET.bytes,
+            MAX_OBJECT_BYTES,
             "current affiliation audit bytes",
         )?;
         self.references
@@ -79,7 +80,7 @@ impl RetainedAudit {
         charge(
             &mut bytes,
             reason.label().len(),
-            OBSERVATION_BUDGET.bytes,
+            MAX_OBJECT_BYTES,
             "current affiliation audit bytes",
         )?;
         self.unavailable.entry(id).or_default().insert(reason);

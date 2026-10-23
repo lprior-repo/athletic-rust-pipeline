@@ -1,3 +1,37 @@
+### Selected physical capture capacity (2026-10-23 18:26 UTC)
+
+Original native Workbook `co2027-pr-1141`, invocation
+`inv_1cuBWhKOC9An7IXEaZvjBBr7ZhXfEA40aJ`, failed at 18:02:12 UTC:
+selected physical preflight needed 4,294,968,825 encoded bytes with a
+4,294,967,296-byte budget. This preceded profile PR parsing. The original
+Store, failed invocation, four retained normal MN profile captures, and empty
+pending proof directory remain preserved. PR fact counts remain unmeasured.
+
+The streamed physical table budget now admits 16 GiB and 8,192 chunks.
+Each chunk remains bounded at 4 MiB, records at 1 MiB, inventory metadata at
+4 MiB, and the default physical row budget at four million. Single frozen
+proof objects, eager roster-family encoding, retained affiliation audit bytes,
+and family-reference validation retain their existing 4 GiB bounds.
+Framing, hashes, physical ordering and selected snapshot/profile bindings are unchanged.
+
+Moon run `worksheet-physical-capacity-red-1146` compiled six new tests against
+the old limits: three passed and three failed, including the exact original
+4,294,968,825-byte refusal. Run `worksheet-physical-qualification-1150`
+passed all 77 selected report tests; formatting, workspace check and source
+lint exited zero. Configured argument-count advisories remain. Independent
+read-only review found no concrete blocker in the frozen capacity diff.
+Logs and receipts are retained under `/tmp/athletic-work-20261021/`.
+
+Large-byte tests seed private counters; they do not allocate or stream 16 GiB.
+The maximum inventory test writes and reopens bounded metadata, with repeated
+references; it does not replay 8,192 real chunks. Existing small physical
+replay, fingerprint, tamper and PR publication tests passed. The per-table
+ceiling is not a measured five-table disk/RAM envelope. Preserve the operational
+20 GiB export-growth guard and 64 GiB free-space floor.
+
+This change does not recover the terminal workflow or uncommitted staging,
+publish an original-Store workbook, prove cold/replay acceptance, or complete
+the five-state recruiting workbook. Same-job recovery remains a separate repair.
 
 
 ### Complete genuine attachment mechanism and replay (2026-10-16 20:27 UTC)

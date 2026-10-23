@@ -1,8 +1,7 @@
 use crate::report::{ExportResourceError, ReportResult};
 use std::path::Path;
 
-pub(crate) const MAX_OBJECT_BYTES: u64 =
-    crate::export::qualification::physical_observations::OBSERVATION_BUDGET.bytes;
+pub(crate) const MAX_OBJECT_BYTES: u64 = 4 * 1024 * 1024 * 1024;
 
 pub(crate) fn install(directory: &Path, bytes: &[u8]) -> ReportResult<String> {
     let length = super::codec::count(bytes.len()).map_err(super::codec_error)?;
