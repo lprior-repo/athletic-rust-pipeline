@@ -5262,3 +5262,35 @@ Original preview/apply/replay with this candidate remains **NOT RUN**. Commit,
 reopen, memory and frozen-publication fit are not established by the capacity
 constants or focused tests. Full native continuation, five-state eligibility and
 the requested populated workbook remain unfinished.
+
+### 2026-10-23: Original roster preview shared-grant refusal
+
+Original Quincy preview 1062 used main `8357e2d0f98dff6de7d676beb9698c05b4caf25e`
+and immutable CLI `391886f7f529771dce9ff300a4293738056005117bfb068099ecf518f24a1f3d`.
+It exited 1 without a signal or protective stop after 779,717 ms at
+14:20:54.996 UTC. Preparation refused cumulative attachment encoded bytes:
+needed 275,271,232,121, available 274,877,906,944. Output was empty and no
+review approval or roster authority was applied. This is a monotonic accounting
+refusal, not measured resident memory or distinct retained object demand.
+
+The correction removes only the manifest's threefold byte debit for hashing
+already retained physical rows. All row hashes, complete four-table inventory,
+snapshot binding, original grant continuation, three traversal steps per row
+and measured manifest output precharge remain. The 256-GiB shared limit and
+all physical, saved-review, protected and frozen bounds remain unchanged.
+This matches the existing domain rule that borrowed digest passes consume
+traversal work without admitting encoded material again.
+
+Qualification 1068 passed three focused boundary/foreign-grant tests and all
+65 roster Store tests, then workspace format/check/source lint (39,921 ms).
+The nonempty fixture verifies exact output capacity, one-byte-short refusal,
+unchanged usage on refusal and poisoned original-grant reuse. Independent
+review matched all three Rust file hashes and found no concrete defect in
+this scope. All 210 ordered compiled roster source inputs still match
+`a3205427f65bb04e178421e434f1a0a9326b6a49742c88833cf27a83afaa8dfa`;
+the changed Store manifest file is outside that parser source inventory.
+
+The original failure's exact debit site remains unattributed. Whether this
+correction unblocks the original preview is **NOT RUN** at this checkpoint.
+Original review apply/replay, general participation eligibility, Colorado
+continuation and the fully populated five-state workbook remain unfinished.

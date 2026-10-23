@@ -58,17 +58,8 @@ fn encode(
     grant: &mut AttachmentReplayGrantV1,
 ) -> StoreResult<Vec<u8>> {
     let rows = evidence.physical_projection(grant)?;
-    rows.iter().try_for_each(|row| {
-        let hash_bytes = row
-            .bytes()
-            .len()
-            .checked_mul(3)
-            .ok_or(super::super::RosterSourceIssuanceStoreError::BudgetExceeded)?;
-        grant
-            .charge_bytes(hash_bytes)
-            .map_err(super::super::source_error)?;
-        grant.charge_steps(3).map_err(super::super::source_error)
-    })?;
+    rows.iter()
+        .try_for_each(|_| grant.charge_steps(3).map_err(super::super::source_error))?;
     let manifest = Manifest {
         schema: "roster-physical-projection-inventory-v1",
         store: evidence.store_identity(),

@@ -58,6 +58,7 @@ fn semantic_access_rejects_recharged_foreign_grant_before_swap_restore() -> Test
     foreign.charge_bytes(usage.encoded_bytes())?;
     foreign.charge_steps(usage.traversal_steps())?;
     let original = std::mem::replace(grant, foreign);
+    check!(evidence.physical_projection_manifest(grant).is_err());
     check!(evidence.retained_root(grant).is_err());
     check!(evidence.physical_projection(grant).is_err());
     *grant = original;
@@ -65,6 +66,8 @@ fn semantic_access_rejects_recharged_foreign_grant_before_swap_restore() -> Test
     check!(evidence.physical_projection(grant)?.is_empty());
     Ok(())
 }
+
+mod manifest_accounting;
 
 #[test]
 fn changed_root_and_poisoned_grant_cannot_create_inspection() -> TestResult {
