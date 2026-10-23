@@ -49,7 +49,11 @@ pub(crate) fn capture(
     let mut physical_rows = 0usize;
     references.into_values().try_for_each(|reference| {
         let object = physical_object(snapshot, journal, reference, &mut physical_rows, remaining)?;
-        let encoded_bytes = codec::encode(&object, remaining)?.len();
+        let encoded_bytes = codec::encoded_len(
+            &object,
+            remaining,
+            "frozen public identity object JSON bytes",
+        )?;
         charge(&mut remaining, encoded_bytes)?;
         bundle.objects.try_reserve(1).map_err(allocation)?;
         bundle.objects.push(object);
@@ -92,7 +96,11 @@ fn operations(
                 );
             }
             graphs.insert(key, value);
-            let encoded_bytes = codec::encode(&operation, *remaining)?.len();
+            let encoded_bytes = codec::encoded_len(
+                &operation,
+                *remaining,
+                "frozen public identity operation JSON bytes",
+            )?;
             charge(remaining, encoded_bytes)?;
             bundle.operations.try_reserve(1).map_err(allocation)?;
             bundle.operations.push(operation);
@@ -144,7 +152,11 @@ fn physical_object(
             .ok_or(StoreError::CounterOverflow)?;
         super::super::bound(*physical_rows, wire::MAX_PHYSICAL_ROWS)?;
         let row = wire::PhysicalRow::capture(key, value)?;
-        let encoded_bytes = codec::encode(&row, remaining)?.len();
+        let encoded_bytes = codec::encoded_len(
+            &row,
+            remaining,
+            "frozen public identity physical row JSON bytes",
+        )?;
         charge(&mut remaining, encoded_bytes)?;
         if rows.insert(key.to_vec(), row).is_some() {
             return Err(
@@ -166,7 +178,11 @@ fn finish(
     accepted: &AcceptedPublicIdentitySnapshot,
 ) -> StoreResult<FrozenPublicIdentityBundleV2> {
     bundle.bounds()?;
-    let bytes = codec::encode(&bundle, super::super::MAX_FROZEN_PUBLIC_IDENTITY_BYTES)?;
+    let bytes = codec::encode_with_context(
+        &bundle,
+        super::super::MAX_FROZEN_PUBLIC_IDENTITY_BYTES,
+        "frozen public identity bundle JSON bytes",
+    )?;
     let digest = super::super::digest(&bytes);
     let replayed = super::replay::replay(&bytes, &digest)?;
     accepted.require_same_projection(&replayed)?;
