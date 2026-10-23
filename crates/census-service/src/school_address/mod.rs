@@ -28,6 +28,7 @@ pub use report::{
 use anyhow::{bail, Context, Result};
 use census_domain::school_directory::nces_address::NcesAddressRunReceiptV1;
 use census_domain::school_directory::{ChangeSet, YearMonth};
+use census_domain::UsJurisdiction;
 use census_store::Store;
 use clap::Args;
 use std::path::PathBuf;
@@ -122,11 +123,27 @@ pub struct SchoolAddressArgs {
     pub validate_postal: bool,
 }
 
+pub(super) enum CorpusScope<'a> {
+    AllCaptured,
+    Jurisdictions(&'a [UsJurisdiction]),
+}
+
 pub fn run(args: &SchoolAddressArgs) -> Result<()> {
+    run_scoped(args, CorpusScope::AllCaptured)
+}
+
+pub(super) fn run_scoped(args: &SchoolAddressArgs, scope: CorpusScope<'_>) -> Result<()> {
     let now = run_month(args)?;
     preflight::check(args)?;
     let lanes = read::lanes(args)?;
     let mut corpus = pipeline::collapse(&lanes)?;
+    if let CorpusScope::Jurisdictions(jurisdictions) = scope {
+        corpus.entries.retain(|entry| {
+            entry
+                .jurisdiction()
+                .is_some_and(|jurisdiction| jurisdictions.contains(&jurisdiction))
+        });
+    }
     let phases = geocode::apply(args, &mut corpus)?;
     let changes = pipeline::diff(args, &corpus.entries)?;
     let (ledger, schedule) = pipeline::schedule(args, &lanes, now)?;

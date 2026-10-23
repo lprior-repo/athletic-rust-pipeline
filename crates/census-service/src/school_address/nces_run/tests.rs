@@ -4,6 +4,7 @@ use census_domain::school_directory::SchoolDirectoryEntry;
 use std::collections::BTreeSet;
 
 mod retention_bounds;
+mod selected_scope;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
