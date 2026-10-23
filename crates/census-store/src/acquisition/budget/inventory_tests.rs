@@ -4,6 +4,28 @@ use crate::{CaptureError, PreparedRecoveryBudget, StoreError, StoreResult};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
+#[test]
+fn cold_inventory_encoded_reads_cross_old_ceiling_and_exhaust_at_eight_gib() -> TestResult {
+    let mut budget = AcquisitionReadBudget::cold_inventory()?;
+    budget.encoded(536_870_912)?;
+    budget.begin_operation();
+    budget.encoded(1)?;
+    budget.encoded(usize::try_from(8_053_063_679_u64)?)?;
+    match budget.encoded(1) {
+        Err(StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {
+            resource: "encoded bytes",
+            required: 1,
+            limit: 0,
+        })) => {}
+        _ => return Err("cold inventory did not enforce eight GiB without refund".into()),
+    }
+    check!(eq; budget.roots, 1_048_576);
+    check!(eq; budget.backing, 34_359_738_368);
+    check!(eq; budget.retained, 67_108_864);
+    check!(eq; budget.encoded, 0);
+    Ok(())
+}
+
 fn exhausted(result: StoreResult<()>) -> TestResult {
     match result {
         Err(StoreError::Capture(CaptureError::ReadBudgetLimitExceeded {

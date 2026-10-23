@@ -18,7 +18,7 @@ pub(super) fn inventory(
     declaration: &CaptureQualification,
 ) -> StoreResult<()> {
     let protocol = declaration.protocol();
-    let mut budget = AcquisitionReadBudget::inventory();
+    let mut budget = AcquisitionReadBudget::cold_inventory()?;
     let manifest = manifest::load(snapshot, meta, &mut budget)?;
     let prefix = Store::journal_key(protocol.phase(), "");
     for (position, guard) in snapshot

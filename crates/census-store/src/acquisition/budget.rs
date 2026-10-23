@@ -77,6 +77,12 @@ impl AcquisitionReadBudget {
             verified: std::collections::BTreeMap::new(),
         }
     }
+    pub(super) fn cold_inventory() -> StoreResult<Self> {
+        let mut budget = Self::inventory();
+        budget.encoded =
+            usize::try_from(8_589_934_592_u64).map_err(|_| StoreError::CounterOverflow)?;
+        Ok(budget)
+    }
     pub fn for_selection() -> Self {
         let mut budget = Self::inventory();
         budget.recovery = target::RecoveryReadLedger::selection();

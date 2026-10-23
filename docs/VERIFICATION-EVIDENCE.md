@@ -4483,3 +4483,43 @@ arity advisories. **PASS 880:** 18/18 existing acquisition/backup regressions,
 backup corruption/preservation refusals. Independent static review found no
 blocker when debug logging is explicitly enabled. None of these receipts is a
 successful original backup or refreshed workbook claim.
+
+### Cold inventory attribution and bounded repair (882--886)
+
+**PASS 878 replay:** a fresh process exited zero in 174,186 ms, recognizing all
+1,397 postal links, adding zero links and zero review cases. The same 17 review
+cases and 2,071 unmatched schools remain. Original Store and Downloads are unchanged.
+
+**PASS 882:** clean `656d0a88b2670db4e9a929b63bcd5595ac9b70a2` portable
+build, 278.314s task / 283.123s wall. Immutable CLI SHA256 is
+`ce07a725f162095eb58ac436fec3e4fe7d01baa25f1d7e146ab17b6cac27d0d0`.
+**FAIL 883:** guarded native backup of the original stopped Store exited 1 in
+556,625 ms at 04:37:29 UTC. All three original invocations remained paused with
+their original pins. Explicit debug tracing identified `acquisition_inventory`
+and logical key
+`work/f812f64dedbeb6cf59c17c6d6fa9605e178ef5ca662ef2d28a3024ea4e622798/attempt/1/prepared`:
+118 key bytes plus 23,564 encoded bytes exceed the remaining 8,809 bytes of the
+general inventory's cumulative 512 MiB allowance. This identifies the exhausted
+pass, not corruption or a per-record oversize. Failed 831 and 883 receipts remain.
+
+The repair gives only general cold acquisition validation an internal 8 GiB
+cumulative encoded-read allowance with checked architecture conversion. Ordinary
+inventory, selection, public construction, per-work, live capacity, recovery
+admission, record, root, backing and retained-memory limits remain unchanged;
+all validation still executes. It permits more cumulative validation work, not
+an 8 GiB allocation. **FAIL-before 885:** the exact-boundary test exhausted the
+old allowance at the first byte after 512 MiB. **PASS 886:** 64/64 scoped budget,
+physical-record bounds, tampered child, backup/restore and preservation tests,
+14.466s tests / 33.006s task / 36.303s wall. Actual original backup success is
+still required before this blocker can be closed.
+
+**PASS 887:** canonical format/check/source lint, three tasks in 40.563s,
+with existing forced arity advisories. Independent narrow static review found
+no actionable blocker. The checked conversion fails closed on 32-bit targets;
+this workstation and portable-build qualification target are x86-64 only.
+
+Restored-copy workbook qualification 884 registered immutable October-23 profile
+`a83a865cd0c266b36f71ee3b3d503495e6607ad338e54015a752a75e32058f69`.
+Its first invocation refused an overlong generation label before opening the
+Store; the corrected invocation uses `co2027-address-readback-884`. No completed
+publication or independent postal readback is claimed at this checkpoint.
