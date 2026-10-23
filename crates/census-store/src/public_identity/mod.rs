@@ -55,8 +55,8 @@ pub const MAX_PUBLIC_IDENTITY_HISTORY_BYTES: usize = 256 * 1024 * 1024;
 pub use correction::{ReviewedIdentityCommitOutcomeV1, ReviewedIdentityRequestV1};
 pub use frozen::{
     replay_frozen_public_identity_v1, replay_frozen_public_identity_v2,
-    FrozenPublicIdentityBundleV2, FrozenPublicIdentityDemandV2, MAX_FROZEN_PUBLIC_IDENTITY_BYTES,
-    MAX_FROZEN_PUBLIC_IDENTITY_DEMAND_JSON_BYTES,
+    CapturedFrozenPublicIdentityV2, FrozenPublicIdentityBundleV2, FrozenPublicIdentityDemandV2,
+    MAX_FROZEN_PUBLIC_IDENTITY_BYTES, MAX_FROZEN_PUBLIC_IDENTITY_DEMAND_JSON_BYTES,
 };
 pub(crate) use qualification::{preflight_keyspaces, require_legacy, validate};
 pub use qualification::{PublicIdentityQualificationStore, PublicIdentityWriterV1};

@@ -19,6 +19,21 @@ pub struct FrozenPublicIdentityBundleV2 {
     digest: String,
 }
 
+pub struct CapturedFrozenPublicIdentityV2 {
+    bundle: FrozenPublicIdentityBundleV2,
+    accepted: AcceptedPublicIdentitySnapshot,
+}
+
+impl CapturedFrozenPublicIdentityV2 {
+    pub fn bundle(&self) -> &FrozenPublicIdentityBundleV2 {
+        &self.bundle
+    }
+
+    pub fn into_parts(self) -> (FrozenPublicIdentityBundleV2, AcceptedPublicIdentitySnapshot) {
+        (self.bundle, self.accepted)
+    }
+}
+
 impl FrozenPublicIdentityBundleV2 {
     pub fn bytes(&self) -> &[u8] {
         &self.bytes
