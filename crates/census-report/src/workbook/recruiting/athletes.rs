@@ -11,6 +11,7 @@ use super::dataset::Dataset;
 use super::facts::AthleteTally;
 use super::profiles::profiles_of;
 use crate::bests::SharedSelection;
+use crate::export::current_school::SelectedSchools;
 use crate::report::ReportResult;
 use crate::workbook::public_identity::{Identity, SHEET_HEADERS};
 use cells::{
@@ -18,10 +19,12 @@ use cells::{
     pr_event_cells, profile_cells, public_recruiting_gpa, tf_flag,
 };
 use census_domain::model::CanonicalAthlete;
+use std::collections::BTreeSet;
 
-pub(super) fn rows<'a>(
-    dataset: &'a Dataset<'a>,
-) -> impl Iterator<Item = ReportResult<Vec<Cell>>> + 'a {
+pub(super) fn rows<'d>(
+    dataset: &'d Dataset<'d>,
+    schools: Option<&'d SelectedSchools<'d>>,
+) -> impl Iterator<Item = ReportResult<Vec<Cell>>> + 'd {
     let mut ordered: Vec<(&CanonicalAthlete, (String, String, String))> = dataset
         .athletes
         .iter()
@@ -49,27 +52,36 @@ pub(super) fn rows<'a>(
     std::iter::once(Ok(header)).chain(
         ordered
             .into_iter()
-            .map(move |(athlete, _)| row_for(dataset, athlete)),
+            .map(move |(athlete, _)| row_for(dataset, athlete, schools)),
     )
 }
 
-pub(super) fn rows_with_reported<'a>(
-    dataset: &'a Dataset<'a>,
-    projection: Option<&'a crate::workbook::reported::Projection<'a>>,
-) -> Box<dyn Iterator<Item = ReportResult<Vec<Cell>>> + 'a> {
+pub(super) fn rows_with_reported<'d>(
+    dataset: &'d Dataset<'d>,
+    projection: Option<&'d crate::workbook::reported::Projection<'d>>,
+    schools: Option<&'d SelectedSchools<'d>>,
+) -> Box<dyn Iterator<Item = ReportResult<Vec<Cell>>> + 'd> {
     match projection {
-        None => Box::new(rows(dataset)),
-        Some(projection) => Box::new(
-            rows(dataset)
-                .enumerate()
-                .map(|(index, row)| reported::verified(row, index == 0))
-                .chain(
-                    projection
-                        .athletes
-                        .iter()
-                        .map(move |athlete| reported::row(dataset, athlete, projection)),
-                ),
-        ),
+        None => Box::new(rows(dataset, schools)),
+        Some(projection) => {
+            let verified: BTreeSet<&str> = dataset
+                .athletes
+                .iter()
+                .map(|athlete| athlete.id.as_str())
+                .collect();
+            Box::new(
+                rows(dataset, schools)
+                    .enumerate()
+                    .map(|(index, row)| reported::verified(row, index == 0))
+                    .chain(
+                        projection
+                            .athletes
+                            .iter()
+                            .filter(move |athlete| !verified.contains(athlete.id.as_str()))
+                            .map(move |athlete| reported::row(dataset, athlete, projection)),
+                    ),
+            )
+        }
     }
 }
 
@@ -85,13 +97,18 @@ pub(super) fn display_key(
     )
 }
 
-fn row_for(dataset: &Dataset<'_>, athlete: &CanonicalAthlete) -> ReportResult<Vec<Cell>> {
+fn row_for(
+    dataset: &Dataset<'_>,
+    athlete: &CanonicalAthlete,
+    schools: Option<&SelectedSchools<'_>>,
+) -> ReportResult<Vec<Cell>> {
     let school = athlete.school.as_str();
     let tally = dataset.tallies.get(athlete.id.as_str());
-    let prs: Vec<&SharedSelection> = dataset.prs_of(athlete.id.as_str()).collect();
+    let performances: Vec<&SharedSelection> = dataset.prs_of(athlete.id.as_str()).collect();
+    let prs: Vec<&SharedSelection> = cells::eligible_prs(&performances).collect();
     let contacts = contact::scoped(dataset.contacts.get(school), athlete);
     let identity = Identity::of(dataset.public_identities, athlete.id.as_str())?;
-    let mut cells = identity_cells(dataset, athlete, identity.athlete_id());
+    let mut cells = identity_cells(dataset, athlete, identity.athlete_id(), schools);
     append_performance_cells(&mut cells, athlete, &prs, tally)?;
     append_staff_cells(&mut cells, &contacts);
     cells.extend(school_athletics_url(dataset, school));
@@ -154,6 +171,7 @@ fn identity_cells(
     dataset: &Dataset<'_>,
     athlete: &CanonicalAthlete,
     athlete_id: &str,
+    schools: Option<&SelectedSchools<'_>>,
 ) -> Vec<Cell> {
     let school = athlete.school.as_str();
     let school_id = dataset
@@ -162,7 +180,7 @@ fn identity_cells(
         .map(|s| s.id.as_str())
         .map_or(school, |value| value)
         .to_string();
-    row!(
+    let mut cells = row!(
         Cell::text(athlete_id),
         Cell::text(athlete.canonical_name.clone()),
         Cell::text(athlete.gender.stable_key().to_string()),
@@ -172,6 +190,24 @@ fn identity_cells(
         Cell::text(dataset.school_name(school)),
         Cell::text(school_id),
         Cell::text(dataset.school_city(school)),
+    );
+    cells.extend(current_school_cells(schools, athlete));
+    cells
+}
+
+fn current_school_cells(
+    schools: Option<&SelectedSchools<'_>>,
+    athlete: &CanonicalAthlete,
+) -> Vec<Cell> {
+    let Some(current) = schools.and_then(|schools| schools.fields(athlete.id.as_str()).ok()) else {
+        return vec![Cell::Empty, Cell::Empty, Cell::Empty, Cell::Empty];
+    };
+    let transfer = athlete.school.as_str() != current.current_school_id;
+    row!(
+        Cell::text(current.current_school),
+        Cell::text(current.current_state),
+        Cell::text(current.current_school_as_of),
+        flag(transfer),
     )
 }
 

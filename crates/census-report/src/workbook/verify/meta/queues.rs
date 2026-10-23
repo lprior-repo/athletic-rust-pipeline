@@ -163,6 +163,11 @@ fn verdict_subject(verdict: &ReviewVerdictRecord, index: &Lookup<'_>) -> String 
             .meet(&verdict.subject_id)
             .map_or_else(|| verdict.subject_id.clone(), |meet| meet.name.clone()),
         Some(ReviewFamily::AthleteIdentity) => index.subject(&verdict.subject_id),
+        Some(
+            ReviewFamily::AthleteGender
+            | ReviewFamily::SchoolAddress
+            | ReviewFamily::TransferAmbiguous,
+        ) => index.subject(&verdict.subject_id),
         None => verdict.subject_id.clone(),
     }
 }
@@ -174,6 +179,11 @@ fn family_state(family: &str, subject_id: &str, index: &Lookup<'_>) -> Expect {
         }
         Some(ReviewFamily::MeetJurisdiction) => index.meet_state(subject_id),
         Some(ReviewFamily::AthleteIdentity) => index.athlete_state(subject_id),
+        Some(
+            ReviewFamily::AthleteGender
+            | ReviewFamily::SchoolAddress
+            | ReviewFamily::TransferAmbiguous,
+        ) => index.athlete_state(subject_id),
         None => None,
     };
     state_cell(state)

@@ -56,6 +56,10 @@ pub(super) fn row(
         Cell::Empty,
         Cell::Empty,
         Cell::Empty,
+        Cell::Empty,
+        Cell::Empty,
+        Cell::Empty,
+        Cell::Empty,
     );
     result.extend(tf_flag(athlete));
     result.extend(participation_flags(athlete));

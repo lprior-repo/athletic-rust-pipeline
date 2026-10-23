@@ -3,7 +3,7 @@ use census_domain::model::EventSemantics;
 #[derive(Clone, Copy)]
 pub(in crate::workbook::verify) enum Schema {
     Historical64,
-    Current70,
+    Current74,
 }
 
 impl Schema {
@@ -12,32 +12,32 @@ impl Schema {
             EventSemantics::FlatEvents19 => Self::Historical64,
             EventSemantics::CombinedEvents20
             | EventSemantics::ResultGroups21
-            | EventSemantics::ResultGroups22 => Self::Current70,
+            | EventSemantics::ResultGroups22 => Self::Current74,
         }
     }
 
     pub(in crate::workbook::verify) fn headers(self) -> &'static [&'static str] {
         match self {
             Self::Historical64 => &HISTORICAL_HEADERS,
-            Self::Current70 => &CURRENT_HEADERS,
+            Self::Current74 => &CURRENT_HEADERS,
         }
     }
 
     pub(in crate::workbook::verify) fn pr_events(self) -> &'static [&'static str] {
         match self {
             Self::Historical64 => &HISTORICAL_PR_EVENTS,
-            Self::Current70 => &CURRENT_PR_EVENTS,
+            Self::Current74 => &CURRENT_PR_EVENTS,
         }
     }
 
     pub(in crate::workbook::verify) fn event_name(self, key: &str) -> &str {
         match (self, key) {
-            (Self::Current70, "Track300m") => "300m",
-            (Self::Current70, "Track500m") => "500m",
-            (Self::Current70, "Track600m") => "600m",
-            (Self::Current70, "Track2000m") => "2000m",
-            (Self::Current70, "Track2Miles") => "2 Miles",
-            (Self::Current70, "Track10000m") => "10000m",
+            (Self::Current74, "Track300m") => "300m",
+            (Self::Current74, "Track500m") => "500m",
+            (Self::Current74, "Track600m") => "600m",
+            (Self::Current74, "Track2000m") => "2000m",
+            (Self::Current74, "Track2Miles") => "2 Miles",
+            (Self::Current74, "Track10000m") => "10000m",
             _ => super::pr_event_name(key),
         }
     }
@@ -110,7 +110,7 @@ const HISTORICAL_HEADERS: [&str; 64] = [
     crate::export::postal::ATHLETE_ADDRESS_HEADER,
 ];
 
-const CURRENT_HEADERS: [&str; 70] = [
+const CURRENT_HEADERS: [&str; 74] = [
     "Athlete ID",
     "Name",
     "Gender",
@@ -120,6 +120,10 @@ const CURRENT_HEADERS: [&str; 70] = [
     "School",
     "School ID",
     "School City",
+    "Current school",
+    "Current state",
+    "Current school as-of",
+    "Transfer",
     "TF",
     "XC",
     "Indoor",

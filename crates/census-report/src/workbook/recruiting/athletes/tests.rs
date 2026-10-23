@@ -27,7 +27,7 @@ fn emitted(dataset: &crate::export::ExportDataset) -> TestResult<Vec<BTreeMap<St
         Vec::new(),
         &admission,
     )?;
-    let mut rows = rows(&recruiting);
+    let mut rows = rows(&recruiting, None);
     let header = rows.next().ok_or("athlete headers")??;
     let header = header
         .into_iter()

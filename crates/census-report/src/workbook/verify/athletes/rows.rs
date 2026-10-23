@@ -51,7 +51,7 @@ impl RowValues<'_, '_> {
 
     fn identity(&self, athlete: &CanonicalAthlete, athlete_id: &str) -> Vec<Value> {
         let school = athlete.school.as_str();
-        vec![
+        let mut values = vec![
             Value::text(athlete_id),
             Value::text(&athlete.canonical_name),
             Value::text(athlete.gender.stable_key()),
@@ -61,6 +61,27 @@ impl RowValues<'_, '_> {
             Value::text(self.expectations.school_name(school)),
             Value::text(self.expectations.school_id(school)),
             Value::text(self.expectations.school_city(school)),
+        ];
+        values.extend(self.current_school(athlete));
+        values
+    }
+
+    fn current_school(&self, athlete: &CanonicalAthlete) -> Vec<Value> {
+        let selected = self.expectations.dataset.selected_profile_id().is_some();
+        if !selected {
+            return vec![Value::Empty, Value::Empty, Value::Empty, Value::Empty];
+        }
+        let current = crate::export::current_school::SelectedSchools::of(self.expectations.dataset)
+            .and_then(|schools| schools.fields(athlete.id.as_str()).map_err(Into::into));
+        let Ok(current) = current else {
+            return vec![Value::Empty, Value::Empty, Value::Empty, Value::Empty];
+        };
+        let transfer = athlete.school.as_str() != current.current_school_id;
+        vec![
+            Value::text(current.current_school),
+            Value::text(current.current_state),
+            Value::text(current.current_school_as_of),
+            cells::flag(transfer),
         ]
     }
 

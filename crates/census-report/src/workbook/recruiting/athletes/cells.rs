@@ -222,6 +222,14 @@ pub(super) fn gpa_source() -> Vec<Cell> {
     vec![Cell::Empty]
 }
 
+pub(super) fn eligible_prs<'a>(
+    prs: &'a [&'a SharedSelection],
+) -> impl Iterator<Item = &'a SharedSelection> + 'a {
+    prs.iter()
+        .copied()
+        .filter(|pr| !pr.key.event_kind.is_relay())
+}
+
 pub(super) fn pr_event_name(key: &str) -> &str {
     match key {
         "Track100m" => "100m",

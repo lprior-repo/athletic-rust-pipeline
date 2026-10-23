@@ -49,6 +49,18 @@ pub(super) fn next(
             admit(&mut rows, &mut bytes, case, after)?;
         }
     }
+    for case in index.quarantines_after(after)? {
+        if rows.len() == CHECKPOINT_CASES
+            && rows
+                .last_key_value()
+                .is_some_and(|(last, _)| case.id >= *last)
+        {
+            break;
+        }
+        if actionable(case, options) {
+            admit(&mut rows, &mut bytes, case.clone(), after)?;
+        }
+    }
     let cursor = rows.last_key_value().map(|(id, _)| id.clone());
     let ids: Vec<_> = rows.keys().cloned().collect();
     for id in ids {

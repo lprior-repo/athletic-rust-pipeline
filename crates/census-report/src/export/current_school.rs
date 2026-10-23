@@ -33,6 +33,15 @@ impl<'a> SelectedSchools<'a> {
         AcceptedIdentityFields::for_candidate(self.identities, candidate)
     }
 
+    pub(crate) fn has_unresolved_current_school(&self, candidate: &str) -> ReportResult<bool> {
+        let identity = match self.identity(candidate) {
+            Ok(identity) => identity,
+            Err(_) => return Ok(false),
+        };
+        let canonical = identity.canonical_candidate_id().cast();
+        Ok(self.affiliations.resolution(&canonical).school().is_none())
+    }
+
     pub(crate) fn fields(&self, candidate: &str) -> StoreResult<CurrentSchoolFields<'a>> {
         let identity = self.identity(candidate)?;
         let canonical = identity.canonical_candidate_id().cast();

@@ -58,8 +58,11 @@ fn families_route_to_rust_adjudication() {
     for family in ReviewFamily::askable() {
         assert_eq!(ReviewFamily::from_label(family.label()), Some(family));
     }
-    assert_eq!(ReviewFamily::askable().len(), 3);
+    assert_eq!(ReviewFamily::askable().len(), 5);
     assert_eq!(ReviewFamily::AthleteIdentity.field(), "identity");
+    assert_eq!(ReviewFamily::AthleteGender.field(), "gender");
+    assert_eq!(ReviewFamily::SchoolAddress.field(), "school_address");
+    assert_eq!(ReviewFamily::TransferAmbiguous.field(), "identity");
     assert_eq!(ReviewFamily::SchoolJurisdiction.field(), "state");
     assert_eq!(ReviewFamily::MeetJurisdiction.field(), "state");
     assert_eq!(

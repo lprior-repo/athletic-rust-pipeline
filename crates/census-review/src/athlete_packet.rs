@@ -58,6 +58,10 @@ impl AthleteIndex {
         }
     }
 
+    pub(super) fn member(&self, subject_id: &str) -> Option<&CanonicalAthlete> {
+        self.rows.get(subject_id)
+    }
+
     pub(super) fn compare_members(
         &self,
         subject_id: &str,
@@ -108,6 +112,24 @@ pub(super) fn packet(
     }
     for flag in flags(subject, other) {
         packet = packet.with_evidence(flag.evidence());
+    }
+    Ok(packet)
+}
+
+pub(super) fn single_packet(
+    case: &ReviewCase,
+    subject: &CanonicalAthlete,
+    question: &str,
+    answer_field: &str,
+    answer_values: &str,
+) -> StoreResult<ReviewPacket> {
+    let mut packet = ReviewPacket::new(case.subject_id.clone(), case.subject.clone())
+        .with_case(case_fact(case))
+        .with_evidence(fact("question", question))
+        .with_evidence(fact("answer_field", answer_field))
+        .with_evidence(fact("answer_values", answer_values));
+    for evidence in side_facts(Side::Subject, subject)? {
+        packet = packet.with_evidence(evidence);
     }
     Ok(packet)
 }

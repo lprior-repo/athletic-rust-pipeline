@@ -1,6 +1,6 @@
 pub(crate) const TITLE: &str = "Athletes";
 
-pub(crate) const HEADERS: [&str; 70] = [
+pub(crate) const HEADERS: [&str; 74] = [
     "Athlete ID",
     "Name",
     "Gender",
@@ -10,6 +10,10 @@ pub(crate) const HEADERS: [&str; 70] = [
     "School",
     "School ID",
     "School City",
+    "Current school",
+    "Current state",
+    "Current school as-of",
+    "Transfer",
     "TF",
     "XC",
     "Indoor",
@@ -73,10 +77,11 @@ pub(crate) const HEADERS: [&str; 70] = [
     crate::export::postal::ATHLETE_ADDRESS_HEADER,
 ];
 
-pub(crate) const WIDTHS: [u16; 70] = [
-    20, 26, 10, 16, 14, 8, 30, 16, 20, 8, 8, 8, 8, 30, 30, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12,
-    12, 12, 18, 18, 18, 18, 16, 16, 16, 16, 16, 16, 16, 12, 16, 12, 24, 32, 24, 32, 24, 32, 24, 24,
-    24, 24, 48, 30, 24, 32, 28, 36, 40, 64, 28, 36, 36, 40, 14, 18, 18, 14, 14, 14, 56,
+pub(crate) const WIDTHS: [u16; 74] = [
+    20, 26, 10, 16, 14, 8, 30, 16, 20, 30, 14, 22, 12, 8, 8, 8, 8, 30, 30, 12, 12, 12, 12, 12, 12,
+    12, 12, 12, 12, 12, 12, 18, 18, 18, 18, 16, 16, 16, 16, 16, 16, 16, 12, 16, 12, 24, 32, 24, 32,
+    24, 32, 24, 24, 24, 24, 48, 30, 24, 32, 28, 36, 40, 64, 28, 36, 36, 40, 14, 18, 18, 14, 14, 14,
+    56,
 ];
 
 pub(crate) const PR_EVENTS: [&str; 25] = [
