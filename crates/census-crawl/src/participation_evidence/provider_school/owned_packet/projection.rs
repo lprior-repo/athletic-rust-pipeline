@@ -1,12 +1,14 @@
 use super::capture::ObservedCapture;
+use super::child::CurrentChildProjection;
 use super::OWNED_PROVIDER_SCHOOL_INTERPRETATION;
-use super::{OwnedProviderSchoolPacketV1, OWNED_PROVIDER_SCHOOL_INTAKE_PHASE};
+use super::{
+    OwnedProviderSchoolPacketV1, OWNED_PROVIDER_SCHOOL_INTAKE_PHASE,
+    OWNED_PROVIDER_SCHOOL_SEMANTIC_CONTRACT,
+};
 use crate::milesplit::{RosterOwnerWitnessPolicy, Site};
 use crate::participation_evidence::invalid;
-use crate::participation_evidence::provider_school::directory::Selected;
 use crate::participation_evidence::provider_school::{
     CheckedProviderSchoolPacketV1, ProviderSchoolDirectoryProofV1, ProviderSchoolPacketRefV1,
-    PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
 };
 use crate::CrawlResult;
 use census_domain::model::{
@@ -18,10 +20,19 @@ use serde::Serialize;
 
 pub(super) fn read(
     packet: &OwnedProviderSchoolPacketV1,
-    selected: Selected,
+    interpretation: CurrentChildProjection,
     directory: &ObservedCapture,
     roster: &ObservedCapture,
 ) -> CrawlResult<CheckedProviderSchoolPacketV1> {
+    let CurrentChildProjection {
+        selected,
+        retained_kernel,
+        current_kernel,
+    } = interpretation;
+    let kernels = DirectoryInterpretation {
+        retained_child_kernel: &retained_kernel,
+        current_kernel: &current_kernel,
+    };
     let reference = packet.reference()?;
     let projected = super::super::projection::roster(
         &selected,
@@ -40,6 +51,7 @@ pub(super) fn read(
         &selected.site,
         &reference,
         Some(&selected.proof),
+        &kernels,
     )?);
     school.evidence.push(evidence(
         packet.roster(),
@@ -47,6 +59,7 @@ pub(super) fn read(
         &selected.site,
         &reference,
         None,
+        &kernels,
     )?);
     let mut observation = SourceSchoolObservation::of_school(
         &SourceNamespace::MilesplitSchool,
@@ -64,13 +77,19 @@ pub(super) fn read(
     );
     Ok(CheckedProviderSchoolPacketV1 {
         reference,
-        semantic_contract: PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2,
+        semantic_contract: OWNED_PROVIDER_SCHOOL_SEMANTIC_CONTRACT,
         school,
         observation,
         roster_verdict: projected.verdict,
         directory_proof: selected.proof,
         published_roster_owners: projected.owners,
     })
+}
+
+#[derive(Serialize)]
+struct DirectoryInterpretation<'a> {
+    retained_child_kernel: &'a AcquisitionDigest,
+    current_kernel: &'a AcquisitionDigest,
 }
 
 #[derive(Serialize)]
@@ -84,6 +103,7 @@ struct Provenance<'a> {
     occurrence: &'a AcquisitionOccurrenceRefV1,
     observed_http: &'a NormalizedObservedHttpV1,
     directory_fields: Option<&'a ProviderSchoolDirectoryProofV1>,
+    directory_interpretation: &'a DirectoryInterpretation<'a>,
 }
 
 fn evidence(
@@ -92,6 +112,7 @@ fn evidence(
     site: &Site,
     reference: &ProviderSchoolPacketRefV1,
     directory: Option<&ProviderSchoolDirectoryProofV1>,
+    kernels: &DirectoryInterpretation<'_>,
 ) -> StoreResult<Evidence> {
     let mut evidence = Evidence::parsed(
         SourceRef::new(site.source_id(), Some(capture.fetch.url.clone())),
@@ -111,6 +132,7 @@ fn evidence(
         occurrence: retained.occurrence(),
         observed_http: &capture.observed,
         directory_fields: directory,
+        directory_interpretation: kernels,
     };
     let encoded =
         crate::participation_evidence::codec::encode(&provenance, MAX_CAPTURE_RECORD_BYTES + 8192)?;

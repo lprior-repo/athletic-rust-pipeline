@@ -33,7 +33,9 @@ fn record_using<T>(
     if length > codec::MAX_BYTES || key.len() > crate::MAX_JOURNAL_KEY_BYTES {
         return Err(CaptureError::RecordTooLarge.into());
     }
-    budget.public_owner_record(key.len(), length)?;
+    budget.public_owner_record(key.len(), length).inspect_err(|error| {
+        tracing::warn!(physical_key = %String::from_utf8_lossy(key), physical_key_bytes = key.len(), encoded_bytes = length, %error, "public resource record admission refused");
+    })?;
     let raw = snapshot
         .get(table, key)
         .map_err(|source| StoreError::Read { source })?

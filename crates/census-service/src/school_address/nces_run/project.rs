@@ -47,7 +47,11 @@ fn stage_and_project(
     if out.exists() {
         bail!("NCES address output exists without a matching immutable Store receipt");
     }
-    let replay = super::super::replay::run(&manifest_path, &out)?;
+    let replay = super::super::replay::run_scoped(
+        &manifest_path,
+        &out,
+        super::super::CorpusScope::Jurisdictions(&selection.scope),
+    )?;
     let frozen = super::super::verify_current(&out)?;
     super::retention::verify_generation(
         &frozen,

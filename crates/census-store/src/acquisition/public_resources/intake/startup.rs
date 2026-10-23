@@ -24,6 +24,12 @@ pub(in crate::acquisition) fn capture_original(
     super::read::capture(store, owner, reference)
 }
 
+#[tracing::instrument(
+    name = "public_school_intake_inventory",
+    level = "debug",
+    skip_all,
+    err
+)]
 pub(crate) fn validate_all(
     snapshot: &Snapshot,
     meta: &Keyspace,

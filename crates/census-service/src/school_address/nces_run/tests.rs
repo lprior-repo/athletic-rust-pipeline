@@ -4,8 +4,17 @@ use census_domain::school_directory::SchoolDirectoryEntry;
 use std::collections::BTreeSet;
 
 mod retention_bounds;
+mod selected_scope;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+const FIVE_STATE_SCOPE: [UsJurisdiction; 5] = [
+    UsJurisdiction::Michigan,
+    UsJurisdiction::Minnesota,
+    UsJurisdiction::Iowa,
+    UsJurisdiction::Illinois,
+    UsJurisdiction::Colorado,
+];
 
 const CCD: &[u8] = include_bytes!("../../../tests/fixtures/nces_run/ccd_synthetic.csv");
 const PSS: &[u8] = include_bytes!("../../../tests/fixtures/nces_run/pss_synthetic.csv");
@@ -278,8 +287,10 @@ fn accepted_nces_run_joins_into_canonical_schools_and_survives_frozen_dataset_re
     let joined = super::super::join_generation_pinned(
         &fixture.store,
         &generation,
+        None,
         overrides,
         receipt.address_generation_digest(),
+        super::super::Mode::Apply,
     )?;
     check!(eq; (joined.counters.already_linked, joined.counters.backfilled,
         joined.counters.postal_filled, joined.counters.postal_remaining), (10, 10, 10, 0));

@@ -15,14 +15,6 @@ use census_domain::UsJurisdiction;
 use census_store::Store;
 use std::path::PathBuf;
 
-const FIVE_STATE_SCOPE: [UsJurisdiction; 5] = [
-    UsJurisdiction::Michigan,
-    UsJurisdiction::Minnesota,
-    UsJurisdiction::Iowa,
-    UsJurisdiction::Illinois,
-    UsJurisdiction::Colorado,
-];
-
 #[derive(Debug, Clone)]
 pub struct NcesSelectedInputV1 {
     pub source_root: PathBuf,

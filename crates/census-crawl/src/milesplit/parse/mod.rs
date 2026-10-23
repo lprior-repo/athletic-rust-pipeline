@@ -15,7 +15,7 @@ static ATHLETE_ROW_REGEX: LazyLock<Result<Regex, regex::Error>> =
 
 static ATHLETE_LINK_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
     Regex::new(
-        r#"<a href="(https?://(?:[a-z0-9-]+\.)*milesplit\.com/athletes/(\d+)-[^"]*)">([^<]*)</a>"#,
+        r#"<a href="(https?://(?:[a-z0-9-]+\.)*milesplit\.com/athletes/(\d+)(?:-[^"]*)?)">([^<]*)</a>"#,
     )
 });
 

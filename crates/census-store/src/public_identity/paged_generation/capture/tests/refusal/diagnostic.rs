@@ -6,7 +6,7 @@ pub(super) fn physical_bytes(store: &Store) -> TestResult<u64> {
     let capture = binding::capture(store, &snapshot)?;
     let mut total = 0u64;
     let mut builder = GraphPlanBuilder::new(capture.clone());
-    let seal = scan::walk(&snapshot, &capture, |node| {
+    let seal = scan::walk(scan::Input::Held(&snapshot), &capture, |node| {
         let measured = node.measure(store)?;
         total = total
             .checked_add(measured.incremental_charge().bytes)

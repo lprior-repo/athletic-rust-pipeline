@@ -39,12 +39,13 @@ pub(super) fn cohort(root: &Path, operation: &str, graduation_year: i16) -> Resu
     let cohort = GradYear::new(graduation_year).context("invalid graduation year")?;
     let (store, writer) = open(root)?;
     let head = writer.head(&store)?;
+    let revision = store.snapshot().revision();
     let outcomes = writer
         .establish_source_bound_cohort(
             &store,
             operation,
             cohort,
-            store.snapshot().revision(),
+            revision,
             &head,
         )
         .context("source-bound cohort establishment failed; retained capture and original operation remain recoverable")?;

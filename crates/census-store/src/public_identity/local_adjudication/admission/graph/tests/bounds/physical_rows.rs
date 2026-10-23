@@ -146,7 +146,7 @@ fn physical_fingerprint_allowance_fits_the_metadata_budget() -> TestResult {
         .checked_mul(512)
         .ok_or("descriptor metadata")?;
     let allowance = rows.checked_add(descriptors).ok_or("metadata total")?;
-    check!(eq; allowance, 66 * 1024 * 1024);
+    check!(eq; allowance, 72 * 1024 * 1024);
     check!(allowance < MAX_METADATA_BYTES);
     Ok(())
 }

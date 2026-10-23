@@ -79,7 +79,14 @@ impl SchoolAddressJoin {
                         Some(digest) => digest,
                         None => preflight_generation(&generation, overrides.clone())?,
                     };
-                    join_generation_pinned(&store, &generation, overrides, &expected)
+                    join_generation_pinned(
+                        &store,
+                        &generation,
+                        None,
+                        overrides,
+                        &expected,
+                        crate::school_address::Mode::Apply,
+                    )
                 })
                 .await
                 .map(|report| Json(SchoolAddressJoinReply::from(report)))

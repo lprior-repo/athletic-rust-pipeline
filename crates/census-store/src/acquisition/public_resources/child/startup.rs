@@ -38,6 +38,7 @@ pub(super) fn require_capacity(
     Ok(())
 }
 
+#[tracing::instrument(name = "public_roster_child_inventory", level = "debug", skip_all, err)]
 pub(crate) fn validate_all(
     snapshot: &Snapshot,
     journal: &Keyspace,

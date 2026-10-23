@@ -10,6 +10,59 @@ fn note(role: &str, packet: &str) -> String {
 }
 
 #[test]
+fn team_scan_budget_covers_retained_physical_row_count() -> Result<()> {
+    check!(TEAM_BUDGET.rows >= 1_050_405);
+    check!(eq; TEAM_BUDGET.rows, 2_097_152);
+    Ok(())
+}
+
+#[test]
+fn team_scan_budget_covers_observed_encoded_requirement() -> Result<()> {
+    check!(TEAM_BUDGET.bytes >= 268_437_966);
+    check!(eq; TEAM_BUDGET.bytes, 8_589_934_592);
+    check!(eq; TEAM_BUDGET.record_bytes, 1_048_576);
+    Ok(())
+}
+
+#[test]
+fn emitted_program_limit_remains_independent_of_physical_scan_budget() -> Result<()> {
+    let retained = school("Quota", &"a".repeat(64), &["918"]);
+    let mut schools = BTreeMap::new();
+    let mut packet_count = 0;
+    collect_school(retained.clone(), &mut schools, &mut packet_count)?;
+    let mut count = 131_071;
+    collect_team(team(&retained, &["918"]), &mut schools, &mut count)?;
+    check!(eq; count, 131_072);
+    check!(eq;
+        schools.get(retained.id.as_str()).context("school missing")?.programs.len(),
+        1
+    );
+    let before = serde_json::to_vec(&schools)?;
+    let mut overflow = team(&retained, &["918"]);
+    overflow.gender = Gender::Boys;
+    overflow.id = CanonicalTeam::mint(
+        &retained.id,
+        overflow.sport,
+        overflow.gender,
+        overflow.school_year,
+    );
+    let error = collect_team(overflow, &mut schools, &mut count)
+        .err()
+        .context("expected retained-program quota refusal")?;
+    check!(matches!(
+        error,
+        StoreError::BudgetExceeded {
+            what: "roster inventory retained programs",
+            needed: 131_073,
+            available: 131_072,
+        }
+    ));
+    check!(eq; count, 131_072);
+    check!(eq; serde_json::to_vec(&schools)?, before);
+    Ok(())
+}
+
+#[test]
 fn parses_packet_field_and_ignores_unrelated_notes() -> Result<()> {
     check!(eq; parse_known_note("ordinary non-JSON evidence")?, None);
     check!(eq; parse_known_note(&note("directory_name_city", "a"))?, None);
@@ -19,6 +72,24 @@ fn parses_packet_field_and_ignores_unrelated_notes() -> Result<()> {
     );
     check!(parse_known_note(&note("provider_roster_owner", "bad-ref")).is_err());
     check!(parse_known_note(OWNED_PROVIDER_SCHOOL_INTAKE_PHASE).is_err());
+    Ok(())
+}
+
+#[test]
+fn original_owned_note_remains_a_discovery_hint_after_current_interpretation_changes() -> Result<()>
+{
+    let reference = "a".repeat(64);
+    let original = serde_json::json!({
+        "role": "provider_roster_owner",
+        "phase": "public_resource_school_intake_v1",
+        "interpretation": "milesplit_owned_directory_roster_school_v1",
+        "packet": reference,
+    });
+    check!(eq; parse_known_note(&original.to_string())?, Some(reference));
+    let mut unknown = original;
+    unknown["interpretation"] = serde_json::json!("unknown-owned-interpretation");
+    check!(eq; parse_known_note(&unknown.to_string())?, None);
+    check!(parse_known_note(RETAINED_OWNED_SCHOOL_NOTE_V1).is_err());
     Ok(())
 }
 

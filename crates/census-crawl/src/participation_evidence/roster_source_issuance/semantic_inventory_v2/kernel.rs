@@ -57,10 +57,36 @@ pub(super) fn require_historical(
     }
 }
 
+pub(super) fn require_current_owned(
+    retained: &[u8],
+    grant: &mut AttachmentReplayGrantV1,
+) -> StoreResult<()> {
+    let result = (|| {
+        bound(
+            retained.len(),
+            MAX_DOCUMENT,
+            "current owned semantic kernel",
+        )?;
+        grant.charge_steps(1).map_err(super::domain)?;
+        grant.charge_bytes(retained.len()).map_err(super::domain)?;
+        let (executing, _) = compiled_identity()?;
+        if retained != executing.as_bytes() {
+            return Err(invalid(
+                "owned interpretation requires exact current kernel",
+            ));
+        }
+        Ok(())
+    })();
+    if result.is_err() {
+        grant.poison();
+    }
+    result
+}
+
 const SCHEMA: &str = "roster-semantic-kernel-dependencies/v13";
 const MAX_DOCUMENT: usize = 64 * 1024;
 const EXPECTED_SOURCE_DIGEST: &str =
-    "bcd7ff96d7f8a363cb5883c8347a385b60c152a46d40c4d22ccfcf10843ee1b1";
+    "78a4a6ef30dee421ec79a3776f16d6d15d502a1655c751716cbceee95ec892ba";
 const COMPILED: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/roster-semantic-kernel-v13.json"));
 
@@ -210,6 +236,43 @@ mod tests {
                 Err(census_store::StoreError::Refused { .. })
             ));
         }
+        Ok(())
+    }
+
+    #[test]
+    fn owned_interpretation_requires_exact_current_document_and_poisons_drift() -> TestResult {
+        let mut grant = AttachmentReplayGrantV1::new();
+        require_current_owned(COMPILED, &mut grant)?;
+        grant.ensure_available()?;
+        for field in ["dependencies", "configuration", "source_digest", "schema"] {
+            let mut value: serde_json::Value = serde_json::from_slice(COMPILED)?;
+            *value.get_mut(field).ok_or("kernel field")? = serde_json::json!("altered");
+            let mut refused = AttachmentReplayGrantV1::new();
+            check!(require_current_owned(&serde_json::to_vec(&value)?, &mut refused).is_err());
+            check!(refused.ensure_available().is_err());
+        }
+        let mut refused = AttachmentReplayGrantV1::new();
+        let mut noncanonical = COMPILED.to_vec();
+        noncanonical.push(b' ');
+        check!(require_current_owned(&noncanonical, &mut refused).is_err());
+        check!(refused.ensure_available().is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn owned_interpretation_does_not_inherit_native_context_or_exhausted_grant() -> TestResult {
+        let native = include_bytes!(concat!(
+            env!("OUT_DIR"),
+            "/roster-semantic-kernel-v13-native.json"
+        ));
+        check!(ne; native.as_slice(), COMPILED);
+        let mut refused = AttachmentReplayGrantV1::new();
+        check!(require_current_owned(native, &mut refused).is_err());
+        check!(refused.ensure_available().is_err());
+        let mut exhausted = AttachmentReplayGrantV1::new();
+        exhausted.charge_bytes(AttachmentReplayGrantV1::MAX_ENCODED_BYTES)?;
+        check!(require_current_owned(COMPILED, &mut exhausted).is_err());
+        check!(exhausted.ensure_available().is_err());
         Ok(())
     }
 }

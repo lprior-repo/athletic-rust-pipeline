@@ -183,6 +183,7 @@ pub(super) fn inspect(
     let snapshot = store.snapshot_locked();
     let expected = snapshot.revision();
     let original = binding::capture(store, &snapshot)?;
+    drop(snapshot);
     drop(guard);
     let capture = writer.capture_raw_generation_at_v2(
         store,

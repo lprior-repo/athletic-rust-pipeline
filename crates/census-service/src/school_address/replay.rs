@@ -116,8 +116,10 @@ impl Replay {
         Ok(super::join_generation_pinned(
             store,
             &self.generation,
+            None,
             self.overrides.clone(),
             &self.digest,
+            super::Mode::Apply,
         )?)
     }
 }
@@ -132,6 +134,14 @@ fn ensure_contained(root: &Path, path: &Path, detail: &str) -> Result<(), Replay
 }
 
 pub fn run(manifest_path: &Path, out: &Path) -> Result<Replay, ReplayError> {
+    run_scoped(manifest_path, out, super::CorpusScope::AllCaptured)
+}
+
+pub(super) fn run_scoped(
+    manifest_path: &Path,
+    out: &Path,
+    scope: super::CorpusScope<'_>,
+) -> Result<Replay, ReplayError> {
     let bytes = load(manifest_path, MAX_MANIFEST_BYTES)?;
     let manifest: Manifest = serde_json::from_slice(&bytes)?;
     if manifest.schema_revision != 1
@@ -158,7 +168,7 @@ pub fn run(manifest_path: &Path, out: &Path) -> Result<Replay, ReplayError> {
     let acquisitions = stage_captures(base, &manifest.captures, &archive, &mut args)?;
     let overrides = Overrides::from_acquisitions(acquisitions)?;
     preserve(&archive.join(".complete"), b"")?;
-    super::run(&args)?;
+    super::run_scoped(&args, scope)?;
     let generation = super::verify_current(out).map_err(JoinError::from)?;
     let report: Report = serde_json::from_slice(
         generation

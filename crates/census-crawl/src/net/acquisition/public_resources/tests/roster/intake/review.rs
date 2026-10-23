@@ -19,6 +19,7 @@ use census_store::{
 
 mod proposal;
 mod recorded_school;
+mod reinterpretation;
 
 const OPERATION: &str = "controlled-owned-genuine-school-review";
 

@@ -16,7 +16,7 @@ mod types;
 pub(crate) use owned_directory::read_directory_roster_child;
 pub use owned_packet::{
     OwnedProviderSchoolPacketV1, OWNED_PROVIDER_SCHOOL_INTAKE_PHASE,
-    OWNED_PROVIDER_SCHOOL_INTERPRETATION,
+    OWNED_PROVIDER_SCHOOL_INTERPRETATION, OWNED_PROVIDER_SCHOOL_SEMANTIC_CONTRACT,
 };
 
 pub use retained::{RetainedProviderSchoolCaptureV1, RetainedProviderSchoolPacketV1};

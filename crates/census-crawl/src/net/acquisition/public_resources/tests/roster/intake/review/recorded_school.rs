@@ -25,7 +25,7 @@ fn projection(
     held: &Held,
 ) -> TestResult {
     verify_school(checked)?;
-    check!(eq; checked.semantic_contract(), crate::participation_evidence::provider_school::PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2);
+    check!(eq; checked.semantic_contract(), crate::participation_evidence::provider_school::OWNED_PROVIDER_SCHOOL_SEMANTIC_CONTRACT);
     check!(eq; checked.reference().as_str(), held.packet.reference().as_str());
     check!(eq; checked.school(), OwnedProviderSchoolPacketV1::from_packet(held.packet.clone()).read()?.school());
     let child = held.packet.child_evidence();

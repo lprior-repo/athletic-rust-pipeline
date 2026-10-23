@@ -32,7 +32,36 @@ fn capacity_accepts_zero_and_exact_limits() -> TestResult {
 #[test]
 fn byte_capacity_admits_measured_canonical_cohort_total() -> TestResult {
     require_capacity(4_640_733_426, MAX_ROOTS, MAX_RESERVATIONS)?;
-    check!(eq; MAX_BYTES, 8_589_934_592);
+    Ok(())
+}
+
+#[test]
+fn byte_capacity_admits_measured_retained_full_corpus_total() -> TestResult {
+    require_capacity(28_363_480_485, MAX_ROOTS, MAX_RESERVATIONS)?;
+    check!(eq; MAX_BYTES, 34_359_738_368);
+    Ok(())
+}
+
+#[test]
+fn root_capacity_admits_retained_full_corpus_minimum() -> TestResult {
+    let rows = [1_796_172u64, 1_967_509, 1_220_513];
+    let (pages, blocks) =
+        rows.into_iter()
+            .try_fold((0u64, 0u64), |(pages, blocks), rows| -> TestResult<_> {
+                let next = rows.div_ceil(512);
+                Ok((
+                    pages.checked_add(next).ok_or("page count")?,
+                    blocks
+                        .checked_add(next.div_ceil(256))
+                        .ok_or("block count")?,
+                ))
+            })?;
+    let roots = pages
+        .checked_add(blocks)
+        .and_then(|total| total.checked_add(7))
+        .ok_or("graph root count")?;
+    check!(eq; roots, 9_783);
+    require_capacity(MAX_BYTES, roots, 1)?;
     Ok(())
 }
 

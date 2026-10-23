@@ -4,7 +4,7 @@ use crate::public_identity::paged_generation::{
 };
 use serde::{Deserialize, Deserializer, Serialize};
 
-pub(super) const MAX_DESCRIPTORS: usize = 4096;
+pub(super) const MAX_DESCRIPTORS: usize = 16_384;
 pub(super) const MAX_PHYSICAL_ROWS: usize = 262_144;
 pub(in crate::public_identity) const MAX_METADATA_BYTES: usize = 128 * 1024 * 1024;
 

@@ -20,8 +20,7 @@ mod postal;
 mod receipts;
 mod support;
 
-pub(crate) use generation::join_generation_pinned;
-pub use generation::{join_generation, preflight_generation};
+pub use generation::{join_generation, join_generation_pinned, preflight_generation};
 pub(crate) use lanes::input::{EvidenceField, EvidenceFields};
 pub use lanes::{build_lane_evidence, Acquisition, Overrides};
 

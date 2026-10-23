@@ -1,8 +1,9 @@
 use anyhow::{bail, Context, Result};
 use census_domain::model::{serialized_digest, RunManifest};
+use census_domain::school_directory::nces_address::NcesAddressRunReceiptV1;
 use census_store::Store;
 
-use super::{verified_input, NcesSelectedInputV1, FIVE_STATE_SCOPE};
+use super::{verified_input, NcesSelectedInputV1};
 
 pub(super) struct PreparedInput {
     pub(super) ccd: verified_input::VerifiedBytes,
@@ -24,8 +25,9 @@ fn validate_selection(selection: &NcesSelectedInputV1, run: &RunManifest) -> Res
     if selection.run_manifest_digest != digest {
         bail!("selected NCES artifacts belong to a different run manifest");
     }
-    if selection.scope.as_slice() != FIVE_STATE_SCOPE || selection.scope != run.jurisdictions {
-        bail!("selected NCES artifacts must use the exact MI/MN/IA/IL/CO run scope");
+    NcesAddressRunReceiptV1::validate_scope(&selection.scope)?;
+    if selection.scope != run.jurisdictions {
+        bail!("selected NCES artifacts must preserve the bound run jurisdiction order");
     }
     Ok(())
 }

@@ -45,19 +45,21 @@ pub fn preflight_generation(
     Ok(report.manifest_digest)
 }
 
-pub(crate) fn join_generation_pinned(
+pub fn join_generation_pinned(
     store: &Store,
     generation_dir: &Path,
+    out_dir: Option<&Path>,
     overrides: Overrides,
     expected_digest: &str,
+    mode: Mode,
 ) -> Result<JoinReport, JoinError> {
     join_checked(
         store,
         generation_dir,
-        None,
+        out_dir,
         overrides,
         JoinPolicy {
-            mode: Mode::Apply,
+            mode,
             expected_digest: Some(expected_digest),
         },
     )

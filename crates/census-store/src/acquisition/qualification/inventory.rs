@@ -8,6 +8,7 @@ mod manifest;
 mod scope;
 use scope::{require_supported_work, validate_manifest};
 
+#[tracing::instrument(name = "acquisition_inventory", level = "debug", skip_all, err)]
 pub(super) fn inventory(
     root: &Path,
     snapshot: &Snapshot,
@@ -17,7 +18,7 @@ pub(super) fn inventory(
     declaration: &CaptureQualification,
 ) -> StoreResult<()> {
     let protocol = declaration.protocol();
-    let mut budget = AcquisitionReadBudget::inventory();
+    let mut budget = AcquisitionReadBudget::cold_inventory()?;
     let manifest = manifest::load(snapshot, meta, &mut budget)?;
     let prefix = Store::journal_key(protocol.phase(), "");
     for (position, guard) in snapshot

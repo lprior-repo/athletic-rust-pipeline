@@ -4,15 +4,21 @@ use crate::milesplit::{Site, SourceRowLocator};
 use crate::net::FetchOutcome;
 use crate::participation_evidence::invalid;
 use crate::CrawlResult;
-use census_domain::model::{CaptureDomainError, PublicSourceResourceV1};
+use census_domain::model::{AcquisitionDigest, CaptureDomainError, PublicSourceResourceV1};
 use census_domain::roster_affiliation_authority::SourceRowLocator as DomainLocator;
 use census_store::{PublicSchoolIntakePacketV1, StoreResult};
+
+pub(super) struct CurrentChildProjection {
+    pub(super) selected: Selected,
+    pub(super) retained_kernel: AcquisitionDigest,
+    pub(super) current_kernel: AcquisitionDigest,
+}
 
 pub(super) fn read(
     packet: &PublicSchoolIntakePacketV1,
     directory: &FetchOutcome,
     roster: &FetchOutcome,
-) -> CrawlResult<Selected> {
+) -> CrawlResult<CurrentChildProjection> {
     let site = packet.directory().work().slot().source_site();
     PublicSourceResourceV1::milesplit_team_directory()
         .validate_target(site, &directory.url)
@@ -34,7 +40,6 @@ pub(super) fn read(
         || child.roster_url().strip_suffix("/roster") != Some(team.url.as_str())
         || child.parsed_teams() != proof.parsed_teams()
         || child.row_digest().as_str() != proof.row_sha256()
-        || child.kernel_digest() != &kernel
         || proof.capture_sha256() != directory.content_digest
     {
         return Err(invalid("owned provider school directory child projection differs").into());
@@ -43,10 +48,14 @@ pub(super) fn read(
         &proof,
         [child.row(), child.name(), child.city(), child.anchor()],
     )?;
-    Ok(Selected {
-        team,
-        proof,
-        site: Site::for_jurisdiction(site),
+    Ok(CurrentChildProjection {
+        selected: Selected {
+            team,
+            proof,
+            site: Site::for_jurisdiction(site),
+        },
+        retained_kernel: child.kernel_digest().clone(),
+        current_kernel: kernel,
     })
 }
 

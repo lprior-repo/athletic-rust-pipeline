@@ -48,7 +48,9 @@ pub(super) fn raw(
     if length > MAX_CAPTURE_RECORD_BYTES {
         return Err(CaptureError::RecordTooLarge.into());
     }
-    budget.row(physical.len(), length)?;
+    budget.row(physical.len(), length).inspect_err(|error| {
+        tracing::warn!(logical_key = key, physical_key_bytes = physical.len(), encoded_bytes = length, %error, "acquisition record admission refused");
+    })?;
     let bytes = snapshot
         .get(journal, &physical)
         .map_err(|source| StoreError::Read { source })?

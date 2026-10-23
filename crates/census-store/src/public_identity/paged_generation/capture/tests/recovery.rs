@@ -5,11 +5,13 @@ fn reserve_partial(store: &Store, id: &RawGenerationOperationIdV2) -> TestResult
     let held = store.snapshot_locked();
     let binding = binding::capture(store, &held)?;
     let mut builder = GraphPlanBuilder::new(binding.clone());
-    let seal = scan::walk(&held, &binding, |node| builder.add(store, node))?;
+    let seal = scan::walk(scan::Input::Held(&held), &binding, |node| {
+        builder.add(store, node)
+    })?;
     let reserved = reserve_graph(store, id, builder.finish(store, &seal)?)?;
     drop(guard);
     let mut first = true;
-    let result = scan::walk(&held, &binding, |node| {
+    let result = scan::walk(scan::Input::Held(&held), &binding, |node| {
         if !first {
             return Err(super::super::super::invalid("test interruption"));
         }
@@ -132,9 +134,8 @@ fn movement_during_staging_refuses_before_seal_and_keeps_charged_partial_graph()
     seed(&store, 513)?;
     let id = operation("before-seal-movement")?;
     let reserved = reserve_partial(&store, &id)?;
-    let held = store.snapshot();
     move_inputs(&store)?;
-    check!(stage(&store, &held, &reserved).is_err());
+    check!(stage(&store, &reserved).is_err());
     check!(!reserved.is_complete(&store)?);
     let sequence = store.snapshot().sequence();
     check!(writer.capture_raw_generation_v2(&store, &id).is_err());
@@ -149,8 +150,7 @@ fn movement_after_seal_refuses_current_attempt_but_allows_historical_replay() ->
     seed(&store, 513)?;
     let id = operation("after-seal-movement")?;
     let reserved = reserve_partial(&store, &id)?;
-    let held = store.snapshot();
-    stage(&store, &held, &reserved)?;
+    stage(&store, &reserved)?;
     check!(reserved.is_complete(&store)?);
     move_inputs(&store)?;
     let sequence = store.snapshot().sequence();

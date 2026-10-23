@@ -4352,3 +4352,694 @@ sole endpoint received SIGTERM. At this checkpoint its started blocking work is
 still draining: no process-exit, cold-backup, new live owner, deployment rewrite,
 profile population or new workbook result is claimed. CO/national remain paused
 and preserved. No invocation was killed and no logical identity was replaced.
+
+### Full NCES inputs and selected-scope correction (2026-10-23 UTC)
+
+Candidate source `0346ebaf0acc4d23739b32cc4355aaf7279ae996` retains the complete
+national CCD/PSS captures while applying the already validated selected run scope
+before the common school-directory publisher. Unscoped callers retain all captured
+entries. No source CSV is edited or filtered to impersonate the downloaded bytes.
+
+The new foreign-state regression **failed before the fix** (835) with
+`NCES address generation contains a row outside its selected run scope`.
+After the fix, `pipeline:tests-scoped -- -p census-service --lib -E
+'test(school_address::)' --no-tests fail` **passed 101/101** (838).
+The strengthened regression separately **passed 1/1** (843), checking complete
+retained CCD/PSS bytes, all six source rows per lane, original hashes and capture
+dates, ten selected projected entries, exact replay sequence stability and cold
+reopen. Independent static review found no actionable correctness issue.
+`pipeline:fmt pipeline:check pipeline:lint-src` **passed** (839; existing forced
+arity advisories remain). `pipeline:build-portable` **passed** (844, 4m34s).
+
+Official NCES archives were actually retrieved once with HTTP 200 and no redirects
+on 2026-10-23 UTC. Retained raw CSV hashes are
+`d1473136285b5994b73a1a8b640757811eb81e0ae770953bcf915ee8c422386e`
+and `14a2f9e600a492940fd57646792b4b5163ea9d03b8015a7df1135066bcec3b8b`.
+Native no-Store full-input publication (834) passed with 122,692 directory entries.
+Independent readback (846) found 16,504 school records in MI/MN/IA/IL/CO, all with
+published street and city. These are all-grade directory records, not matched
+recruiting-school addresses or an accepted athlete population. Raw archives,
+headers, response metadata and capture times remain in cache
+`nces-public-inputs-834/capture-manifest.json`. Full-input selected intake in an
+isolated restored historical Store remains pending at this checkpoint.
+
+The clean candidate artifacts (847) are retained under release
+`2e178cbd08d84784a7d86397fb3b4e63040fd29af2c491fa96b02a059deb9389`;
+the CLI SHA256 is `a44ec877c06a6f07741fc500ef8313fb596c36b6021cf211d2d6a96a529dc8cb`.
+No candidate runtime activation or original-Store address admission is claimed.
+The original owner remains physically active after its drain grace expired.
+Read-only sampling (842) observed new meet 700748 captures at 03:07:30--34 UTC,
+matching original-plan entry 1,120 of 1,602, compared with entry 847 at 02:30 UTC.
+This proves activity, not result eligibility, step completion or an ETA. Guarded
+cold backup/publication 831 still waits for actual owner exit. Existing Downloads
+and its reported-unverified workbook remain preserved; full workbook acceptance
+and repository-wide release qualification remain open.
+
+### Qualified NCES intake, replay and address-join repair (2026-10-23 UTC)
+
+The first actual selected intake refused the generic Store opener (849). Commit
+`4522c865b20a9778ca37b1051d93a312b161ddef` uses the existing explicit Graph-V3
+opener without initialization, enrollment or migration. Its three CLI regressions
+passed (852). The subsequent real-input retry (857) exposed a second defect:
+the immutable run uses normal `CENSUS_SCOPE` ordering while NCES compared a
+different five-state vector order. Commit
+`99439817935a4f53c7f32d1762900b0cba04650e` shares exact-five-state validation
+without changing persisted order, exact run/selection equality, season or cohort.
+The runtime-order regression failed before that fix (859); domain 2/2 (861),
+service 104/104 (862), format/check/source lint (863) and portable build (864)
+passed afterward. Both commits are on remote main.
+
+**PASS 869:** full original official CCD/PSS inputs were admitted through the
+native CLI on isolated restored Store `probes/nces-real-source-selected-scope-844`,
+exit 0 in 168,543 ms. Its immutable CLI SHA256 is
+`1a851cc4d199f81604f20a3d0c3b00a4bd530702bd576ebc91ab1445dabf5b36`.
+The run digest is `622ab59c1c137e8a40e5b2bd70695240c18a713a3942be7accd0b127d6908e8d`;
+address generation is `15d8f9a9170e19e65f63a3087abbd2f69cbd960eb0ab7596f20200762f8b0705`.
+Independent readback **866 passed**: exactly 16,504 selected directory records
+(CO 2,181; IL 5,490; IA 1,525; MI 4,064; MN 3,244), declared artifact hashes,
+complete retained original CSV bytes and actual October-23 capture dates.
+These are all-grade school-directory records, not athlete/address matches.
+**PASS 871:** a fresh CLI process replayed the identical command, exit 0 in
+185,578 ms, with all four run/generation/input-manifest/scope bindings unchanged.
+Native Store sequence stability was not independently measured.
+
+The selected `school-address-join` CLI separately reproduced both generic-opener
+refusal and unintended missing-root creation (872). The repair composes the
+existing qualified opener, verified stored NCES receipt and original capture
+URLs/dates with the existing digest-pinned join engine. Dry-run and output-directory
+selection remain explicit. Loose `replay-evidence.json` is not trusted.
+**PASS 874:** 108/108 address and CLI tests, including exact URL/date/hash
+attribution, dry-run/replay sequence stability and refusal of a changed retained
+capture or another valid generation before postal writes. Independent static
+review found no actionable blocker; it ran no Store or native commands.
+**PASS 875:** format-write/check/source lint, 35.199 s, with existing forced
+arity advisories. Logs and native JSON receipts use these numeric suffixes under
+`/tmp/athletic-work-20261021/`.
+
+The original owner physically exited at 04:00:55 UTC. Its final report retained
+timeout 1 and unknown attempt 1, and systemd recorded exit 1; this is not clean
+shutdown acceptance. Guarded runner 831 then began the cold Store backup with
+the original invocations paused and pins preserved. At this checkpoint actual
+address joining, refreshed workbook publication, full population eligibility and
+repository-wide release acceptance remain outstanding. Downloads is preserved.
+
+### Native postal application and blocked original backup (878--880)
+
+**PASS 877:** portable build from clean source
+`2339c95b759fdc4abeba9085f7542a14456184e1`, 4m14.962s task, 4m19.792s wall.
+Immutable endpoint SHA256 is
+`8c7cedecdbe8d0db73d0d79f7fa36c476c8d650f119a8b7b8667c17caf96d65f`;
+CLI SHA256 is `79f5dd540be487471e10942c5c82c857d3f356a7b1aff7c27c81ac12bc3ba28f`.
+Tracked-source inventory binds 8,476 files with digest
+`7baf82e7a3e4761638364ae4dab688e529897c8b1d8457428aec1e1c31b9a720`.
+
+**PASS 878 apply:** the native selected address join on restored probe 844
+exited zero in 177,367 ms at 04:17:19 UTC. Its report binds generation
+`15d8f9a9170e19e65f63a3087abbd2f69cbd960eb0ab7596f20200762f8b0705`:
+3,485 schools scanned, 1,397 linked/postal-filled (1,265 CCD and 132 PSS),
+2,088 remaining (17 ambiguous review and 2,071 unmatched), zero refused or
+missing-evidence outcomes. These are join-report counters, not independently
+reopened postal-claim counts or athlete/workbook counts. Fresh-process replay
+is running at this checkpoint. No original Store postal writes are claimed.
+
+**FAIL 831:** the cold Store backup exited 1 at 04:10:04 UTC. It copied to
+staging but refused publication during acquisition validation:
+`acquisition read for encoded bytes requires 23682, exceeding its limit of 8809`.
+The runner stopped before the artifact marker, workbook publication or cold
+verification. Native staging cleanup remains unchanged; logs/request/exit/failure
+receipts are retained. The original Store and previous Downloads remain preserved.
+
+Static tracing establishes that 8,809 is remaining cumulative encoded allowance,
+not a per-record maximum. The log alone does not establish the failing pass or
+key, and does not establish corruption. Child startup and general acquisition
+inventory repeatedly read shared closures, but their role in this actual failure
+still needs native attribution. Bead `athletic-rust-pipeline-i91w` owns the repair.
+The diagnostic-only change adds named debug validation spans and refused-record
+key/length fields without changing any limits, data, errors or integrity checks.
+The diagnostic native invocation must enable `census_store::acquisition=debug`.
+**PASS 879:** format-write/check/source lint, 38.115s, with existing forced
+arity advisories. **PASS 880:** 18/18 existing acquisition/backup regressions,
+13.114s tests, 36.574s task, including the 100-child cold-open fixture and profile
+backup corruption/preservation refusals. Independent static review found no
+blocker when debug logging is explicitly enabled. None of these receipts is a
+successful original backup or refreshed workbook claim.
+
+### Cold inventory attribution and bounded repair (882--886)
+
+**PASS 878 replay:** a fresh process exited zero in 174,186 ms, recognizing all
+1,397 postal links, adding zero links and zero review cases. The same 17 review
+cases and 2,071 unmatched schools remain. Original Store and Downloads are unchanged.
+
+**PASS 882:** clean `656d0a88b2670db4e9a929b63bcd5595ac9b70a2` portable
+build, 278.314s task / 283.123s wall. Immutable CLI SHA256 is
+`ce07a725f162095eb58ac436fec3e4fe7d01baa25f1d7e146ab17b6cac27d0d0`.
+**FAIL 883:** guarded native backup of the original stopped Store exited 1 in
+556,625 ms at 04:37:29 UTC. All three original invocations remained paused with
+their original pins. Explicit debug tracing identified `acquisition_inventory`
+and logical key
+`work/f812f64dedbeb6cf59c17c6d6fa9605e178ef5ca662ef2d28a3024ea4e622798/attempt/1/prepared`:
+118 key bytes plus 23,564 encoded bytes exceed the remaining 8,809 bytes of the
+general inventory's cumulative 512 MiB allowance. This identifies the exhausted
+pass, not corruption or a per-record oversize. Failed 831 and 883 receipts remain.
+
+The repair gives only general cold acquisition validation an internal 8 GiB
+cumulative encoded-read allowance with checked architecture conversion. Ordinary
+inventory, selection, public construction, per-work, live capacity, recovery
+admission, record, root, backing and retained-memory limits remain unchanged;
+all validation still executes. It permits more cumulative validation work, not
+an 8 GiB allocation. **FAIL-before 885:** the exact-boundary test exhausted the
+old allowance at the first byte after 512 MiB. **PASS 886:** 64/64 scoped budget,
+physical-record bounds, tampered child, backup/restore and preservation tests,
+14.466s tests / 33.006s task / 36.303s wall. Actual original backup success is
+still required before this blocker can be closed.
+
+**PASS 887:** canonical format/check/source lint, three tasks in 40.563s,
+with existing forced arity advisories. Independent narrow static review found
+no actionable blocker. The checked conversion fails closed on 32-bit targets;
+this workstation and portable-build qualification target are x86-64 only.
+
+Restored-copy workbook qualification 884 registered immutable October-23 profile
+`a83a865cd0c266b36f71ee3b3d503495e6607ad338e54015a752a75e32058f69`.
+Its first invocation refused an overlong generation label before opening the
+Store; the corrected invocation uses `co2027-address-readback-884`. No completed
+publication or independent postal readback is claimed at this checkpoint.
+
+### Original cold backup repaired; original cohort resumed (888--893)
+
+**PASS 888:** clean `98880f661ba58c2071c2cf5798c8c88199f38fab` portable
+build, 267.844s task / 272.644s wall. Immutable endpoint SHA256 is
+`08511cea62b047b9f009f3ee9d8281f009db03d12ec77472f9c1343e9c0a6a5f`;
+CLI SHA256 is `51ff1515413521d09b7296dfd7a5f73f164a05b7f9db62e9ec176d81fce46f41`.
+The 8,476-file tracked-source inventory digest is
+`66d2586bda1ed4c720c2d91fb1679572b3023d8101671891720904ec89521b40`.
+
+**PASS 889:** normal native cold backup of the original stopped Store exited
+zero at 2026-10-23 05:01:36.750 UTC in 616,098 ms. The original physical owner
+was absent, all three original invocations were paused with unchanged pins,
+and 299,268,599,808 bytes were available before execution. The same destination
+that failed in 831 and 883 now publishes 207,907 files / 42,466,708,784 bytes /
+zero links. Its `backup.json` SHA256 is
+`148cf35b22d4ff38e081b8dc273d0df16b6a1ac63d3bb9277cbfd4204494817e`.
+Cold staging validation retained all existing checks. Physical table counts
+include athletes 1,796,172, performances 1,220,513, schools 8,718 and athlete
+identity decisions zero; these are archive rows, not eligible recruiting counts.
+Bead `athletic-rust-pipeline-i91w` is closed for this demonstrated backup repair.
+
+**RUNNING 892:** after verifying successful backup 889 and its manifest hash,
+absence of an original Store owner, and unchanged paused invocation IDs/pins,
+the same immutable CLI resumed original operation
+`five-state-co2027-source-cohort-20261022`, graduation year 2027. Its existing
+Rust source-bound identity writer remains authoritative. The wrapper will run
+the identical command in a fresh process and compare count and registry head
+only after success. No original cohort completion, affiliation, eligibility or
+workbook acceptance is claimed yet.
+
+**LIMITED ADVISORY 890:** RTX 5090 reviewed preserved, uncommitted worksheet
+changes without editing files, HTTP 200 / finish `stop`, 27,531 ms. Two suggested
+compile defects were disproved by complete imports and callers; a suggested
+missing-address refusal contradicts the explicit blank-for-unknown contract.
+No source change or review approval was adopted. **INCONCLUSIVE 893:** RTX 3090
+guard review reached 4,096 tokens / finish `length` with empty final content,
+60,853 ms; HTTP 200 is not review acceptance. Request/response receipts remain.
+
+Workbook qualification 884 still runs on the separate restored Store. No
+Downloads replacement, full workbook completion, Native/browser backup,
+original nonempty-journal upgrade qualification or full release pass is claimed.
+
+### Full-corpus graph capacity and literal address publication (2026-10-23 UTC)
+
+**FAIL 892:** the original source-cohort operation exited 1 after 382,408 ms
+at 05:08:15.753 UTC. Graph admission required descriptor 4,097 against a 4,096
+ceiling. It did not complete identity acceptance or execute its planned replay.
+The original operation, paused invocations, Store and failed receipts remain.
+
+The three nonempty authority-table physical counts from cold backup 889 total
+4,984,194 rows. At 512 rows/page they require at least 9,736 pages, 40 blocks,
+six table manifests and one seal: 9,783 graph descriptors. Both the descriptor
+and cumulative admitted-root ceilings now allow 16,384. The 8 GiB byte ceiling,
+262,144 physical-row ceiling, 128 MiB metadata ceiling, 4,096 reservation
+ceiling, encodings, policy identities, validators and persisted counters remain.
+No quotas or work keys were reset. Older binaries enforcing 4,096 may refuse
+new larger reservations; this is no authorization to restart an old endpoint.
+
+An independent static calculation bounds this corpus at 10,332 descriptors
+conditional on its complete graph fitting 8 GiB. Incremental zero-charge reuse
+does not establish that full-byte condition. Existing cumulative charges still
+consume capacity. Exact full-corpus byte admission, apply, replay and cold
+reopen therefore remain native obligations; the calculation is not acceptance.
+
+**RED 895:** both new 9,783-object regressions failed against the old limits:
+root capacity reported needed 9,783 / available 4,096, and the decoder refused
+descriptor count. The initial 894 attempt had a test-return-type compile error,
+corrected before that executed red result. **PASS 896:** 72 focused tests,
+389.104s test / 394.332s task / 397.553s wall. Coverage includes count and
+physical/metadata boundaries, no-mutation refusals, cumulative reservation
+exhaustion, source-cohort receipts, partial recovery, replay, crash and tamper.
+The decoder regression deliberately repeats descriptors to exercise decoding
+capacity, then requires semantic validation to reject that invalid graph.
+
+Formatting 899 reported test wrapping; canonical fmt-write 900 corrected it
+without changing behavior. **PASS 901:** workspace fmt/check/lint-src, 37.808s,
+with the existing forced arity advisories. Independent static final-diff review
+found no actionable blocker. **LIMITED ADVISORY 897:** RTX 5090 HTTP 200,
+finish `stop`, 44,810 ms, `NO ACTIONABLE FINDING`; it did not run tests or
+certify the actual corpus. RTX 3090 had foreign work active and was preserved.
+
+**PASS native publication 884:** the restored-copy address workbook exited zero
+at 05:17:20.278 UTC after 2,808,136 ms. Its owned generation is
+`7e9bfcc3de4002d783c0618b3bf86fd3a13849c906105c7eda48cf1d26b8cc07`
+under `probes/address-workbook-884`; the workbook is 10,462,770 bytes with
+independently checked SHA256
+`48f08b76c393d8303705fdeb75a8b4bb51220a93e0fde52bb57ece2b82bdcbb6`.
+Built-in frozen readback verified 62,950 rows. Separate Store-absent cold
+verification is still running at this checkpoint and is not yet a PASS.
+
+**PASS literal readback 898:** `unzip` and namespace-aware `xmlstarlet` XPath
+read the actual worksheet cells: 62,950 subjects, 32,436 school-address cells,
+899 reported-best rows, zero observed-best/grade/source-declared-PR/head-TF-
+coach/head-XC-coach cells, and 62,950 `UNVERIFIED` statuses. Address rows by
+represented school state: CO 5,667; IA 5,954; IL 7,337; MI 7,766; MN 5,712.
+Twenty-four Quincy (Sr.) rows contain `3322 Maine St`, matching the normalized
+NCES CCD school claim and its captured-source URL, SHA256 and actual date.
+These are reported affiliation addresses, not current-school acceptance.
+Normalized accepted athletes, eligible best marks and comparison classes remain
+zero. Its 10,108 global coach-contact rows do not fill recruit coach cells.
+The original Store and Downloads file remain unchanged; the full goal remains
+incomplete and no release or selected-publication acceptance is claimed.
+
+### Address cold readback and preserved Downloads delivery (2026-10-23 UTC)
+
+**PASS cold 884:** the separate native verifier exited zero at
+05:33:42.378 UTC after 982,090 ms. It reopened generation `7e9bfcc3` from its
+frozen evidence, verified all 62,950 literal rows, and reported
+`verify: OK (complete frozen generation)`. Its supplied absent Store path
+`/tmp/athletic-work-20261021/absent-store-address-cold-verify-884` was not created.
+The exact terminal receipt is
+`worksheet-address-publication-cold-verify-result-retry-884.json`.
+
+**Metadata-only wrapper failure:** after that native success, orchestration
+looked for `normalized/schools.csv`; the actual normalized files are at the
+generation root, including `schools.csv`. The wrapper's ENOENT failure receipt
+remains preserved. Corrected summary 907 records the actual path, native exit
+and absent-Store check without rerunning publication or verification and without
+changing an artifact. This correction does not turn the wrapper exit into zero.
+
+**PASS copy 907:** a new separate file was copied exclusively to
+`/home/lewis/Downloads/Recruiting-Class-of-2027-MI-MN-IA-IL-CO-Address-Update-7e9bfcc3.xlsx`.
+Its 10,462,770 bytes and SHA256 `48f08b76c393d8303705fdeb75a8b4bb51220a93e0fde52bb57ece2b82bdcbb6`
+match the verified original. The existing `Single-Sheet.xlsx` copy remained
+9,554,529 bytes / SHA256 `1d9387b5c5722ded4d24448e049cf1e96101da71cc1e4df3c8532d908a01aab4`.
+This is the partial reported workbook with 32,436 address cells; the zero
+accepted-athlete, grade, declared-PR, eligible-best and recruit-coach counts
+above still apply. No full five-state acceptance is claimed.
+
+**PASS build 902:** portable executables built from clean commit
+`135094116a07e7033898c99112fe673dbffe4bcc` in 4m44.204s. Release 903 binds
+8,476 tracked files, inventory SHA256
+`75b0660a6995b2bf986c95c7d7a051f114b91eac1e8b9d1ddfff1f7e05667a52`,
+serve SHA256 `96dd8e31a6ff432799d78e51eec95962872dfc90e69b269f45b01bafce212aae`
+and CLI SHA256 `93e352fbb42f75f4e6b5755f4904a132caaac0f99b2a38572948ae2795f9baca`.
+Guarded original source-cohort retry 904 started at 05:34:19.590 UTC with the
+same operation and preserved Store, bound to backup 889 and the unchanged three
+paused Native invocation IDs/pins. It remains running at this checkpoint;
+apply, replay and cold acceptance remain unclaimed.
+
+**FAIL inventory 908:** a read-only retained-roster inventory on the unowned
+restored Store exited 1 after 173,287 ms. Its team scan required 268,437,966
+encoded bytes against its unchanged 268,435,456-byte bound. No roster review,
+capability enrollment or original-Store operation was performed by this probe;
+it supplies no complete packet/program inventory or membership acceptance.
+
+### Measured retained-corpus byte admission (2026-10-23 UTC)
+
+**FAIL native 904:** the original source-cohort operation
+`five-state-co2027-source-cohort-20261022` exited 1 at 05:42:23.507 UTC after
+483,917 ms. The new descriptor bound let its complete graph plan reach byte
+admission: proposed cumulative usage was 28,363,480,485 bytes against
+8,589,934,592 available. Reservation capacity was checked before committing
+the graph reservation or staging graph bodies. The failure and retained
+capture remain recoverable under the same operation; no successful apply,
+replay, eligibility or publication is claimed.
+
+The sole production change raises the shared manual-admission byte ceiling
+to 34,359,738,368 (32 GiB). The measured cumulative proposal is 26.41555 GiB,
+leaving 5,996,257,883 bytes. This accounts for reservation metadata and encoded
+physical keys/values, including nested base64 representations; it is neither
+raw corpus size nor an eager 32-GiB allocation. Existing descriptor/root,
+physical-row, metadata, reservation and per-object limits, validators,
+encodings, policy identities and persisted counters remain unchanged.
+The exact 904 graph passed descriptor and metadata planning before this
+refusal. Future disk use also includes WAL, SST and compaction overhead outside
+this logical admission ledger. Old 8-GiB binaries can refuse a subsequently
+valid larger header and must not be restarted against new larger state.
+
+**RED 911:** the new exact measured-byte regression executed against 8 GiB
+and failed with needed 28,363,480,485 / available 8,589,934,592. **PASS 912:**
+all 73 focused tests passed, 394.500s test / 399.833s task / 403.558s wall.
+Coverage retains exact limits, one-byte-over typed refusal, checked overflow,
+corrupt-header preservation, physical tamper, cumulative reservation
+exhaustion, large capture and zero-new-charge replay, and crash recovery.
+The former 4,640,733,426-byte positive regression remains. Independent static
+review of the actual two-file diff found no actionable findings; it does not
+certify native graph persistence or workbook acceptance. RTX 3090 probe 910
+found foreign work active and submitted no request; both foreign GPU jobs
+were preserved. Original native same-key apply, fresh-process replay and cold
+reopen remain required. The partial Downloads workbook is unchanged.
+
+**PASS 914:** workspace fmt/check/lint-src completed in 38.569s with existing
+forced arity advisories. The qualified capacity change is ready for an
+immutable portable build; no native retry result is inferred from these checks.
+
+**PASS build 915:** clean commit `2c7169133cbf9fcbb227f0435bf856058142506c`
+built the portable executables in 277.922s wall. Immutable release 916 binds
+8,476 tracked files / inventory SHA256
+`068c19ed222ab72cd62a3bc7f279e1d03531f53c13b9ab91feca122d622232eb`,
+serve SHA256 `e39ee1790f9756acd839bf259256dfcfe0c3e80f8f44d208ff7e821b3154e3a6`
+and CLI SHA256 `ec05c19f4168e1bb8721ce80c40b8a81d4ec2458d7415d78731340ddc3e0fb7c`.
+Original retry 917 started at 06:00:02.957 UTC with this CLI, the original Store,
+graduation year and operation. Guards required backup 889's passed native
+receipt and unchanged manifest digest, no other Store owner, more than 128 GiB
+available, and the exact three original paused Native invocation IDs/pins.
+The wrapper requests a same-operation fresh-process replay only after native
+apply succeeds. Both remain running/unconfirmed at this checkpoint. No original
+runtime activation or completed workbook acceptance is claimed.
+
+### Retained program discovery capacity (2026-10-23 UTC)
+
+Native inventory 908's team scan exhausted its cumulative encoded-read bound
+at 268,437,966 bytes; no partial inventory was published. Backup 889's physical
+observation count is 1,050,405 Teams. The discovery CLI now permits 2,097,152
+physical team rows and 8 GiB cumulative encoded key/value reads, retaining the
+1-MiB individual record bound. This is a finite operational allowance, not a
+measurement that the complete Teams scan fits it. The full native inventory
+must still report actual read counts and byte usage.
+
+The emitted-program quota remains 131,072 through a separate `MAX_PROGRAMS`
+constant. School, packet-reference, note and 32-MiB serialized-output bounds
+remain unchanged. Reads stream merged entities, but merged evidence/owner
+sets and selected programs accumulate in memory; the serialized-output limit
+does not establish a 32-MiB peak-memory bound. This changes unreviewed packet
+discovery only, without changing roster authority, participation eligibility,
+the separate complete-closure review limits, persisted keys or retry budgets.
+
+**RED 920:** seven tests executed against the original consumer budgets;
+five passed and the two measured row/byte policy regressions failed.
+**PASS 921:** seven tests passed, 0.015s test / 2.548s task / 5.941s wall.
+The program regression starts at the last quota slot, admits one small
+program, then requires exact typed overflow refusal with an unchanged counter
+and byte-identical collected results. It does not allocate 131,072 programs.
+**PASS 923:** all 249 Store reader tests passed, 3.580s test / 4.399s task /
+8.583s wall, including exact byte admission, refusal before loading, snapshot
+isolation and whole-scan refusal. Attempt 922 selected zero tests and exited
+with an error; it is not a successful verification result.
+
+**LIMITED local advice:** RTX 3090 draft 918 returned HTTP 200 / `stop` after
+92,367 ms and supplied the narrow production diff, but omitted requested tests.
+RTX 5090 test draft 919 returned HTTP 200 / `stop` after 5,223 ms. Its wrong
+physical count, inverted byte assertion and large allocation loop were rejected;
+none of that test draft was applied. Main wrote and executed the regressions
+above. Independent review of the actual two-file diff found no actionable
+findings. Neither local advice nor these regressions establish completed
+native discovery, source acceptance or workbook completion.
+
+Canonical formatting 924 completed. **PASS 925:** workspace fmt/check/lint-src
+completed in 33.945s with the existing forced arity advisories. Native inventory
+against the preserved unowned restored Store remains the next qualification;
+the original Store continues under the separate source-cohort 917 owner.
+
+**PASS build 926:** clean commit `4d5c6b6db109e1463047fed8ba52c564cfab1925`
+built the portable executables in 273.293s wall. Immutable paired release 927
+is `02c936517e9f7af2415c91cdeefaada6b6bfee57061d1d1111b0f124e636c76e`,
+binding serve SHA256
+`8c588a150e73aa025ce0f8fbd76ae8d3fa111482dfa6e427c39e9743d106a123`,
+CLI SHA256 `24fb1bc52303995b1bc929e3c7cb5d70946c9133a953f61caf1f762733c36e08`
+and 8,476 tracked source files / inventory SHA256
+`e9c65869a75e4cd3a2723e1f02bb8c411cf950b6db1afecc25513a67ace273a6`.
+
+**PASS native inventory 928:** the retained restored-844 Store completed normal
+`capture-protocol roster-inventory`, exit 0 / no signal, in 167,029 ms at
+06:28:00.332 UTC. At snapshot 1,097,164 it read 10,115 physical school rows /
+30,607,479 encoded bytes / 3,485 merged schools and 99,589 physical team rows /
+362,093,026 encoded bytes / 16,054 merged teams. This restored copy predates
+backup 889's larger original corpus; these read counts do not qualify the
+1,050,405 original Team observations. Its 4,916,895-byte JSON output has SHA256
+`61dd85ddc14668244df3bfcfb61c122a25629f74a0310e3de59e96cf1dc1aceb`.
+
+Unreviewed hints identify 2,741 schools / 2,743 original roster packets /
+12,972 matching programs: IL 848/850/3,854; MI 894/894/3,575;
+IA 410/410/3,472; MN 589/589/2,071. No Colorado packet is present in this
+inventory. Every packet hint records capture on 2026-10-22 UTC; this does not
+establish current membership on another selected as-of date. Packet discovery
+does not qualify authority, cohort, grade, current school, participation,
+eligible marks, coach contacts or the workbook.
+
+### Actual paused acquisition journal baseline (2026-10-23 UTC)
+
+**LIMITED inspection 930:** read-only Native admin queries retained the complete
+nonempty journals of the three exact original paused invocation IDs/pins,
+checking row totals and final indices across 32-entry pages. CO has 259 entries /
+64,765,465 serialized bytes, MI 817 / 112,186,413 and National 333 / 1,372,660.
+MI's unfinished `results-v2-execute` is index 816; CO's is index 258.
+All three IDs/pins/statuses were unchanged before/after inspection. Response
+pages are bounded at 256 MiB and aggregate serialized rows at 512 MiB.
+The previous unpaged inspection 929 refused its 32-MiB response bound; that
+failure is retained and is not a compatibility result. Native/browser cold
+backup, restored populated-journal continuation and actual resume remain
+unqualified. Source-cohort 917 still owns the original Fjall Store; no second
+owner, live-directory copy, replacement invocation or retry reset was used.
+
+### Roster review refusal and protective cohort stop (2026-10-23 UTC)
+
+**LIMITED preview 931:** retained-copy roster capability preview exited 0 in
+163,865 ms. Applying that reviewed request in 932 exited 1 / no signal in
+174,564 ms at 06:38:33.845 UTC: `roster source authority operation conflicts
+with retained approval`. The copy already has retained roster capability;
+this refusal is not a successful new enrollment or accepted membership.
+
+**FAIL genuine preview 933:** normal roster review for Quincy, Illinois,
+girls cross-country, school year 2026, exited 1 / no signal in 176,875 ms at
+06:42:30.056 UTC. Original packet
+`e1bef9656d153bf2d66fae2d0595f7e38cf2ff6833ee15bc107287bf6be7cde7`
+refused while preparing its capture objects:
+`owned provider school directory child projection differs`.
+No proposal digest was approved. The combined guard checks directory-child
+identity, URLs, parsed count, row digest, kernel digest and capture digest;
+the terminal error does not identify which predicate differed. It does not
+compare the canonical school postal address. Local GPU advice 934 completed
+on both cards, but no diagnostic patch was applied: editing the guarded
+production source also changes the compiled semantic-kernel digest and could
+change the failure being investigated.
+
+**STOPPED cohort 917, not accepted:** at 06:48:05.602 UTC Main sent SIGTERM
+only to owned CLI PID 3341694 after available filesystem capacity crossed the
+64-GiB protective floor, reaching 60,085,559,296 bytes. Receipt 935 binds the
+PID, argv and CLI SHA256
+`ec05c19f4168e1bb8721ce80c40b8a81d4ec2458d7415d78731340ddc3e0fb7c`.
+The native process terminated at 06:48:06.954 UTC after 2,883,997 ms with
+`code: null, signal: SIGTERM`. The previous running checkpoints are superseded
+by this terminal receipt. Fresh-process replay did not begin. The original
+operation key, staged graph, Store bytes, backup and invocation identities
+remain preserved; no replacement key or reset was used.
+
+The original Fjall directory reached about 269 GiB apparent size and roughly
+260 GiB physical allocation. At 06:54:55 UTC the filesystem had 56 GiB free
+and PID 3341694 was absent. Logical graph admission at 32 GiB does not bound
+physical storage growth; its cause and a safe continuation remain unqualified.
+No full workbook or release acceptance follows from these attempts. The
+Downloads generation `7e9bfcc3` remains the partial 62,950-row publication:
+32,436 addresses, 899 reported-best rows, no observed grade, declared PR,
+eligible observed best or recruiting coach cells, and all rows UNVERIFIED.
+
+### 2026-10-23: supported storage recovery and bounded capture snapshots
+
+Measurements 939/940 found 5,037 journal SSTs / 285,365,848,244 bytes.
+Checksum-validated current manifest v2132 references 307 SSTs /
+19,686,013,315 bytes; 4,730 additional SSTs total 265,679,834,929 bytes.
+Pinned lsm-tree 3.1.10 retains obsolete versions above the oldest live snapshot.
+The capture path held its planning snapshot across journal staging; caller
+inspection also found a named snapshot and three CLI argument temporaries
+lasting across capture. Logical admission did include encoded physical rows;
+this was not evidence of omitted base64 charging.
+
+**PASS 941:** ordinary current `capture-protocol show` reopened the stopped
+original Store and completed at 07:14:39.319 UTC, exit 0/no signal,
+267,110 ms. Supported vendor recovery validates referenced tables before
+removing unreferenced material. Available bytes increased from 58,424,856,576
+to 257,983,717,376. Store identity `fea26b14cb1bcac9807665773ae3db5559ddfe7cfea59cb457956f807bc59879`,
+capture protocol and exact three paused Native invocation IDs/pins remained
+unchanged. No manual database deletion, migration, reset, new operation key
+or cohort restart occurred. This supersedes the preceding 56-GiB checkpoint.
+
+The narrow repair drops planning snapshots before staging and reads each
+bounded owned raw page under a fresh append-locked snapshot after checking
+the original protected input revisions. It releases the snapshot and lock
+before journal callbacks, retaining original binding, raw bytes, page limits,
+reservation, seal and final checks. The ordinary public cursor remains bound
+to its exact snapshot/table. CLI cohort, split and withholding capture a
+revision in a preceding statement; graph inspection explicitly releases its
+snapshot before capture. No schema, admission budget or interpretation changed.
+
+**PASS 947:** 34 capture/reader tests, 334,947 ms wall, including partial
+close/reopen, same-key replay/overlap, mutation refusal and the existing large
+aggregate. **PASS 948:** 64 cohort/admission/reader tests, 247,091 ms wall,
+including owned-key byte-boundary/count parity and exhaustion. Scopes overlap.
+**PASS 950:** 18 graph/context/adjudication/withholding tests, 15,196 ms wall,
+after caller fixes. **PASS 949:** workspace fmt/check/lint-src, 38,268 ms wall,
+with existing arity advisories. Initial 944 configuration refusal and 945 test
+compilation failures were corrected; neither is counted as passing evidence.
+GPU 943 proposals were rejected; subsequent actual-diff GPU 946 reviews and
+independent final static review found no remaining actionable findings.
+
+**Diagnostic 938 completed:** exit 0/no signal at 07:36:29.886 UTC,
+1,921,681 ms wall. Eight child-projection predicates match; the sole mismatch
+is retained kernel `09a2757096e47bd8c3566a4d6c33395f4b79a528286fdeb292ce466489656066`
+versus native 927 kernel `bc39831f1a941e81534b1a1bd2656f26f1e51a50cc37bd8d7c85fb3087a2533f`.
+Team IDs/URLs, 850 parsed teams, row digest and directory capture hash match.
+Native and diagnostic builds have the same explicit production-source digest
+`821d84c35a0d0b3d6b620294b1695a24a1a14429f8c3aaec0bd292cb57c1235a`;
+their artifact-context kernel hashes differ, as recorded separately. The
+temporary excluded test source was preserved outside the repository and
+removed after this terminal diagnostic. This diagnosis does not approve the
+old packet under the current kernel or authorize a compatibility exception.
+Native full-corpus peak growth, original same-key apply/replay, roster approval
+and the complete populated workbook remain unqualified by these focused checks.
+
+### 2026-10-23: current interpretation of authenticated retained roster packets
+
+**PASS 951:** canonical `pipeline:build-portable` on clean `bbd3a5ee`,
+exit 0/no signal at 07:46:59.403 UTC, 277,831 ms. Immutable release 952
+completed at 07:52:29.575 UTC. CLI SHA256
+`06e60a631ae0c41203d03be4e33393379031cca8ad32538f01ef844a324b67a1`,
+serve SHA256 `31c0fc351d9e9562a9dc94b5a0d40bbe43cdfb1de7177243c1d5bfdabc042a41`.
+Its compiled kernel is `bc39831f1a941e81534b1a1bd2656f26f1e51a50cc37bd8d7c85fb3087a2533f`.
+Original same-key source-cohort attempt 953 started at 07:53:03.093 UTC,
+PID 3462454, operation `five-state-co2027-source-cohort-20261022`.
+At 08:17:49 UTC it was still running with 256,231,006,208 available bytes
+and 350,187,520 process write bytes. This planning-stage measurement does not
+qualify staging growth, apply, replay or publication. Existing Store, backup,
+operation key and three paused Native invocation identities/pins are preserved.
+
+The Owned reader now authenticates the original packet, immutable child and
+captures, then re-derives the current directory and roster interpretation.
+All original target, count, capture/row hash and four exact locator checks
+remain. The original child kernel is provenance, alongside the executing kernel;
+it does not authorize the new interpretation. The distinct contract
+`milesplit-owned-retained-current-interpretation/v1` requires the exact compiled
+current kernel document during retained semantic replay. Historical adapters
+cannot authorize this contract, and old Owned/Raw contract substitution refuses.
+Original v1 notes remain unreviewed discovery hints only. No Store wire shape,
+original receipt, capture, attempt ceiling or source freshness is rewritten.
+
+**PASS 963:** canonical scoped crawl suite, 37/37 tests, 2,151 skipped,
+51.798 s test execution / 68,987 ms wall, exit 0/no signal at 08:17:14.500 UTC.
+The controlled prior-kernel fixture registers the original child through the
+ordinary Store API, preserves its packet/receipt and two original source bodies,
+issues a current review, cold reopens, and replays the frozen review after removing
+its scratch Store. The false-ordinal fixture retains a valid authenticated span
+and digest but refuses current locator interpretation without writes. Exact-kernel
+dependency/configuration/source/schema drift, noncanonical bytes, alternate build
+context and exhausted grants refuse and poison their replay grant.
+
+Initial 957 command refusal, 958 compilation errors, 959 old-contract assertion,
+960 malformed negative fixture and 961 ordinal-type compilation failure are not
+passing evidence. The corrected suite above supersedes them. Compiled comparison
+960 separately verifies all 210 ordered current production source entries and
+digest `95eba95c95ddf002cc8aa45132502dc73169e88fe7fb7a0d1f24ee31af934bcd`.
+This comparison concerns the debug artifact; native artifact qualification remains
+separate. GPU 955 supplied the reviewed child-verifier leaf; GPU 956's invented
+test APIs were rejected. Both GPU 962 reviews completed (3090: 22,733 ms;
+5090: 7,571 ms). Main and independent static review rejected their unsupported
+old-contract rewrite, substring, digest and vacuity objections; independent final
+review found no remaining actionable defect in this narrow diff.
+
+**PASS 964 service tests:** 12/12, 261 skipped, 48.089 s execution / 79,592 ms
+wall. The subsequent strict lint found the historical contract getter unused.
+The dispatch now selects Owned's constant after its exact-current check and
+retains the existing checked historical getter after inventory-contract equality;
+neither branch rewrites old inventory authority. **PASS 965 after this repair:**
+37/37 crawl tests (2,151 skipped, 53.718 s execution / 69,387 ms wall),
+12/12 service tests (261 skipped, 50.022 s execution / 61,381 ms wall), and
+workspace fmt/check/lint-src (31,967 ms wall). Existing arity advisories remain.
+Independent static rereview found no actionable blocker in this adjustment.
+The changed dispatch's exact 210-entry source closure is
+`d79fe8a283f1aa4dba9b45587f4a1118c9e1e90db80e90f65ac48081c8ca1834`;
+compiled comparison 966 matches every ordered source entry and digest.
+
+The prior-kernel fixture intentionally uses the existing registered work acquisition API; it does
+not qualify the separate ordinary fetcher's pre-replay registration behavior.
+Actual native retained-packet review, full-corpus publication, eligibility, source
+coverage and the full populated workbook remain unqualified. Downloads still
+contains the preserved partial 62,950-row generation `7e9bfcc3`.
+
+### 2026-10-23: measured authority row ceiling and numeric-only roster identity
+
+**PASS 967:** `pipeline:build-portable` on clean main `1ef97649`, exit
+0/no signal at 08:28:49.854 UTC, 258,315 ms. Immutable release 968 contains
+CLI SHA256 `c12ee181e0978873cc64c66c405af3aea8dc155ef02aa59cf363c67f1c6c47a7`,
+serve SHA256 `280de2d581ceaa290d6b2ae62d1661b302f440d31b21c0ebd006f3f862e5f53f`,
+and actual embedded kernel
+`71d29bf9bb935bd83e0c7c9463298430bd85565c6a905b89be2838774715d0a8`.
+This build qualification does not make the subsequent native failures passes.
+
+**FAIL 953:** the original same-key source-cohort process exited 1/no signal
+at 08:38:05.648 UTC after 2,702,555 ms. Its exact failure was
+`capture physical rows would require 1796172 but only 1048576 is available`.
+No accepted outcome or replay result was produced. The 182 monitor samples
+record minimum free space 252,079,534,080 bytes, maximum process write bytes
+14,229,319,680, and no protective stop. Process write bytes include WAL/SST/
+compaction and do not prove logical stage, cursor, seal or accepted progress.
+The earlier planning bottleneck remains unmeasured. Original Store bytes,
+operation `five-state-co2027-source-cohort-20261022`, receipts and backup remain
+preserved; no new operation key or replacement Store was introduced.
+
+The shared authority reader preflights the complete physical table before
+merging and cohort filtering. Retained backup 889 records 1,796,172 athlete,
+1,967,509 source-observation and 1,220,513 performance rows. The repair raises
+only its finite row ceiling to 2,097,152, for physical inventory and emitted
+authority sections. Per-table 4 GiB encoded bytes, per-record 1 MiB, aggregate
+authority 8 GiB including header reserve, and other admission/history limits
+remain unchanged. Count regressions use synthetic byte totals: they prove the
+row boundary, not corpus encoded-byte or RSS fit. Static inspection of six
+named consumer files found no lower hardcoded row ceiling; it does not qualify
+uninspected helpers or native corpus execution.
+
+**FAIL 969:** exact Quincy retained-packet native review preview exited
+1/no signal at 08:31:43.723 UTC after 171,903 ms, with zero stdout bytes:
+`preparing the capture objects` -> `row-local rejected identity unknown`.
+No approval digest was supplied and no source authority was applied.
+Existing packet analysis 972 identifies ordinal 0, byte offset 76,856,
+length 1,910: an empty-name link to
+`https://il.milesplit.com/athletes/14789618`. The parser required a slug and
+lost the published numeric ID. Its leaf now also recognizes the numeric-only
+URL form. The row still rejects as `MissingName`; no identity is invented and
+the rejected-row guards remain. The exact original 1,056,933-byte packet is
+retained as a regression fixture with SHA256/reference
+`e1bef9656d153bf2d66fae2d0595f7e38cf2ff6833ee15bc107287bf6be7cde7`.
+The test authenticates its original bytes/root, all 201 dispositions, original
+locator and rejected ID, then derives the current compact inventory using
+explicitly controlled metadata. This is not source approval or Store issuance.
+
+GPU 973 requests completed HTTP 200 (5090: 6,112 ms; 3090: 12,130 ms).
+Main applied the 5090 regex leaf, rejected its invented test APIs and wrote
+the genuine-packet regression. The 3090 claim of corpus byte-budget fit was
+rejected because no logical-byte measurement supported it. Independent static
+review found no actionable defect, with native byte/RSS, Store issuance and
+publication qualification explicitly outstanding.
+
+**PASS 975:** canonical default-feature scoped tests, two test threads:
+38/38 crawl (2,151 skipped, 72,011 ms wall), 12/12 service (261 skipped,
+62,117 ms wall), and 80/80 Store (1,643 skipped, 43,799 ms wall).
+Store scope covers authority graph, physical graph readers, source-cohort
+commit/replay and local admission. Workspace fmt/check/lint-src exited
+0/no signal, 36,085 ms wall; configured arity advisories remain visible.
+**PASS 976:** every ordered entry in the 210-source compiled debug closure
+matches source digest
+`977450a2e404fed574aa935d946d5bb3c8addd760a17f4e014e0fd4c0949c1b1`.
+Receipts and logs are under `/tmp/athletic-work-20261021/` with the numbered
+`worksheet-current-revalidation-975` and `worksheet-current-source-compiled-976`
+prefixes. No further native Store run or query was used to derive these fixes.
+
+These focused checks do not qualify the repaired native full-corpus apply,
+ordinary acquisition continuation, eligibility, frozen publication, normal
+five-state coverage, UP completeness or a fully populated workbook. The
+preserved Downloads generation `7e9bfcc3` is still partial.

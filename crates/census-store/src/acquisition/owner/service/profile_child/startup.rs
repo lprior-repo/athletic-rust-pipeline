@@ -11,6 +11,12 @@ use std::collections::BTreeMap;
 type Counts = BTreeMap<String, (AcquisitionWorkV1, u32)>;
 const FAMILY: &[u8] = b"public_resource_child_profile";
 
+#[tracing::instrument(
+    name = "public_profile_child_inventory",
+    level = "debug",
+    skip_all,
+    err
+)]
 pub(crate) fn validate_all(
     snapshot: &Snapshot,
     meta: &Keyspace,

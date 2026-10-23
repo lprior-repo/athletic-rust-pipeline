@@ -11,6 +11,9 @@ const FIVE_STATE_SCOPE: [UsJurisdiction; 5] = [
     UsJurisdiction::Colorado,
 ];
 
+#[cfg(test)]
+mod tests;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum NcesArtifactProviderV1 {
@@ -162,11 +165,19 @@ impl NcesAddressRunReceiptV1 {
     pub fn validate_for_run(&self, run: &RunManifest) -> Result<(), NcesArtifactReceiptError> {
         self.validate()?;
         if self.scope != run.jurisdictions
-            || run.jurisdictions.as_slice() != FIVE_STATE_SCOPE.as_slice()
             || run.run.season() != SchoolYear::new(2026).ok_or(NcesArtifactReceiptError::Run)?
             || run.cohort.get() != 2027
         {
             return Err(NcesArtifactReceiptError::Run);
+        }
+        Ok(())
+    }
+
+    pub fn validate_scope(scope: &[UsJurisdiction]) -> Result<(), NcesArtifactReceiptError> {
+        if scope.len() != FIVE_STATE_SCOPE.len()
+            || !FIVE_STATE_SCOPE.iter().all(|state| scope.contains(state))
+        {
+            return Err(NcesArtifactReceiptError::Scope);
         }
         Ok(())
     }
@@ -183,10 +194,7 @@ impl NcesAddressRunReceiptV1 {
         }
         self.ccd.validate()?;
         self.pss.validate()?;
-        if self.scope.as_slice() != FIVE_STATE_SCOPE.as_slice() {
-            return Err(NcesArtifactReceiptError::Scope);
-        }
-        Ok(())
+        Self::validate_scope(&self.scope)
     }
 }
 
