@@ -4709,3 +4709,17 @@ reopen remain required. The partial Downloads workbook is unchanged.
 **PASS 914:** workspace fmt/check/lint-src completed in 38.569s with existing
 forced arity advisories. The qualified capacity change is ready for an
 immutable portable build; no native retry result is inferred from these checks.
+
+**PASS build 915:** clean commit `2c7169133cbf9fcbb227f0435bf856058142506c`
+built the portable executables in 277.922s wall. Immutable release 916 binds
+8,476 tracked files / inventory SHA256
+`068c19ed222ab72cd62a3bc7f279e1d03531f53c13b9ab91feca122d622232eb`,
+serve SHA256 `e39ee1790f9756acd839bf259256dfcfe0c3e80f8f44d208ff7e821b3154e3a6`
+and CLI SHA256 `ec05c19f4168e1bb8721ce80c40b8a81d4ec2458d7415d78731340ddc3e0fb7c`.
+Original retry 917 started at 06:00:02.957 UTC with this CLI, the original Store,
+graduation year and operation. Guards required backup 889's passed native
+receipt and unchanged manifest digest, no other Store owner, more than 128 GiB
+available, and the exact three original paused Native invocation IDs/pins.
+The wrapper requests a same-operation fresh-process replay only after native
+apply succeeds. Both remain running/unconfirmed at this checkpoint. No original
+runtime activation or completed workbook acceptance is claimed.
