@@ -4723,3 +4723,46 @@ available, and the exact three original paused Native invocation IDs/pins.
 The wrapper requests a same-operation fresh-process replay only after native
 apply succeeds. Both remain running/unconfirmed at this checkpoint. No original
 runtime activation or completed workbook acceptance is claimed.
+
+### Retained program discovery capacity (2026-10-23 UTC)
+
+Native inventory 908's team scan exhausted its cumulative encoded-read bound
+at 268,437,966 bytes; no partial inventory was published. Backup 889's physical
+observation count is 1,050,405 Teams. The discovery CLI now permits 2,097,152
+physical team rows and 8 GiB cumulative encoded key/value reads, retaining the
+1-MiB individual record bound. This is a finite operational allowance, not a
+measurement that the complete Teams scan fits it. The full native inventory
+must still report actual read counts and byte usage.
+
+The emitted-program quota remains 131,072 through a separate `MAX_PROGRAMS`
+constant. School, packet-reference, note and 32-MiB serialized-output bounds
+remain unchanged. Reads stream merged entities, but merged evidence/owner
+sets and selected programs accumulate in memory; the serialized-output limit
+does not establish a 32-MiB peak-memory bound. This changes unreviewed packet
+discovery only, without changing roster authority, participation eligibility,
+the separate complete-closure review limits, persisted keys or retry budgets.
+
+**RED 920:** seven tests executed against the original consumer budgets;
+five passed and the two measured row/byte policy regressions failed.
+**PASS 921:** seven tests passed, 0.015s test / 2.548s task / 5.941s wall.
+The program regression starts at the last quota slot, admits one small
+program, then requires exact typed overflow refusal with an unchanged counter
+and byte-identical collected results. It does not allocate 131,072 programs.
+**PASS 923:** all 249 Store reader tests passed, 3.580s test / 4.399s task /
+8.583s wall, including exact byte admission, refusal before loading, snapshot
+isolation and whole-scan refusal. Attempt 922 selected zero tests and exited
+with an error; it is not a successful verification result.
+
+**LIMITED local advice:** RTX 3090 draft 918 returned HTTP 200 / `stop` after
+92,367 ms and supplied the narrow production diff, but omitted requested tests.
+RTX 5090 test draft 919 returned HTTP 200 / `stop` after 5,223 ms. Its wrong
+physical count, inverted byte assertion and large allocation loop were rejected;
+none of that test draft was applied. Main wrote and executed the regressions
+above. Independent review of the actual two-file diff found no actionable
+findings. Neither local advice nor these regressions establish completed
+native discovery, source acceptance or workbook completion.
+
+Canonical formatting 924 completed. **PASS 925:** workspace fmt/check/lint-src
+completed in 33.945s with the existing forced arity advisories. Native inventory
+against the preserved unowned restored Store remains the next qualification;
+the original Store continues under the separate source-cohort 917 owner.

@@ -23,10 +23,11 @@ const SCHOOL_BUDGET: ReadBudget = ReadBudget {
     record_bytes: 1024 * 1024,
 };
 const TEAM_BUDGET: ReadBudget = ReadBudget {
-    rows: 131_072,
-    bytes: 256 * 1024 * 1024,
+    rows: 2_097_152,
+    bytes: 8 * 1024 * 1024 * 1024,
     record_bytes: 1024 * 1024,
 };
+const MAX_PROGRAMS: u64 = 131_072;
 const MAX_PACKET_REFS: u64 = 65_536;
 const MAX_NOTE_BYTES: usize = 64 * 1024;
 const MAX_OUTPUT_BYTES: usize = 32 * 1024 * 1024;
@@ -207,11 +208,7 @@ fn collect_team(
     };
     let owner = ProviderOwners::new(&team.source_identities, &SourceNamespace::MilesplitTeam);
     let provider_join = school.owner.join(&owner);
-    let next = next_count(
-        *count,
-        TEAM_BUDGET.rows,
-        "roster inventory retained programs",
-    )?;
+    let next = next_count(*count, MAX_PROGRAMS, "roster inventory retained programs")?;
     school
         .programs
         .try_reserve(1)

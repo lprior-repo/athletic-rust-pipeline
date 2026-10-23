@@ -10,6 +10,59 @@ fn note(role: &str, packet: &str) -> String {
 }
 
 #[test]
+fn team_scan_budget_covers_retained_physical_row_count() -> Result<()> {
+    check!(TEAM_BUDGET.rows >= 1_050_405);
+    check!(eq; TEAM_BUDGET.rows, 2_097_152);
+    Ok(())
+}
+
+#[test]
+fn team_scan_budget_covers_observed_encoded_requirement() -> Result<()> {
+    check!(TEAM_BUDGET.bytes >= 268_437_966);
+    check!(eq; TEAM_BUDGET.bytes, 8_589_934_592);
+    check!(eq; TEAM_BUDGET.record_bytes, 1_048_576);
+    Ok(())
+}
+
+#[test]
+fn emitted_program_limit_remains_independent_of_physical_scan_budget() -> Result<()> {
+    let retained = school("Quota", &"a".repeat(64), &["918"]);
+    let mut schools = BTreeMap::new();
+    let mut packet_count = 0;
+    collect_school(retained.clone(), &mut schools, &mut packet_count)?;
+    let mut count = 131_071;
+    collect_team(team(&retained, &["918"]), &mut schools, &mut count)?;
+    check!(eq; count, 131_072);
+    check!(eq;
+        schools.get(retained.id.as_str()).context("school missing")?.programs.len(),
+        1
+    );
+    let before = serde_json::to_vec(&schools)?;
+    let mut overflow = team(&retained, &["918"]);
+    overflow.gender = Gender::Boys;
+    overflow.id = CanonicalTeam::mint(
+        &retained.id,
+        overflow.sport,
+        overflow.gender,
+        overflow.school_year,
+    );
+    let error = collect_team(overflow, &mut schools, &mut count)
+        .err()
+        .context("expected retained-program quota refusal")?;
+    check!(matches!(
+        error,
+        StoreError::BudgetExceeded {
+            what: "roster inventory retained programs",
+            needed: 131_073,
+            available: 131_072,
+        }
+    ));
+    check!(eq; count, 131_072);
+    check!(eq; serde_json::to_vec(&schools)?, before);
+    Ok(())
+}
+
+#[test]
 fn parses_packet_field_and_ignores_unrelated_notes() -> Result<()> {
     check!(eq; parse_known_note("ordinary non-JSON evidence")?, None);
     check!(eq; parse_known_note(&note("directory_name_city", "a"))?, None);
