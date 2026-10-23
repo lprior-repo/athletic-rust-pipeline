@@ -5484,3 +5484,42 @@ workbook acceptance is claimed by this source qualification. Original cold backu
 1118 is separate operational work. Eligibility, general participation, Colorado,
 UP authority, actual acquisition-to-frozen publication and original cold/replay
 acceptance remain open. The existing Downloads workbook remains partial.
+
+## 2026-10-23 recovery of the existing workbook job
+
+Original native Workbook key co2027-pr-1141 failed before profile PR parsing:
+physical capture required 4,294,968,825 bytes against the old 4-GiB limit.
+Its terminal invocation and request remain retained. Readback 1151 found the
+original pending job contains only a real, empty input.json.proofs directory;
+there is no frozen archive or request commitment. No workbook or parsed PR
+count resulted from this invocation. Installed Restate 1.7.10 cannot resume a
+completed Workflow or restart one under its original key.
+
+The explicit offline --recover-job route uses the original full workbook job
+through the existing capture lock, selected capture, verification and publisher.
+It requires explicit Store, selection and output; it refuses a nonexistent job,
+legacy representations, partial or nonempty staging, symlinks, conflicting roots
+and incompatible CLI modes. Committed inputs retain their existing request,
+profile, freshness, archive and proof checks. Empty staging has no retained
+request binding: the operator must preserve and compare every original request
+option, including limit, before recovery. This route does not authenticate an
+uncommitted request automatically or turn the native failure into success.
+
+RED 1154 compiled three recovery tests against the old resume-only behavior:
+two preservation controls passed and empty-stage recovery failed. GREEN 1157
+passed 93 report tests and six CLI tests, including same-job capture/replay,
+committed pending promotion, partial-artifact preservation, symlink refusal,
+selection requirements and refusal before network or Store access. Supplemental
+1160 passed five report tests, adding a different valid committed-selection
+refusal and exercising recovery's legacy-format guard. The combined coverage is
+94 distinct report tests and six CLI tests; overlapping runs are not additive.
+Format, check and source lint passed in both runs, with configured argument-count
+advisories. Independent static review found no concrete production blocker;
+its suggested request-limit documentation and two dispatch checks are included.
+RTX 5090/3090 supplied bounded drafts; Main rejected unsafe or incorrect output
+and integrated the reviewed existing-path implementation.
+
+These results do not qualify actual original-job recovery, its resource fit,
+source PR counts, full release gates or the populated workbook. The original
+runtime stopped with a balanced drain before supported cold backup 1158;
+backup completion and original recovery require separate operational evidence.

@@ -1035,6 +1035,22 @@ The original publication root, receipt, frozen job and recorded Restate outcome 
 original meanings. This route does not decode an old artifact, migrate retained data, repair
 damaged proofs, resume acquisition or turn an old failed invocation into success. It requires the
 explicit offline Store selection and a stopped sole owner, the same as `--resume-frozen`.
+For a failed native workbook job with no committed frozen input, the explicit offline
+`workbook --recover-job workbook:<original-key> --out <original-root>` route reuses that
+existing logical job through the same selected capture and publisher. Both selection flags
+and explicit `--store` are required; stop the sole owner first. Supply the original request's
+cohort, contact school year, scope, jurisdictions, limit, selection and output. Preserve its retained
+request and failure receipts and compare these options before recovery: empty staging has no
+request commitment, so recovery is an operator assertion of that original request, not automatic
+authentication against the failed Restate input. It cannot use ingress, another generation,
+`--resume-frozen` or `--derive-out`.
+Recovery requires an existing retained root or pending job. Complete inputs retain every
+commitment, profile, source freshness, snapshot and proof check. An uncommitted pending directory
+can capture its first frozen input only when it contains exactly one real, empty
+`input.json.proofs` directory. Partial archives, proof bytes, extra entries, symlinks and conflicting
+retained/pending roots refuse without deleting or overwriting them. This narrow empty-stage
+recovery does not relax normal capture or frozen-only resume. The original Restate invocation
+remains failed; offline recovery does not reset it, change its key or claim native replay.
 Source tests do not qualify an actual retained-input transition or authorize a deployment; follow
 [deployment-lifecycle.md](deployment-lifecycle.md) for exact-build release/native qualification,
 drain, cold backup and same-store handoff before production use.

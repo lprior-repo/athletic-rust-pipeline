@@ -18,6 +18,11 @@ use crate::cli::{
 
 mod derived;
 
+enum OfflineJob<'a> {
+    Recover(&'a str),
+    Generation(ExportGeneration),
+}
+
 #[derive(Args, Debug)]
 pub(crate) struct WorkbookArgs {
     #[arg(
@@ -58,6 +63,15 @@ pub(crate) struct WorkbookArgs {
     generation: Option<String>,
     #[arg(
         long,
+        value_name = "JOB",
+        value_parser = recovery_job,
+        requires_all = ["out", "selected_store_identity", "selected_profile_id"],
+        conflicts_with_all = ["resume_frozen", "derive_out", "generation", "ingress"],
+        help = "Recover an existing native workbook job offline; supply its original selection and output options. Empty staging has no retained request binding. Requires --store and a stopped owner"
+    )]
+    recover_job: Option<String>,
+    #[arg(
+        long,
         requires_all = ["generation", "selected_store_identity", "selected_profile_id"],
         help = "Resume an existing native workbook frozen input with the same request and generation; requires --store and a stopped owner, and never captures new input"
     )]
@@ -89,6 +103,10 @@ pub(crate) struct WorkbookArgs {
 }
 
 pub(crate) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
+    anyhow::ensure!(
+        args.recover_job.is_none() || cli.store.is_some(),
+        "--recover-job requires explicit --store and a stopped owner"
+    );
     anyhow::ensure!(
         !args.resume_frozen || cli.store.is_some(),
         "--resume-frozen requires explicit --store and a stopped owner"
@@ -158,9 +176,14 @@ fn run_workbook_offline(
         }
         (store_identity, profile_id) => {
             let request = publication_preflight::selected_request(store_identity, profile_id)?;
-            let generation = ExportGeneration::resolve(args.generation.as_deref())?;
+            let job = match args.recover_job.as_deref() {
+                Some(job) => OfflineJob::Recover(job),
+                None => {
+                    OfflineJob::Generation(ExportGeneration::resolve(args.generation.as_deref())?)
+                }
+            };
             let store = publication_preflight::open_selected_store(root)?;
-            build_offline_selected(&store, args, options, &request, &generation)
+            build_offline_selected(&store, args, options, &request, job)
         }
     }
 }
@@ -170,25 +193,31 @@ fn build_offline_selected(
     args: &WorkbookArgs,
     requested: &workbook::Options,
     request: &ExportJobRequest,
-    generation: &ExportGeneration,
+    job: OfflineJob<'_>,
 ) -> Result<PathBuf> {
     let selection = request.require_selected_publication();
     let mut options = workbook::options_for_selected_request(store, selection, requested)
         .context("binding workbook options to the selected profile")?;
-    let dataset = if args.resume_frozen {
-        let native = workbook_request(requested, request);
-        let job = format!("workbook:{}", workbook_request_key(&native, generation)?);
-        ExportDataset::resume_job_request(store, &job, request)
-            .context("resuming the existing native workbook input")?
-    } else {
-        let job = format!(
-            "cli-workbook-selected-v1-{}-{}-{}",
-            generation.as_str(),
-            selection.store_identity().as_str(),
-            selection.profile_id().as_str()
-        );
-        ExportDataset::for_job_request(store, &job, request)
-            .context("capturing the selected workbook input")?
+    let dataset = match job {
+        OfflineJob::Recover(job) => ExportDataset::recover_job_request(store, job, request)
+            .context("recovering the existing native workbook input")?,
+        OfflineJob::Generation(generation) => {
+            if args.resume_frozen {
+                let native = workbook_request(requested, request);
+                let job = format!("workbook:{}", workbook_request_key(&native, &generation)?);
+                ExportDataset::resume_job_request(store, &job, request)
+                    .context("resuming the existing native workbook input")?
+            } else {
+                let job = format!(
+                    "cli-workbook-selected-v1-{}-{}-{}",
+                    generation.as_str(),
+                    selection.store_identity().as_str(),
+                    selection.profile_id().as_str()
+                );
+                ExportDataset::for_job_request(store, &job, request)
+                    .context("capturing the selected workbook input")?
+            }
+        }
     };
     if let Some(destination) = &args.derive_out {
         let original = match &options.out {
@@ -242,4 +271,14 @@ fn workbook_request(options: &workbook::Options, export_job: &ExportJobRequest) 
         jurisdictions: options.jurisdictions.clone(),
         export_job: export_job.clone(),
     }
+}
+
+fn recovery_job(value: &str) -> Result<String, String> {
+    if value.len() > 4096 || value.strip_prefix("workbook:").is_none_or(str::is_empty) {
+        return Err(
+            "recovery requires an existing full workbook:<key> job of at most 4096 bytes"
+                .to_string(),
+        );
+    }
+    Ok(value.to_string())
 }

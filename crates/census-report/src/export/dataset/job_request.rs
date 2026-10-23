@@ -34,4 +34,12 @@ impl ExportDataset {
     ) -> ReportResult<Self> {
         frozen::job::resume(store, job, request)
     }
+
+    pub fn recover_job_request(
+        store: &Store,
+        job: &str,
+        request: &ExportJobRequest,
+    ) -> ReportResult<Self> {
+        frozen::job::recover(store, job, request)
+    }
 }
