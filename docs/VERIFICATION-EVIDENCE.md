@@ -5606,3 +5606,24 @@ drafts; Main rejected unsafe or incorrect draft portions before integration.
 These results are focused qualification. The full release gate, actual original
 Store demand measurement, resource fit, final export, source PR totals, replay,
 cold verification and the fully populated five-state workbook remain unproved.
+
+### 2026-10-23: actual diagnostic 1206 exceeded 16 GiB; counting headroom
+
+Clean merged main `593e597a` and immutable release 1209 ran the original Store's
+read-only demand command from 22:15:54.511Z to 22:41:39.763Z. It exited 1 without
+a signal or protective stop. Its shared cumulative diagnostic counter refused a
+serialized prefix of 835913 bytes with 310522 bytes remaining. The conservative
+attempted prefix is at least 17180394575 bytes; complete demand remains unknown.
+No COMPLETE measurement, promoted input, proof object or publication resulted.
+Both named watches observed terminal state; host 1211 confirmed the owner gone.
+Maximum sampled RSS/HWM was 8083748 KiB; the actual final peak is unknown.
+
+The next candidate changes only the finite scalar diagnostic ceiling to 128 GiB.
+Normal publication remains limited to 4 GiB; all row, object, graph, history,
+wire, replay and projection checks remain. This counts into the existing sink,
+without reserving a matching buffer. It permits more work before refusal and
+does not prove that the actual inventory fits. The expanded counter test crosses
+the observed old prefix, accepts exactly 128 GiB and rejects one extra byte
+without mutation. Qualification 1231 passed all 48 scoped Store tests and
+format/check/source lint. Actual full demand, memory fit and workbook acceptance
+remain open; this change does not repair normal publication capacity.
