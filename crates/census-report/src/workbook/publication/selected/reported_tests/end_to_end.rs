@@ -9,8 +9,12 @@ mod fixture;
 mod mutation;
 #[path = "end_to_end/overflow.rs"]
 mod overflow;
+#[path = "end_to_end/profile_alias.rs"]
+mod profile_alias;
 #[path = "end_to_end/profile_prs.rs"]
 mod profile_prs;
+#[path = "end_to_end/profile_scope.rs"]
+mod profile_scope;
 #[path = "end_to_end/support.rs"]
 mod support;
 

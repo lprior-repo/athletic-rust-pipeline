@@ -72,6 +72,7 @@ pub(in crate::workbook) fn write_outcome(
         super::selected::REVISION
             | super::selected::REPORTED_REVISION
             | super::selected::PROFILE_PRS_REVISION
+            | super::selected::OWNED_PROFILE_PRS_REVISION
     ) && !outcome.participation_exclusions.is_empty()
     {
         return Err(defect(

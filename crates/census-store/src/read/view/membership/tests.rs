@@ -8,6 +8,7 @@ mod bounds;
 mod closure;
 mod descriptors;
 mod fingerprints;
+mod profile_admission;
 mod provisional;
 mod snapshot;
 mod wire;

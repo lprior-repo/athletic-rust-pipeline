@@ -27,18 +27,7 @@ impl Fetcher {
         options: &FetchOptions,
         scope: crate::net::public_http::TransportScope<'_>,
     ) -> Result<CapturedFetch, FetchError> {
-        if work
-            .work()
-            .slot()
-            .public_resource()
-            .is_some_and(|resource| {
-                resource.kind() == census_domain::model::PublicSourceResourceKindV1::Robots
-            })
-        {
-            return Err(FetchError::Policy {
-                detail: "robots.txt dispatch is disabled".to_owned(),
-            });
-        }
+        require_dispatchable(work.work())?;
         let url = work.work().request().original_url().to_owned();
         scope.check(&url)?;
         let options = self.checked_acquisition_options(work.work(), options)?;
@@ -170,6 +159,17 @@ impl Fetcher {
             .await;
         finish_acquisition(session, fetched)
     }
+}
+
+fn require_dispatchable(work: &AcquisitionWorkV1) -> Result<(), FetchError> {
+    if work.slot().public_resource().is_some_and(|resource| {
+        resource.kind() == census_domain::model::PublicSourceResourceKindV1::Robots
+    }) {
+        return Err(FetchError::Policy {
+            detail: "robots.txt dispatch is disabled".to_owned(),
+        });
+    }
+    Ok(())
 }
 
 fn finish_acquisition(

@@ -4,6 +4,8 @@ use serde_json::json;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
+mod archive_bounds;
+
 #[test]
 fn copied_objects_survive_original_directory_removal() -> TestResult {
     let source = tempfile::tempdir()?;
@@ -51,16 +53,24 @@ fn unlisted_destination_is_preserved_and_refused() -> TestResult {
 
 #[test]
 fn inventory_bounds_are_exact_and_canonical() -> TestResult {
-    let mut references = vec![objects::Reference {
-        digest: format!("{:064x}", 0),
-        bytes: objects::MAX_BYTES,
-    }];
+    check!(eq; objects::MAX_BYTES, 17_592_186_044_416);
+    check!(eq; proof_objects::MAX_OBJECT_BYTES, 4 * 1024 * 1024 * 1024);
+    let full_objects = objects::MAX_BYTES / proof_objects::MAX_OBJECT_BYTES;
+    check!(eq; full_objects, 4096);
+    let mut references = (0..full_objects)
+        .map(|index| objects::Reference {
+            digest: format!("{index:064x}"),
+            bytes: proof_objects::MAX_OBJECT_BYTES,
+        })
+        .collect::<Vec<_>>();
     objects::validate(&references)?;
     references.push(objects::Reference {
-        digest: format!("{:064x}", 1),
+        digest: format!("{full_objects:064x}"),
         bytes: 1,
     });
-    check!(objects::validate(&references).is_err());
+    check!(matches!(objects::validate(&references),
+        Err(crate::report::ReportError::Invariant { detail })
+        if detail == "selected proof objects exceed the 16 TiB archive limit"));
     let duplicate = objects::Reference {
         digest: "a".repeat(64),
         bytes: 1,

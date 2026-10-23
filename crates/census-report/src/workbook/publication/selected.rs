@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 pub(super) const REVISION: u32 = 11;
 pub(super) const REPORTED_REVISION: u32 = 12;
 pub(super) const PROFILE_PRS_REVISION: u32 = 13;
+pub(super) const OWNED_PROFILE_PRS_REVISION: u32 = 14;
 pub(super) const HISTORICAL_REVISION: u32 = 7;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -62,7 +63,7 @@ pub(super) fn binding(
         HISTORICAL_REVISION if dataset.is_historical_selected_replay() => {
             SelectedProfile::of(dataset).map(Some)
         }
-        REVISION | REPORTED_REVISION | PROFILE_PRS_REVISION => {
+        REVISION | REPORTED_REVISION | PROFILE_PRS_REVISION | OWNED_PROFILE_PRS_REVISION => {
             let expected = current_revision(dataset)?;
             if revision != expected {
                 return Err(super::invariant(
@@ -81,9 +82,14 @@ pub(super) fn binding(
 pub(super) fn validate(revision: u32, binding: Option<&SelectedProfile>) -> ReportResult<()> {
     match (revision, binding) {
         (1..=6, None)
-        | (HISTORICAL_REVISION | REVISION | REPORTED_REVISION | PROFILE_PRS_REVISION, Some(_)) => {
-            Ok(())
-        }
+        | (
+            HISTORICAL_REVISION
+            | REVISION
+            | REPORTED_REVISION
+            | PROFILE_PRS_REVISION
+            | OWNED_PROFILE_PRS_REVISION,
+            Some(_),
+        ) => Ok(()),
         _ => Err(super::invariant(
             "publication revision and selected profile binding disagree".into(),
         )),
@@ -99,7 +105,11 @@ fn current_revision(dataset: &ExportDataset) -> ReportResult<u32> {
                 "reported profile PRs require the Include profile".into(),
             ));
         }
-        Ok(PROFILE_PRS_REVISION)
+        if dataset.has_owned_profile_prs() {
+            Ok(OWNED_PROFILE_PRS_REVISION)
+        } else {
+            Ok(PROFILE_PRS_REVISION)
+        }
     } else {
         Ok(revision)
     }
@@ -187,7 +197,7 @@ pub(super) fn ensure_options_for_revision(
     binding(revision, dataset)?;
     if matches!(
         revision,
-        REVISION | REPORTED_REVISION | PROFILE_PRS_REVISION
+        REVISION | REPORTED_REVISION | PROFILE_PRS_REVISION | OWNED_PROFILE_PRS_REVISION
     ) {
         ensure_profile_options(verified_profile(dataset)?, options)?;
     }

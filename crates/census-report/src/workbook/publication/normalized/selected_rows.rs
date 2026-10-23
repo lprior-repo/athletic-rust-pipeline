@@ -12,7 +12,10 @@ pub(super) fn write(
 ) -> ReportResult<()> {
     if !matches!(
         revision,
-        selected::REVISION | selected::REPORTED_REVISION | selected::PROFILE_PRS_REVISION
+        selected::REVISION
+            | selected::REPORTED_REVISION
+            | selected::PROFILE_PRS_REVISION
+            | selected::OWNED_PROFILE_PRS_REVISION
     ) {
         return Ok(());
     }
@@ -32,14 +35,19 @@ pub(super) fn write(
     );
     if matches!(
         revision,
-        selected::REPORTED_REVISION | selected::PROFILE_PRS_REVISION
+        selected::REPORTED_REVISION
+            | selected::PROFILE_PRS_REVISION
+            | selected::OWNED_PROFILE_PRS_REVISION
     ) {
         counts.insert(
             "reported_performances.csv".into(),
             super::write_reported(directory, derivation, outcome)?,
         );
     }
-    if revision == selected::PROFILE_PRS_REVISION {
+    if matches!(
+        revision,
+        selected::PROFILE_PRS_REVISION | selected::OWNED_PROFILE_PRS_REVISION
+    ) {
         counts.insert(
             "source_profile_prs.csv".into(),
             super::source_profile_prs::write(directory, derivation, outcome)?,

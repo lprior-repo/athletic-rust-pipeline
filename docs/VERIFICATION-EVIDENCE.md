@@ -4171,3 +4171,54 @@ Live ingress status 718 still reports zero identity decisions and 681,660
 retained performance records. No copied-store identity decision was applied to
 the live owner. Current affiliation, participation eligibility, all five-state
 coverage and fully populated workbook acceptance remain separate obligations.
+
+### Roster-owned profile PR capture and frozen worksheet projection
+
+The current source slice adds profile acquisition derived from a checked native
+row in an original, closed roster packet. The original capture owner admits the
+stable profile child; retained captures and receipts survive replay. The selected
+dataset and recipe 14 worksheet/normalized outputs can include these source PRs
+as explicitly unverified profile facts, without manufacturing eligible results.
+Existing paired-packet recipe 13 remains unchanged. Accepted aliases are used
+when selecting source facts; raw roster and result scope are tested before
+optional PR parsing. A member without its own cohort can contribute a profile
+through the existing accepted alias group.
+
+Canonical Moon evidence, logs under `/tmp/athletic-work-20261021/`:
+
+- **PASS 775:** 664/664 scoped Store, crawl, report and service tests;
+  Nextest `213354fa-5f90-49b0-b7d8-e29e4e9d8aa1`, 65.536 s tests,
+  1m52.455s total. The two large metadata controls below ran separately.
+  The controlled native publication fixture exercises acquisition replay,
+  actual selected ExportJob/worksheet/CSV generation, repeat publication,
+  Store-absent frozen verification and missing/corrupted proof refusal.
+- **RED 767 / GREEN 769:** the strengthened alias counterexample first omitted
+  the native profile root, then passed after mapping original roster/result
+  subjects through the existing accepted partition before group cohort scope.
+  Command 769 passed all four selected controls, Nextest
+  `5ed6beab-19e2-4d8a-9616-8aa6318552f3`. The alias fixture deliberately has no
+  certified affiliation; it proves source facts, not accepted athlete output.
+- **PASS 770:** exact 8,388,608 proof-object metadata references and rejection of
+  one extra reference; Nextest `5356759e-18bf-4af1-aed9-d1d6256b6ace`,
+  68.438 s tests, maximum command RSS 2,536,652 KiB, zero swaps.
+- **PASS 772:** exact 4,000,000 profile-root metadata references and rejection of
+  one extra root; Nextest `a267e833-0dbb-42cd-9e5f-958680a0ca23`,
+  94.608 s tests, maximum command RSS 2,183,744 KiB, zero swaps.
+- **PASS 773:** format/check/source lint, 40.547 s; existing forced arity
+  advisories remain. **PASS 774:** AST audit, 5m17.701s, no functions over
+  60 lines and no strict unresolved sites.
+
+The profile family admits four million owner subjects; its physical scan budget
+derives from 51 jurisdictions and the existing seven physical rows per retained
+capture, with a 16 TiB aggregate byte ceiling. Proof-object aggregate admission is
+16 TiB, preserving the existing 4 GiB per-object bound. These are finite admission
+and metadata-boundary tests, not millions of acquired profiles, 16 TiB of actual
+payloads or demonstrated live runtime memory readiness.
+
+Normal bulk profile collection is still missing at this checkpoint. Original
+MI591 remains under sole live owner 590; live status 758 reports 812,531 retained
+performance records and zero accepted identity decisions. No runtime activation
+or live identity mutation is part of this source slice. The preserved Downloads
+workbook is unchanged (SHA256
+`1d9387b5c5722ded4d24448e049cf1e96101da71cc1e4df3c8532d908a01aab4`).
+The fully populated five-state workbook remains unfinished.

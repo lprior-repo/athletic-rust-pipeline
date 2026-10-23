@@ -1,7 +1,9 @@
-use super::{invalid, ReportedProfilePrs, MAX_PACKET_BYTES, MAX_ROOTS};
+use super::{
+    invalid, ReportedProfilePrs, ReportedProfileRootSchemaV1, ReportedProfileRootV1,
+    MAX_PACKET_BYTES, MAX_ROOTS,
+};
 use crate::export::dataset::selected_proofs::objects;
 use crate::report::ReportResult;
-use census_store::RetainedCaptureRootV1;
 use serde::de::{Error, SeqAccess, Visitor};
 use std::path::Path;
 
@@ -34,7 +36,8 @@ impl ReportedProfilePrs {
         let mut previous: Option<&str> = None;
         let mut bytes = 0_u64;
         for root in &self.roots {
-            if root.schema != census_store::RetainedCaptureRootSchemaV1::ProviderTargetPacketV1
+            if (root.schema == ReportedProfileRootSchemaV1::OwnedPublicProfileCaptureV1
+                && root.key != root.payload.digest.as_str())
                 || root.key.len() != 64
                 || !root
                     .key
@@ -64,14 +67,14 @@ impl ReportedProfilePrs {
 
 pub(super) fn deserialize<'de, D: serde::Deserializer<'de>>(
     deserializer: D,
-) -> Result<Vec<RetainedCaptureRootV1>, D::Error> {
+) -> Result<Vec<ReportedProfileRootV1>, D::Error> {
     deserializer.deserialize_seq(Roots)
 }
 
 struct Roots;
 
 impl<'de> Visitor<'de> for Roots {
-    type Value = Vec<RetainedCaptureRootV1>;
+    type Value = Vec<ReportedProfileRootV1>;
 
     fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "at most {MAX_ROOTS} retained profile PR roots")

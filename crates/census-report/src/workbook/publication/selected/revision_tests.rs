@@ -34,7 +34,7 @@ fn single_worksheet_has_distinct_recipe_and_preserves_exact_seven_recipe() -> Te
     check!(recipes::recipe_for_selected_revision(lineage, options, &selected, 10).is_err());
     check!(recipes::recipe_for_selected_revision(lineage, options, &selected, 6).is_err());
     check!(recipes::recipe_for_selected_revision(lineage, options, &selected, 9).is_err());
-    check!(recipes::recipe_for_selected_revision(lineage, options, &selected, 14).is_err());
+    check!(ne; recipes::recipe_for_selected_revision(lineage, options, &selected, 14)?, recipes::recipe_for_selected_revision(lineage, options, &selected, 13)?);
     check!(eq; inventory::names(7)?, inventory::names(8)?);
     Ok(())
 }

@@ -8,6 +8,22 @@ use crate::{Receipt, Store, StoreError, StoreResult};
 use fjall::{Keyspace, Readable, Snapshot};
 use std::collections::BTreeSet;
 
+pub(in crate::acquisition) use super::write::physical::records_for;
+
+pub(in crate::acquisition) fn validate_capture(
+    capture: &super::PublicSchoolIntakeCaptureV1,
+) -> StoreResult<()> {
+    capture.validate()
+}
+
+pub(in crate::acquisition) fn capture_original(
+    store: &Store,
+    owner: &crate::PublicResourceCaptureOwnerV1,
+    reference: &census_domain::model::AcquisitionOccurrenceRefV1,
+) -> StoreResult<super::PublicSchoolIntakeCaptureV1> {
+    super::read::capture(store, owner, reference)
+}
+
 pub(crate) fn validate_all(
     snapshot: &Snapshot,
     meta: &Keyspace,
@@ -51,7 +67,7 @@ pub(crate) fn validate_all(
     validate_receipts(snapshot, meta, receipts, maximum, &mut budget)
 }
 
-fn read_packet(
+pub(crate) fn read_packet(
     snapshot: &Snapshot,
     journal: &Keyspace,
     receipts: &Keyspace,

@@ -7,8 +7,8 @@ use std::path::{Component, Path};
 
 mod checksum;
 mod retained;
-const MAX_OBJECTS: usize = 16_384;
-pub(in crate::export::dataset) const MAX_BYTES: u64 = 3 * 1024 * 1024 * 1024;
+pub(super) const MAX_OBJECTS: usize = 8_388_608;
+pub(in crate::export::dataset) const MAX_BYTES: u64 = 17_592_186_044_416;
 const MAX_ANCESTORS: usize = 256;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -40,7 +40,7 @@ pub(super) fn inventory(directory: &Path) -> ReportResult<Vec<Reference>> {
     let mut total = 0u64;
     for entry in std::fs::read_dir(directory).map_err(|source| io_error(directory, source))? {
         if references.len() >= MAX_OBJECTS {
-            return Err(invalid("selected proof inventory exceeds 16384 objects"));
+            return Err(invalid("selected proof inventory exceeds 8388608 objects"));
         }
         let entry = entry.map_err(|source| io_error(directory, source))?;
         let name = entry
@@ -216,7 +216,7 @@ fn charge(current: u64, added: u64) -> ReportResult<u64> {
         .ok_or(StoreError::CounterOverflow)?;
     if total > MAX_BYTES {
         return Err(invalid(
-            "selected proof objects exceed the 3 GiB archive limit",
+            "selected proof objects exceed the 16 TiB archive limit",
         ));
     }
     Ok(total)

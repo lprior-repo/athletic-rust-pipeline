@@ -7,6 +7,7 @@ mod linked;
 mod linked_event_label;
 mod profile;
 pub mod profile_pr;
+pub mod roster_child;
 mod types;
 mod urls;
 

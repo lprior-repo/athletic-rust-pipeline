@@ -1,36 +1,64 @@
-use super::{invalid, ReportedProfilePrTable, MAX_PACKET_BYTES};
+use super::{
+    invalid, ReportedProfilePrTable, ReportedProfileRootSchemaV1, ReportedProfileRootV1,
+    MAX_PACKET_BYTES,
+};
 use crate::export::dataset::{proof_objects, ExportDataset};
 use crate::report::ReportResult;
 use census_crawl::participation_evidence::provider_target::{profile_pr, SourceTargetPacketV1};
 use census_domain::model::SourceIdentity;
-use census_store::{RetainedCaptureRootSchemaV1, RetainedCaptureRootV1};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::path::Path;
 
+pub(super) fn identity(
+    root: &ReportedProfileRootV1,
+    bytes: &[u8],
+) -> ReportResult<(String, String)> {
+    require_root(root, bytes)?;
+    if root.schema == ReportedProfileRootSchemaV1::OwnedPublicProfileCaptureV1 {
+        let packet = census_store::Store::decode_public_profile_capture_v1(bytes)?;
+        if packet.reference()?.as_str() != root.key {
+            return Err(invalid(
+                "reported profile PR source packet identity differs",
+            ));
+        }
+        let acquired =
+            chrono::DateTime::parse_from_rfc3339(packet.capture().response().observed_at())
+                .map_err(|_| invalid("reported profile PR observation timestamp invalid"))?
+                .with_timezone(&chrono::Utc);
+        return Ok((
+            packet.athlete_id()?.to_owned(),
+            acquired.date_naive().to_string(),
+        ));
+    }
+    let (packet, source) = packet(root, bytes)?;
+    Ok((
+        source.id,
+        packet
+            .profile_capture()
+            .acquired_at()
+            .date_naive()
+            .to_string(),
+    ))
+}
+
 pub(super) fn read(
-    root: &RetainedCaptureRootV1,
+    root: &ReportedProfileRootV1,
     bytes: &[u8],
 ) -> ReportResult<(String, ReportedProfilePrTable)> {
+    require_root(root, bytes)?;
+    if root.schema == ReportedProfileRootSchemaV1::OwnedPublicProfileCaptureV1 {
+        return owned(root, bytes);
+    }
     let (packet, source) = packet(root, bytes)?;
     let subject = source.id.clone();
     Ok((subject, table(root, &packet, source)?))
 }
 
-pub(super) fn packet(
-    root: &RetainedCaptureRootV1,
+fn packet(
+    root: &ReportedProfileRootV1,
     bytes: &[u8],
 ) -> ReportResult<(SourceTargetPacketV1, SourceIdentity)> {
-    if root.schema != RetainedCaptureRootSchemaV1::ProviderTargetPacketV1
-        || root.payload.bytes != u64::try_from(bytes.len()).map_err(|_| invalid("PR byte count"))?
-        || root.payload.bytes > MAX_PACKET_BYTES
-        || root.payload.digest.as_str() != format!("{:x}", Sha256::digest(bytes))
-        || bytes.first() != Some(&b'{')
-    {
-        return Err(invalid(
-            "reported profile PR source root or content differs",
-        ));
-    }
     let packet: SourceTargetPacketV1 = serde_json::from_slice(bytes)
         .map_err(|_| invalid("reported profile PR packet is invalid"))?;
     if packet.reference()?.as_str() != root.key {
@@ -42,8 +70,45 @@ pub(super) fn packet(
     Ok((packet, source))
 }
 
+fn require_root(root: &ReportedProfileRootV1, bytes: &[u8]) -> ReportResult<()> {
+    if root.payload.bytes != u64::try_from(bytes.len()).map_err(|_| invalid("PR byte count"))?
+        || root.payload.bytes > MAX_PACKET_BYTES
+        || root.payload.digest.as_str() != format!("{:x}", Sha256::digest(bytes))
+        || bytes.first() != Some(&b'{')
+    {
+        return Err(invalid(
+            "reported profile PR source root or content differs",
+        ));
+    }
+    Ok(())
+}
+
+fn owned(
+    root: &ReportedProfileRootV1,
+    bytes: &[u8],
+) -> ReportResult<(String, ReportedProfilePrTable)> {
+    let packet = census_store::Store::decode_public_profile_capture_v1(bytes)?;
+    if packet.reference()?.as_str() != root.key {
+        return Err(invalid(
+            "reported profile PR source packet identity differs",
+        ));
+    }
+    let facts = profile_pr::read_owned_profile_capture(bytes)?;
+    let source = facts.source().clone();
+    let table = ReportedProfilePrTable {
+        source: source.clone(),
+        root: root.clone(),
+        profile_url: facts.profile_url().to_owned(),
+        body_sha256: facts.body_sha256().to_owned(),
+        acquired_at: facts.acquired_at(),
+        interpretation: profile_pr::INTERPRETATION.to_owned(),
+        rows: facts.into_rows(),
+    };
+    Ok((source.id, table))
+}
+
 pub(super) fn table(
-    root: &RetainedCaptureRootV1,
+    root: &ReportedProfileRootV1,
     packet: &SourceTargetPacketV1,
     source: SourceIdentity,
 ) -> ReportResult<ReportedProfilePrTable> {

@@ -55,16 +55,12 @@ pub(super) fn athletes<'a>(
                 return false;
             }
             let has_performance = performances.contains_key(athlete.id.as_str());
-            let roster = athlete.identities().next().is_some()
-                && athlete
-                    .sports
-                    .iter()
-                    .any(|sport| profile.input().sports.contains(sport))
-                && dataset
-                    .schools
-                    .get(&athlete.school)
-                    .and_then(|school| school.state)
-                    .is_some_and(|state| in_state(state, derivation, profile));
+            let state = dataset
+                .schools
+                .get(&athlete.school)
+                .and_then(|school| school.state);
+            let roster = crate::report::population::roster(athlete, profile, state)
+                && state.is_some_and(|state| in_state(state, derivation, profile));
             roster || has_performance
         })
         .collect()
@@ -76,15 +72,7 @@ fn in_cohort(
     profile: &QueryProfileV1,
 ) -> bool {
     crate::report::in_requested_year(athlete, derivation.grad_year())
-        && athlete.derived_cohort_confidence() == Some(census_domain::model::Confidence::HIGH)
-        && profile
-            .input()
-            .graduation_years
-            .contains(&athlete.grad_year)
-        && profile
-            .input()
-            .competition_categories
-            .contains(&athlete.gender)
+        && crate::report::population::cohort(athlete, profile)
 }
 
 fn in_state(

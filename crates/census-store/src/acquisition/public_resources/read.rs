@@ -247,6 +247,19 @@ fn bound_work(
     let format = crate::format::read_capture_format(snapshot, meta, budget)?;
     let declaration = declaration(snapshot, meta, journal, receipts, &format, budget)?
         .ok_or(CaptureError::CaptureCapabilityNamespaceUnsupported)?;
+    if work.slot().public_resource().is_some_and(|resource| {
+        resource.kind() == PublicSourceResourceKindV1::MileSplitAthleteProfile
+    }) {
+        return crate::acquisition::owner::profile_child::for_work(
+            snapshot,
+            meta,
+            journal,
+            receipts,
+            &declaration,
+            work,
+            budget,
+        );
+    }
     if work
         .slot()
         .public_resource()

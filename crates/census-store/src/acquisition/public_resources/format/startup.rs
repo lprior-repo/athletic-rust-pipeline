@@ -31,12 +31,18 @@ pub(crate) fn validate_format(
     })?;
     crate::acquisition::public_resources::child::startup::validate_all(
         snapshot,
-        meta,
         journal,
         receipts,
         &declaration,
     )?;
     crate::acquisition::public_resources::intake::startup::validate_all(
+        snapshot,
+        meta,
+        journal,
+        receipts,
+        &declaration,
+    )?;
+    crate::acquisition::owner::profile_child::startup::validate_all(
         snapshot,
         meta,
         journal,

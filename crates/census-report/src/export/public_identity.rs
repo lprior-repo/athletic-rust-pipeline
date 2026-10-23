@@ -13,6 +13,14 @@ pub(crate) mod output;
 mod partition;
 pub(crate) mod population;
 
+pub(super) fn source_aliases(
+    accepted: &AcceptedPublicIdentitySnapshot,
+    athletes: &[CanonicalAthlete],
+) -> ReportResult<HashMap<String, String>> {
+    require_current_qualification(accepted.qualification_version())?;
+    Ok(partition::capture(accepted, athletes)?.aliases)
+}
+
 pub(crate) struct VerifiedPublicIdentityView {
     accepted: AcceptedPublicIdentitySnapshot,
     input_generation: String,

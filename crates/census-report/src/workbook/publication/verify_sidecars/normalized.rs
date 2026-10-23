@@ -61,6 +61,7 @@ pub(super) fn verify_outcome(
         artifact_revision,
         crate::workbook::publication::selected::REPORTED_REVISION
             | crate::workbook::publication::selected::PROFILE_PRS_REVISION
+            | crate::workbook::publication::selected::OWNED_PROFILE_PRS_REVISION
     ) {
         let projection = crate::workbook::reported::Projection::of(
             inputs.dataset,
@@ -76,7 +77,11 @@ pub(super) fn verify_outcome(
             reported_performances::verify(directory, &projection)?,
         );
     }
-    if artifact_revision == crate::workbook::publication::selected::PROFILE_PRS_REVISION {
+    if matches!(
+        artifact_revision,
+        crate::workbook::publication::selected::PROFILE_PRS_REVISION
+            | crate::workbook::publication::selected::OWNED_PROFILE_PRS_REVISION
+    ) {
         counts.insert(
             "source_profile_prs.csv".into(),
             source_profile_prs::verify(directory, inputs, outcome)?,
@@ -168,7 +173,7 @@ pub(in crate::workbook) fn visit_athletes(
 ) -> ReportResult<u64> {
     let additional = match artifact_revision {
         1..=6 => None,
-        7 | 8 | 10..=13 => Some(["canonical_candidate_id", "identity_resolution"]),
+        7 | 8 | 10..=14 => Some(["canonical_candidate_id", "identity_resolution"]),
         _ => {
             return Err(super::defect(format!(
                 "unsupported comparison artifact revision {artifact_revision}"

@@ -25,6 +25,7 @@ pub use relays::{RelayAdmission, RelayDisposition, RelayGap, RelayProjection, Re
 mod coverage;
 mod derivation;
 mod notes;
+pub(crate) mod population;
 mod projection;
 mod rows;
 mod tables;

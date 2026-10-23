@@ -12,6 +12,15 @@ struct Envelope<'a> {
 }
 
 pub(super) fn records(key: &str, at: &str, packet: &[u8]) -> StoreResult<Vec<(Vec<u8>, Vec<u8>)>> {
+    records_for(PHASE, key, at, packet)
+}
+
+pub(in crate::acquisition) fn records_for(
+    phase: &str,
+    key: &str,
+    at: &str,
+    packet: &[u8],
+) -> StoreResult<Vec<(Vec<u8>, Vec<u8>)>> {
     let text =
         std::str::from_utf8(packet).map_err(|_| refused("public school intake packet encoding"))?;
     let raw = RawValue::from_string(text.to_string())
@@ -25,7 +34,7 @@ pub(super) fn records(key: &str, at: &str, packet: &[u8]) -> StoreResult<Vec<(Ve
     if value.len() > MAX_PACKET {
         return Err(refused("public school intake envelope limit"));
     }
-    let root = Store::journal_key(PHASE, key);
+    let root = Store::journal_key(phase, key);
     let records = if value.len() <= MAX_JOURNAL_VALUE_BYTES {
         vec![(root, value)]
     } else {

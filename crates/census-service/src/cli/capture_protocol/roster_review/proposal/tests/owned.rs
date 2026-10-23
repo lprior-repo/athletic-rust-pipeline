@@ -10,6 +10,7 @@ mod binding;
 #[path = "../../../../../../tests/common/controlled_public_capture.rs"]
 mod controlled_normalized_transport;
 mod fixture;
+mod profile_publication;
 mod source;
 mod verify;
 

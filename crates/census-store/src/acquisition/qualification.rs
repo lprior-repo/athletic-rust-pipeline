@@ -4,6 +4,8 @@ use census_domain::model::*;
 use fjall::{Database, Keyspace, Readable, Snapshot};
 use std::path::Path;
 
+pub(crate) use super::owner::profile_child::capture as public_profile;
+
 mod inventory;
 mod preservation;
 use inventory::inventory;

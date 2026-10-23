@@ -40,15 +40,10 @@ pub(super) fn require_capacity(
 
 pub(crate) fn validate_all(
     snapshot: &Snapshot,
-    meta: &Keyspace,
     journal: &Keyspace,
     receipts: &Keyspace,
     declaration: &super::PublicResourceDeclarationV1,
 ) -> StoreResult<()> {
-    let prefix = b"public_resource_child";
-    if snapshot.prefix(meta, prefix).next().is_some() {
-        return Err(refused("public roster child state in metadata"));
-    }
     let maximum = declaration
         .binding
         .owners
@@ -58,7 +53,7 @@ pub(crate) fn validate_all(
     let mut budget = AcquisitionReadBudget::new(1_048_576, 512 * 1024 * 1024, 0)?;
     let mut counts = BTreeMap::new();
     for (position, guard) in snapshot
-        .prefix(journal, prefix)
+        .prefix(journal, b"public_resource_child_frontier")
         .take(maximum + 1)
         .enumerate()
     {
@@ -101,7 +96,7 @@ fn receipts_inventory(
     budget: &mut AcquisitionReadBudget,
 ) -> StoreResult<()> {
     for (position, guard) in snapshot
-        .prefix(receipts, b"public_resource_child")
+        .prefix(receipts, b"public_resource_child_frontier")
         .take(maximum + 1)
         .enumerate()
     {

@@ -1,4 +1,4 @@
-use super::{invalid, replay, ReportedProfilePrs, MAX_ROOTS};
+use super::{invalid, replay, ReportedProfilePrs, ReportedProfileRootV1, MAX_ROOTS};
 use crate::export::dataset::proof_objects;
 use crate::export::dataset::selected_proofs::objects;
 use crate::report::ReportResult;
@@ -19,17 +19,18 @@ impl ReportedProfilePrs {
     pub(in crate::export::dataset) fn extend_selected(
         loaded: &mut crate::export::dataset::Loaded,
         snapshot: &StoreSnapshot<'_>,
-        profile: &census_domain::model::QueryProfileV1,
+        scope: super::SourceScope<'_>,
         directory: &Path,
         grant: &mut AttachmentReplayGrantV1,
     ) -> ReportResult<()> {
-        if profile.input().include_provisional
+        if scope.profile.input().include_provisional
             == census_domain::model::ProvisionalInclusionV1::Include
         {
+            let as_of = &scope.profile.input().as_of;
             loaded.reported_profile_prs = Self::capture(
                 snapshot,
-                &loaded.athletes,
-                &profile.input().as_of,
+                super::scope::athletes(loaded, scope)?,
+                as_of,
                 directory,
                 grant,
             )?;
@@ -37,16 +38,16 @@ impl ReportedProfilePrs {
         Ok(())
     }
 
-    pub(in crate::export::dataset) fn capture(
+    pub(in crate::export::dataset) fn capture<'a>(
         snapshot: &StoreSnapshot<'_>,
-        athletes: &[CanonicalAthlete],
+        athletes: impl IntoIterator<Item = &'a CanonicalAthlete>,
         as_of: &ProfileDate,
         directory: &Path,
         grant: &mut AttachmentReplayGrantV1,
     ) -> ReportResult<Self> {
         objects::require_empty(directory)?;
         let selected = athletes
-            .iter()
+            .into_iter()
             .flat_map(CanonicalAthlete::identities)
             .filter(|source| source.namespace == SourceNamespace::MilesplitAthlete)
             .map(|source| source.id.as_str())
@@ -67,38 +68,40 @@ impl ReportedProfilePrs {
             },
             grant,
             |held| {
-                let result = reported.capture_root(
-                    held.root(),
-                    held.payload().get().as_bytes(),
-                    &mut selection,
-                );
+                let result = ReportedProfileRootV1::retained(held.root()).and_then(|root| {
+                    reported.capture_root(&root, held.payload().get().as_bytes(), &mut selection)
+                });
                 result.map_err(|error| StoreError::Refused {
                     detail: error.to_string(),
                 })
             },
         )?;
+        snapshot.for_each_public_profile_capture_v1(|packet| {
+            let bytes = packet.encode()?;
+            let result = ReportedProfileRootV1::owned(&bytes)
+                .and_then(|root| reported.capture_root(&root, &bytes, &mut selection));
+            result.map_err(|error| StoreError::Refused {
+                detail: error.to_string(),
+            })
+        })?;
+        reported.roots.sort_unstable_by(|a, b| a.key.cmp(&b.key));
         reported.validate_roots()?;
         Ok(reported)
     }
 
     fn capture_root(
         &mut self,
-        root: &census_store::RetainedCaptureRootV1,
+        root: &ReportedProfileRootV1,
         bytes: &[u8],
         selection: &mut Selection<'_>,
     ) -> ReportResult<()> {
-        let (packet, source) = replay::packet(root, bytes)?;
-        if !selection.subjects.contains(source.id.as_str())
-            || packet
-                .profile_capture()
-                .acquired_at()
-                .date_naive()
-                .to_string()
-                .as_str()
-                > selection.as_of.as_str()
+        let (subject, acquired_day) = replay::identity(root, bytes)?;
+        if !selection.subjects.contains(subject.as_str())
+            || acquired_day.as_str() > selection.as_of.as_str()
         {
             return Ok(());
         }
+        let (_, table) = replay::read(root, bytes)?;
         if self.roots.len() >= MAX_ROOTS {
             return Err(invalid("reported profile PR root count exceeds its bound"));
         }
@@ -111,8 +114,6 @@ impl ReportedProfilePrs {
                 "reported profile PR sources exceed the archive limit",
             ));
         }
-        let subject = source.id.clone();
-        let table = replay::table(root, &packet, source)?;
         self.roots
             .try_reserve(1)
             .map_err(|_| invalid("profile PR root allocation refused"))?;

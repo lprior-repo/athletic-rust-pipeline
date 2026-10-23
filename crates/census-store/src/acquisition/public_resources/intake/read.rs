@@ -69,7 +69,7 @@ fn receipt(
     .ok_or_else(|| refused("public school intake source receipt absent"))
 }
 
-fn capture(
+pub(super) fn capture(
     store: &Store,
     owner: &PublicResourceCaptureOwnerV1,
     reference: &AcquisitionOccurrenceRefV1,

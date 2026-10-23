@@ -1,9 +1,35 @@
 use super::StoreSnapshot;
+use crate::acquisition::qualification::public_profile;
 use crate::acquisition::{admission::ReadMeter, qualification, verify_reference};
+use crate::read::JournalNamespace;
 use crate::{AcquisitionReadBudget, CaptureError, StoreResult, VerifiedRetainedOccurrence};
 use census_domain::model::AcquisitionOccurrenceRefV1;
 
 impl StoreSnapshot<'_> {
+    pub fn read_public_profile_capture_v1(
+        &self,
+        key: &str,
+    ) -> StoreResult<Option<public_profile::PublicProfileCapturePacketV1>> {
+        public_profile::startup::read_packet(&self.snapshot, self.journal, self.receipts, key)
+    }
+
+    pub fn for_each_public_profile_capture_v1(
+        &self,
+        mut visit: impl FnMut(&public_profile::PublicProfileCapturePacketV1) -> StoreResult<()>,
+    ) -> StoreResult<()> {
+        let phase = public_profile::PHASE;
+        let budget = public_profile::scan_budget()?;
+        self.for_each_journal_root_bounded(JournalNamespace::whole_phase(phase)?, budget, |key| {
+            let packet = self.read_public_profile_capture_v1(key)?.ok_or_else(|| {
+                crate::StoreError::Refused {
+                    detail: "public profile capture root absent".to_owned(),
+                }
+            })?;
+            visit(&packet)
+        })?;
+        Ok(())
+    }
+
     pub fn read_public_school_intake_admission_v1(
         &self,
         packet: &crate::PublicSchoolIntakePacketV1,

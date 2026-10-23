@@ -10,6 +10,8 @@ use crate::{StoreError, StoreResult, MAX_JOURNAL_KEY_BYTES, MAX_JOURNAL_VALUE_BY
 const MAX_NAMESPACE_ROWS: u64 = 25_000;
 const MAX_NAMESPACE_BYTES: u64 = 64 * 1024 * 1024;
 
+mod admission;
+
 impl<'s> StoreSnapshot<'s> {
     pub(super) fn scan_journal_namespace(
         &self,
@@ -94,7 +96,7 @@ pub(crate) fn scan_contents<G>(
     mut visit: impl FnMut(&mut G, &[u8], &[u8]) -> StoreResult<()>,
 ) -> StoreResult<JournalNamespaceContents> {
     use super::super::PhysicalReadAdmissionV1;
-    admit(budget)?;
+    admission::namespace(namespace, budget)?;
     let prefix = namespace.physical_prefix()?;
     preadmit(state, PhysicalReadAdmissionV1::KeyProbe)?;
     let mut physical = snapshot.prefix(journal, &prefix);

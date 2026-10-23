@@ -32,7 +32,7 @@ impl ExportDataset {
         objects_directory: &Path,
         job: Option<&str>,
     ) -> ReportResult<Self> {
-        let (profile, authority) = selected_authority(store, snapshot, selection)?;
+        let (profile, authority, accepted) = selected_authority(store, snapshot, selection)?;
         let mut loaded = read::all(snapshot)?;
         let mut lineage = frozen::lineage(store, snapshot)?;
         lineage.export_job = job.map(str::to_owned);
@@ -55,7 +55,10 @@ impl ExportDataset {
         super::super::reported_profile_prs::ReportedProfilePrs::extend_selected(
             &mut loaded,
             snapshot,
-            &profile,
+            super::super::reported_profile_prs::SourceScope {
+                profile: &profile,
+                accepted: &accepted,
+            },
             objects_directory,
             &mut grant,
         )?;
@@ -137,7 +140,11 @@ fn selected_authority(
     store: &Store,
     snapshot: &StoreSnapshot<'_>,
     selection: &ProfileSelectionV1,
-) -> ReportResult<(QueryProfileV1, SelectedAuthority)> {
+) -> ReportResult<(
+    QueryProfileV1,
+    SelectedAuthority,
+    census_store::AcceptedPublicIdentitySnapshot,
+)> {
     snapshot.ensure_origin(store)?;
     let profile = snapshot.selected_profile(selection)?;
     census_domain::profile_execution::validate_current_selected_qualification_profile(&profile)
@@ -148,7 +155,7 @@ fn selected_authority(
         .ok_or_else(|| invalid("selected publication has no retained public identity authority"))?;
     let authority = SelectedAuthority::capture(profile.clone(), snapshot, &accepted)?;
     authority.validate()?;
-    Ok((profile, authority))
+    Ok((profile, authority, accepted))
 }
 
 fn capture_school(

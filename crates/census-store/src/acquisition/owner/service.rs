@@ -3,7 +3,20 @@ use crate::acquisition::AcquisitionReadBudget;
 use crate::{Store, StoreResult};
 use census_domain::model::{AcquisitionDigest, ProfileSelectionV1};
 
+pub(crate) mod profile_child;
+
 impl PublicResourceCaptureOwnerV1 {
+    pub fn selected_query_profile(
+        &self,
+        store: &Store,
+    ) -> StoreResult<census_domain::model::QueryProfileV1> {
+        let declaration = {
+            let _writes = store.lock_appends();
+            self.declaration(store, &mut AcquisitionReadBudget::for_work())?
+        };
+        store.selected_profile(&declaration.binding.selection)
+    }
+
     pub fn require_service_binding(
         &self,
         store: &Store,

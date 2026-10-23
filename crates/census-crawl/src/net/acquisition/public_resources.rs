@@ -6,6 +6,7 @@ use census_store::{CaptureOwnerRef, CaptureWriterV1, PublicResourceCaptureOwnerV
 use census_store::{PublicResourceRootKindV1, Store};
 
 mod directory_witness;
+mod profile;
 mod replay;
 mod roster;
 pub use directory_witness::{assess_directory_roster_child, CheckedDirectoryRosterWitnessV1};

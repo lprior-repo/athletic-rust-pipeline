@@ -1,7 +1,6 @@
 use super::{ReportError, ReportResult};
 use crate::export::ExportDataset;
 use crate::grouping::{Admission, GroupingError};
-use census_domain::model::performance_comparison::SurfaceClass;
 use census_domain::model::{
     CanonicalEvent, EventDisposition, EventExclusionReason, EventId, EventKind,
     EventResolutionReason, MeetId, RecruitingCatalogV1, Sport,
@@ -160,12 +159,7 @@ fn meet_sports(dataset: &ExportDataset) -> ReportResult<HashMap<&MeetId, Sport>>
     let mut budget = Admission::new(STAGE);
     for meet in &dataset.meets {
         budget.record(meet)?;
-        let sport = match SurfaceClass::resolve(meet) {
-            SurfaceClass::Indoor => Sport::IndoorTrack,
-            SurfaceClass::Outdoor => Sport::OutdoorTrack,
-            SurfaceClass::CrossCountry => Sport::CrossCountry,
-            SurfaceClass::Unresolved => Sport::Unknown,
-        };
+        let sport = super::population::meet_sport(meet);
         if index.insert(&meet.id, sport).is_some() {
             return Err(ReportError::Invariant {
                 detail: format!("duplicate meet {}", meet.id),

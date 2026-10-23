@@ -10,6 +10,7 @@ mod proof;
 mod public;
 mod service;
 pub(super) use proof::OwnerScopeProof;
+pub(crate) use service::profile_child;
 
 #[derive(Clone)]
 pub struct PublicResourceCaptureOwnerV1 {
@@ -140,6 +141,20 @@ impl<'a> CaptureOwnerRef<'a> {
         }
     }
     pub(super) fn verify_work(self, store: &Store, work: &AcquisitionWorkV1) -> StoreResult<()> {
+        if let Some(owner) = self.public() {
+            if work.slot().public_resource().is_some_and(|resource| {
+                resource.kind() == PublicSourceResourceKindV1::MileSplitAthleteProfile
+            }) {
+                self.verify(store)?;
+                owner.matches_work(work)?;
+                return read::for_work(
+                    store,
+                    &store.db.snapshot(),
+                    work,
+                    &mut AcquisitionReadBudget::for_work(),
+                );
+            }
+        }
         self.verify_candidate(store, work)?;
         if self.public().is_some() {
             read::for_work(

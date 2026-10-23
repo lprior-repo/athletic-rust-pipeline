@@ -20,7 +20,7 @@ pub(crate) fn packet(id: &str, acquired: &str) -> TestResult<SourceTargetPacketV
     packet_with_profile(id, acquired, Ok)
 }
 
-pub(super) fn packet_with_profile(
+pub(crate) fn packet_with_profile(
     id: &str,
     acquired: &str,
     transform: impl FnOnce(String) -> TestResult<String>,

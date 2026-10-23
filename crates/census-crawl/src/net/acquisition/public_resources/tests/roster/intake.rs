@@ -7,6 +7,7 @@ use census_store::{
 };
 
 mod leaves;
+mod profile;
 mod review;
 mod source;
 use source::verify_school;

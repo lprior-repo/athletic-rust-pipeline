@@ -74,7 +74,7 @@ pub(super) fn names(revision: u32) -> ReportResult<&'static [&'static str]> {
         5 | 6 => Ok(CURRENT),
         7 | 8 | 11 => Ok(SELECTED),
         10 | 12 => Ok(REPORTED_SELECTED),
-        13 => Ok(PROFILE_PRS_SELECTED),
+        13..=14 => Ok(PROFILE_PRS_SELECTED),
         _ => Err(super::invariant(
             "unsupported normalized inventory revision".into(),
         )),
@@ -85,7 +85,7 @@ pub(super) fn validate(revision: u32, counts: Option<&RowCounts>) -> ReportResul
     let expected = names(revision)?;
     match (revision, counts) {
         (1..=4, None) => Ok(()),
-        (5..=8 | 10..=13, Some(counts))
+        (5..=8 | 10..=14, Some(counts))
             if counts
                 .keys()
                 .map(String::as_str)
@@ -105,7 +105,7 @@ pub(super) fn compare(
     actual: &RowCounts,
 ) -> ReportResult<()> {
     validate(revision, expected)?;
-    if matches!(revision, 5..=8 | 10..=13) && expected != Some(actual) {
+    if matches!(revision, 5..=8 | 10..=14) && expected != Some(actual) {
         return Err(super::invariant(
             "normalized CSV row counts disagree with verified records".into(),
         ));

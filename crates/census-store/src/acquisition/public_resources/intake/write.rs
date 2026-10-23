@@ -5,7 +5,7 @@ use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::model::AcquisitionOccurrenceRefV1;
 use fjall::Readable;
 
-mod physical;
+pub(super) mod physical;
 
 impl Store {
     pub fn prepare_public_school_intake(
