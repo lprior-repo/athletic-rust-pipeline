@@ -91,7 +91,7 @@ pub(super) fn write(
     let sheet = book
         .worksheet_from_name("Athletes")
         .map_err(|error| crate::report::xlsx_error(path, error))?;
-    for column in 17..=20 {
+    for column in 17..=21 {
         sheet
             .set_column_format(column, &wrapped)
             .map_err(|error| crate::report::xlsx_error(path, error))?;
