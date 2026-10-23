@@ -4284,3 +4284,71 @@ old-590-to-candidate in-flight upgrade. Runtime activation still requires the
 documented ownership boundary and appropriate compatibility evidence. Downloads
 SHA256 remains `1d9387b5c5722ded4d24448e049cf1e96101da71cc1e4df3c8532d908a01aab4`.
 The full workbook goal and repository-wide release obligations remain open.
+
+### Clean-main artifact checkpoint (807, 810, 812)
+
+Source commit `53fb3a6ce46b7e8bee23440c2a69d773044d6b63` is pushed to main.
+The existing managed `workbook-release-b566` checkout was clean before and after
+these commands, detached at that exact commit; foreign primary-checkout report
+and performance changes were excluded.
+
+- **PASS 807:** `pipeline:build-portable`, 5m47.750s task, 5m53.691s wall;
+  Moon task `46c77938`. Immutable copied endpoint SHA256 is
+  `45b80265a68fd9c4bbbd570181c726ddb1651d42cae26879bc5a8b76709d85df`;
+  CLI is `b5e42ec64dd4f5bd1c33292ffa2c3a3c50cb046e9c184a20cbbb8e5da838d64d`;
+  lockfile is `5cdfaee3a9d8ba1e9233d0176313f339a1364ba09d04e9e7794a7e79faed7265`.
+  Both binaries, lockfile, tracked-source hash inventory and provenance are
+  preserved in the cache release directory named by that endpoint hash.
+- **PASS 810:** focused profile collection and frozen-publication regressions,
+  23/23, Nextest `c405d144-9264-44f6-8a55-2c6d53a3ca03`, 47.522s tests,
+  2m30.998s task. This clean-checkout receipt complements native 799 and publication
+  802; it does not repeat their native restart or large metadata-boundary claims.
+- **PASS 812:** `pipeline:fmt pipeline:check pipeline:lint-src`, 2m5.013s;
+  existing forced arity advisories remain.
+
+Logs are `worksheet-profile-clean-build-807.log`,
+`worksheet-profile-clean-tests-810.log` and
+`worksheet-profile-clean-gates-812.log` under the same temporary evidence root.
+The candidate is not activated and these focused receipts do not certify the
+full repository release gate, an old-to-new in-flight runtime handoff or new
+genuine profile population. Original live owner 590 and the Downloads workbook
+are preserved.
+
+### Actual executable handoff probe 818 and live drain request 820
+
+**PASS 818:** the preserved old endpoint (`d634c291…`) and clean candidate
+(`45b80265…`) ran sequentially against one explicitly separate, empty qualification
+Store (`5cd24b1f…`) and native Restate 1.7.10. A private network namespace had only
+loopback and no external routes. The fixture registered the original selected
+profile `29aa9c73…` and submitted the unchanged full MI591 jurisdiction request.
+It used the actual `JurisdictionCensus.pass` handler, not a substitute service.
+
+The invocation `inv_1lc4hnnCg2sx41El9x3H73BBP4KeMAA3KC` paused at
+`results-v2-plan` (journal 95). The old endpoint drained and exited zero, leaving
+97 journal entries. Supported deployment rediscovery dry-run/apply retained
+`dp_13UvVYNV3wxecdvNP4HqFA5`; the candidate resumed the same invocation and key,
+preserved every old journal entry exactly and completed with 119 entries. There
+was exactly one pass invocation. Both endpoint processes and the isolated native
+node exited zero after SIGTERM; no forced kill or replacement pass was used.
+
+The result correctly retains owed work and source failures. In particular, this
+empty fixture reports a roster-stage `unsupported capture capability namespace`
+refusal. It is neither a successful roster/profile acquisition test nor replay
+qualification for live MI591's nonempty `results-v2-execute` at journal 816.
+Evidence is preserved in cache `probes/actual-old-new-current-census-818/`;
+the operator script/log are `worksheet-actual-old-new-818.mjs` and `.log` under
+the temporary evidence root. An initial fixture enrollment used a future review
+timestamp and refused before acceptance; the saved corrected preview/approval
+uses the actual earlier timestamp. No production approval was changed.
+
+**820, drain requested:** the live inventory contained only original running
+MI591 and original paused CO/national calls. Full inventory, MI journal,
+deployments, services and actual owner configuration/binary identity were saved
+in `handoff-actual-profile-820/`. `/proc/2403935/exe` and its preserved immutable
+artifact both hash to `d634c291…`; its build manifest records checkout
+`3b8c745b…` and a source inventory, not an exact clean-checkout build claim.
+MI591 was explicitly paused on its original key/deployment, then that verified
+sole endpoint received SIGTERM. At this checkpoint its started blocking work is
+still draining: no process-exit, cold-backup, new live owner, deployment rewrite,
+profile population or new workbook result is claimed. CO/national remain paused
+and preserved. No invocation was killed and no logical identity was replaced.
