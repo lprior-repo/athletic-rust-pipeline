@@ -76,6 +76,24 @@ fn parses_packet_field_and_ignores_unrelated_notes() -> Result<()> {
 }
 
 #[test]
+fn original_owned_note_remains_a_discovery_hint_after_current_interpretation_changes() -> Result<()>
+{
+    let reference = "a".repeat(64);
+    let original = serde_json::json!({
+        "role": "provider_roster_owner",
+        "phase": "public_resource_school_intake_v1",
+        "interpretation": "milesplit_owned_directory_roster_school_v1",
+        "packet": reference,
+    });
+    check!(eq; parse_known_note(&original.to_string())?, Some(reference));
+    let mut unknown = original;
+    unknown["interpretation"] = serde_json::json!("unknown-owned-interpretation");
+    check!(eq; parse_known_note(&unknown.to_string())?, None);
+    check!(parse_known_note(RETAINED_OWNED_SCHOOL_NOTE_V1).is_err());
+    Ok(())
+}
+
+#[test]
 fn provider_owner_preserves_distinct_ids_without_selecting_ambiguity() {
     let namespace = SourceNamespace::MilesplitSchool;
     let mut identities = vec![

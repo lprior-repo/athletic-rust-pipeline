@@ -4903,3 +4903,70 @@ removed after this terminal diagnostic. This diagnosis does not approve the
 old packet under the current kernel or authorize a compatibility exception.
 Native full-corpus peak growth, original same-key apply/replay, roster approval
 and the complete populated workbook remain unqualified by these focused checks.
+
+### 2026-10-23: current interpretation of authenticated retained roster packets
+
+**PASS 951:** canonical `pipeline:build-portable` on clean `bbd3a5ee`,
+exit 0/no signal at 07:46:59.403 UTC, 277,831 ms. Immutable release 952
+completed at 07:52:29.575 UTC. CLI SHA256
+`06e60a631ae0c41203d03be4e33393379031cca8ad32538f01ef844a324b67a1`,
+serve SHA256 `31c0fc351d9e9562a9dc94b5a0d40bbe43cdfb1de7177243c1d5bfdabc042a41`.
+Its compiled kernel is `bc39831f1a941e81534b1a1bd2656f26f1e51a50cc37bd8d7c85fb3087a2533f`.
+Original same-key source-cohort attempt 953 started at 07:53:03.093 UTC,
+PID 3462454, operation `five-state-co2027-source-cohort-20261022`.
+At 08:17:49 UTC it was still running with 256,231,006,208 available bytes
+and 350,187,520 process write bytes. This planning-stage measurement does not
+qualify staging growth, apply, replay or publication. Existing Store, backup,
+operation key and three paused Native invocation identities/pins are preserved.
+
+The Owned reader now authenticates the original packet, immutable child and
+captures, then re-derives the current directory and roster interpretation.
+All original target, count, capture/row hash and four exact locator checks
+remain. The original child kernel is provenance, alongside the executing kernel;
+it does not authorize the new interpretation. The distinct contract
+`milesplit-owned-retained-current-interpretation/v1` requires the exact compiled
+current kernel document during retained semantic replay. Historical adapters
+cannot authorize this contract, and old Owned/Raw contract substitution refuses.
+Original v1 notes remain unreviewed discovery hints only. No Store wire shape,
+original receipt, capture, attempt ceiling or source freshness is rewritten.
+
+**PASS 963:** canonical scoped crawl suite, 37/37 tests, 2,151 skipped,
+51.798 s test execution / 68,987 ms wall, exit 0/no signal at 08:17:14.500 UTC.
+The controlled prior-kernel fixture registers the original child through the
+ordinary Store API, preserves its packet/receipt and two original source bodies,
+issues a current review, cold reopens, and replays the frozen review after removing
+its scratch Store. The false-ordinal fixture retains a valid authenticated span
+and digest but refuses current locator interpretation without writes. Exact-kernel
+dependency/configuration/source/schema drift, noncanonical bytes, alternate build
+context and exhausted grants refuse and poison their replay grant.
+
+Initial 957 command refusal, 958 compilation errors, 959 old-contract assertion,
+960 malformed negative fixture and 961 ordinal-type compilation failure are not
+passing evidence. The corrected suite above supersedes them. Compiled comparison
+960 separately verifies all 210 ordered current production source entries and
+digest `95eba95c95ddf002cc8aa45132502dc73169e88fe7fb7a0d1f24ee31af934bcd`.
+This comparison concerns the debug artifact; native artifact qualification remains
+separate. GPU 955 supplied the reviewed child-verifier leaf; GPU 956's invented
+test APIs were rejected. Both GPU 962 reviews completed (3090: 22,733 ms;
+5090: 7,571 ms). Main and independent static review rejected their unsupported
+old-contract rewrite, substring, digest and vacuity objections; independent final
+review found no remaining actionable defect in this narrow diff.
+
+**PASS 964 service tests:** 12/12, 261 skipped, 48.089 s execution / 79,592 ms
+wall. The subsequent strict lint found the historical contract getter unused.
+The dispatch now selects Owned's constant after its exact-current check and
+retains the existing checked historical getter after inventory-contract equality;
+neither branch rewrites old inventory authority. **PASS 965 after this repair:**
+37/37 crawl tests (2,151 skipped, 53.718 s execution / 69,387 ms wall),
+12/12 service tests (261 skipped, 50.022 s execution / 61,381 ms wall), and
+workspace fmt/check/lint-src (31,967 ms wall). Existing arity advisories remain.
+Independent static rereview found no actionable blocker in this adjustment.
+The changed dispatch's exact 210-entry source closure is
+`d79fe8a283f1aa4dba9b45587f4a1118c9e1e90db80e90f65ac48081c8ca1834`;
+compiled comparison 966 matches every ordered source entry and digest.
+
+The prior-kernel fixture intentionally uses the existing registered work acquisition API; it does
+not qualify the separate ordinary fetcher's pre-replay registration behavior.
+Actual native retained-packet review, full-corpus publication, eligibility, source
+coverage and the full populated workbook remain unqualified. Downloads still
+contains the preserved partial 62,950-row generation `7e9bfcc3`.

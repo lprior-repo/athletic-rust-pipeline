@@ -1,6 +1,7 @@
 use super::super::historical::CheckedOriginalRosterPacket;
 use super::super::manifest::RetainedRosterParserManifestV1;
 use super::*;
+use crate::participation_evidence::provider_school::OWNED_PROVIDER_SCHOOL_SEMANTIC_CONTRACT;
 use crate::CrawlResult;
 
 pub(in crate::participation_evidence::roster_source_issuance) fn compare(
@@ -21,12 +22,20 @@ pub(in crate::participation_evidence::roster_source_issuance) fn compare(
         if inventory.schema != SCHEMA || inventory.policy != POLICY {
             return Err(invalid("unsupported row-local retained semantics").into());
         }
-        let kernel = kernel::require_historical(inventory.kernel_document.as_bytes(), grant)?;
-        kernel.require_semantic_contract(&inventory.provider_semantic_contract)?;
+        let contract = if inventory.provider_semantic_contract
+            == OWNED_PROVIDER_SCHOOL_SEMANTIC_CONTRACT
+        {
+            kernel::require_current_owned(inventory.kernel_document.as_bytes(), grant)?;
+            OWNED_PROVIDER_SCHOOL_SEMANTIC_CONTRACT
+        } else {
+            let kernel = kernel::require_historical(inventory.kernel_document.as_bytes(), grant)?;
+            kernel.require_semantic_contract(&inventory.provider_semantic_contract)?;
+            kernel.semantic_contract()
+        };
         let packet = original.packet(grant)?;
         budget::charge(&packet.directory(), grant)?;
         budget::charge(&packet.roster(), grant)?;
-        let checked = packet.read_semantic_contract(kernel.semantic_contract())?;
+        let checked = packet.read_semantic_contract(contract)?;
         let recomputed = super::inventory(&checked, parser.canonical_bytes(), metadata, grant)?;
         if encode_inventory(&inventory, grant)?.as_slice() != retained
             || !comparison::same_outcome(&inventory, &recomputed)

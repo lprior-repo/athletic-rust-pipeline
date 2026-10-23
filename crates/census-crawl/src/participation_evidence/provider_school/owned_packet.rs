@@ -1,4 +1,3 @@
-use super::PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2;
 use super::{CheckedProviderSchoolPacketV1, ProviderSchoolPacketRefV1};
 use crate::participation_evidence::invalid;
 use crate::CrawlResult;
@@ -9,7 +8,9 @@ mod child;
 mod projection;
 
 pub const OWNED_PROVIDER_SCHOOL_INTAKE_PHASE: &str = "public_resource_school_intake_v1";
-pub const OWNED_PROVIDER_SCHOOL_INTERPRETATION: &str = "milesplit_owned_directory_roster_school_v1";
+pub const OWNED_PROVIDER_SCHOOL_INTERPRETATION: &str = "milesplit_owned_directory_roster_school_v2";
+pub const OWNED_PROVIDER_SCHOOL_SEMANTIC_CONTRACT: &str =
+    "milesplit-owned-retained-current-interpretation/v1";
 
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(transparent)]
@@ -55,7 +56,7 @@ impl OwnedProviderSchoolPacketV1 {
         &self,
         contract: &str,
     ) -> CrawlResult<CheckedProviderSchoolPacketV1> {
-        if contract != PROVIDER_SCHOOL_SEMANTIC_CONTRACT_V2 {
+        if contract != OWNED_PROVIDER_SCHOOL_SEMANTIC_CONTRACT {
             return Err(invalid("unsupported owned provider school semantic contract").into());
         }
         self.read()

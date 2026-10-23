@@ -31,6 +31,7 @@ const MAX_PROGRAMS: u64 = 131_072;
 const MAX_PACKET_REFS: u64 = 65_536;
 const MAX_NOTE_BYTES: usize = 64 * 1024;
 const MAX_OUTPUT_BYTES: usize = 32 * 1024 * 1024;
+const RETAINED_OWNED_SCHOOL_NOTE_V1: &str = "milesplit_owned_directory_roster_school_v1";
 
 #[derive(Serialize)]
 struct Envelope<'a> {
@@ -230,6 +231,7 @@ fn collect_team(
 fn parse_known_note(note: &str) -> StoreResult<Option<String>> {
     if !note.contains(OWNED_PROVIDER_SCHOOL_INTAKE_PHASE)
         && !note.contains(OWNED_PROVIDER_SCHOOL_INTERPRETATION)
+        && !note.contains(RETAINED_OWNED_SCHOOL_NOTE_V1)
     {
         return Ok(None);
     }
@@ -244,7 +246,10 @@ fn parse_known_note(note: &str) -> StoreResult<Option<String>> {
     let field = |name| value.get(name).and_then(serde_json::Value::as_str);
     if field("role") != Some("provider_roster_owner")
         || field("phase") != Some(OWNED_PROVIDER_SCHOOL_INTAKE_PHASE)
-        || field("interpretation") != Some(OWNED_PROVIDER_SCHOOL_INTERPRETATION)
+        || !matches!(
+            field("interpretation"),
+            Some(OWNED_PROVIDER_SCHOOL_INTERPRETATION | RETAINED_OWNED_SCHOOL_NOTE_V1)
+        )
     {
         return Ok(None);
     }
