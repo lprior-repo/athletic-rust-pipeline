@@ -5523,3 +5523,37 @@ These results do not qualify actual original-job recovery, its resource fit,
 source PR counts, full release gates or the populated workbook. The original
 runtime stopped with a balanced drain before supported cold backup 1158;
 backup completion and original recovery require separate operational evidence.
+
+## 2026-10-23: frozen identity counting and refusal context
+
+Actual original-job recovery 1165, built from `759f889e`, exited 1 after
+41m51s at 19:37:16 UTC with `encoding bounded public identity state: public
+identity byte ceiling`. Its protective guard did not trigger. Subsequent
+read-only reconciliation 1173 found the original pending proof directory empty,
+no promoted input and no publication. Both original failed receipts, the job,
+request, pending directory and backup remain preserved. The exact failing inner
+encoder, its remaining allowance and full required encoding size are unknown.
+
+The narrow candidate counts compact JSON output through a bounded sink instead
+of allocating temporary operation, physical-row and object encodings just to
+measure their lengths. Contextual encoding retains the first attempted crossing
+and its allowance; that attempted size is a lower bound on full required bytes.
+The final bundle remains independently bounded. The generic encoder, configured
+caps, persisted bytes, hashes and replay checks are unchanged; full bundle,
+base64 and replay allocations remain.
+
+Qualification 1177 passed format, check and source lint, 37 Store tests including
+six new serialization boundary tests, and 39 report tests including selected-job
+recovery, source PR publication and Store-absent replay. Independent code/test
+static reviews and bounded RTX 5090/3090 static reviews found no concrete blocker.
+The local receipts bind the formatted source hashes. These are focused results;
+the release gate, actual original-job rerun, production memory fit, measured full
+encoding demand and five-state workbook acceptance are not qualified.
+
+Runner 1165 recorded its terminal result immediately, but Main did not resume the
+session between the prior status reply and the next reconciliation. The executed
+recipe is unchanged. Held derivative 1175 adds explicit terminal status and a
+bounded error tail before the failure throw; controlled probe 1176 passed that
+output ordering through the supported execution-session polling path. It tested
+no automatic callback, Store operation or workbook acceptance. The next actual
+attempt requires a pinned qualified release and an attached terminal watch.

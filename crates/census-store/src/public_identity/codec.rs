@@ -8,6 +8,12 @@ use serde::{de::DeserializeOwned, de::DeserializeSeed, Deserialize, Serialize};
 use super::{PublicIdentityError, MAX_PUBLIC_IDENTITY_HISTORY_BYTES};
 use crate::{StoreError, StoreResult};
 
+mod bounded;
+pub(super) use bounded::{encode_with_context, encoded_len};
+
+#[cfg(test)]
+mod bounded_tests;
+
 pub(super) fn load(
     snapshot: &Snapshot,
     table: &Keyspace,
