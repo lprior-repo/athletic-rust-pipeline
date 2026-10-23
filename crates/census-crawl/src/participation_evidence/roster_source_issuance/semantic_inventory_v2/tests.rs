@@ -3,6 +3,8 @@ use crate::milesplit::SourceRowLocator;
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 #[path = "fixture.rs"]
 mod fixture;
+#[path = "quincy.rs"]
+mod quincy;
 
 #[test]
 fn genuine_partial_preserves_all164_dispositions_and_abbott_admission() -> TestResult {

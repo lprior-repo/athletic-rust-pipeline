@@ -68,7 +68,7 @@ fn production_inventory_bytes_are_inclusive_and_refuse_one_over() -> TestResult 
 
 #[test]
 fn production_physical_rows_remain_inclusive_and_refuse_before_bytes() -> TestResult {
-    check!(eq; BUDGET.rows, 1_048_576);
+    check!(eq; BUDGET.rows, 2_097_152);
     check!(eq; BUDGET.record_bytes, 1_048_576);
     preflight(inventory(BUDGET.rows, 1)?, BUDGET)?;
     let rows = BUDGET.rows.checked_add(1).ok_or("row overflow")?;
@@ -79,4 +79,25 @@ fn production_physical_rows_remain_inclusive_and_refuse_before_bytes() -> TestRe
         rows,
         BUDGET.rows,
     )
+}
+
+#[test]
+fn recorded_physical_counts_refuse_original_row_ceiling_and_fit_current_bound() -> TestResult {
+    for rows in [1_796_172, 1_967_509, 1_220_513] {
+        let counts = inventory(rows, 1)?;
+        exceeded(
+            preflight(
+                counts,
+                ReadBudget {
+                    rows: 1_048_576,
+                    ..BUDGET
+                },
+            ),
+            "capture physical rows",
+            rows,
+            1_048_576,
+        )?;
+        preflight(counts, BUDGET)?;
+    }
+    Ok(())
 }

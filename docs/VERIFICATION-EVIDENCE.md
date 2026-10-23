@@ -4970,3 +4970,76 @@ not qualify the separate ordinary fetcher's pre-replay registration behavior.
 Actual native retained-packet review, full-corpus publication, eligibility, source
 coverage and the full populated workbook remain unqualified. Downloads still
 contains the preserved partial 62,950-row generation `7e9bfcc3`.
+
+### 2026-10-23: measured authority row ceiling and numeric-only roster identity
+
+**PASS 967:** `pipeline:build-portable` on clean main `1ef97649`, exit
+0/no signal at 08:28:49.854 UTC, 258,315 ms. Immutable release 968 contains
+CLI SHA256 `c12ee181e0978873cc64c66c405af3aea8dc155ef02aa59cf363c67f1c6c47a7`,
+serve SHA256 `280de2d581ceaa290d6b2ae62d1661b302f440d31b21c0ebd006f3f862e5f53f`,
+and actual embedded kernel
+`71d29bf9bb935bd83e0c7c9463298430bd85565c6a905b89be2838774715d0a8`.
+This build qualification does not make the subsequent native failures passes.
+
+**FAIL 953:** the original same-key source-cohort process exited 1/no signal
+at 08:38:05.648 UTC after 2,702,555 ms. Its exact failure was
+`capture physical rows would require 1796172 but only 1048576 is available`.
+No accepted outcome or replay result was produced. The 182 monitor samples
+record minimum free space 252,079,534,080 bytes, maximum process write bytes
+14,229,319,680, and no protective stop. Process write bytes include WAL/SST/
+compaction and do not prove logical stage, cursor, seal or accepted progress.
+The earlier planning bottleneck remains unmeasured. Original Store bytes,
+operation `five-state-co2027-source-cohort-20261022`, receipts and backup remain
+preserved; no new operation key or replacement Store was introduced.
+
+The shared authority reader preflights the complete physical table before
+merging and cohort filtering. Retained backup 889 records 1,796,172 athlete,
+1,967,509 source-observation and 1,220,513 performance rows. The repair raises
+only its finite row ceiling to 2,097,152, for physical inventory and emitted
+authority sections. Per-table 4 GiB encoded bytes, per-record 1 MiB, aggregate
+authority 8 GiB including header reserve, and other admission/history limits
+remain unchanged. Count regressions use synthetic byte totals: they prove the
+row boundary, not corpus encoded-byte or RSS fit. Static inspection of six
+named consumer files found no lower hardcoded row ceiling; it does not qualify
+uninspected helpers or native corpus execution.
+
+**FAIL 969:** exact Quincy retained-packet native review preview exited
+1/no signal at 08:31:43.723 UTC after 171,903 ms, with zero stdout bytes:
+`preparing the capture objects` -> `row-local rejected identity unknown`.
+No approval digest was supplied and no source authority was applied.
+Existing packet analysis 972 identifies ordinal 0, byte offset 76,856,
+length 1,910: an empty-name link to
+`https://il.milesplit.com/athletes/14789618`. The parser required a slug and
+lost the published numeric ID. Its leaf now also recognizes the numeric-only
+URL form. The row still rejects as `MissingName`; no identity is invented and
+the rejected-row guards remain. The exact original 1,056,933-byte packet is
+retained as a regression fixture with SHA256/reference
+`e1bef9656d153bf2d66fae2d0595f7e38cf2ff6833ee15bc107287bf6be7cde7`.
+The test authenticates its original bytes/root, all 201 dispositions, original
+locator and rejected ID, then derives the current compact inventory using
+explicitly controlled metadata. This is not source approval or Store issuance.
+
+GPU 973 requests completed HTTP 200 (5090: 6,112 ms; 3090: 12,130 ms).
+Main applied the 5090 regex leaf, rejected its invented test APIs and wrote
+the genuine-packet regression. The 3090 claim of corpus byte-budget fit was
+rejected because no logical-byte measurement supported it. Independent static
+review found no actionable defect, with native byte/RSS, Store issuance and
+publication qualification explicitly outstanding.
+
+**PASS 975:** canonical default-feature scoped tests, two test threads:
+38/38 crawl (2,151 skipped, 72,011 ms wall), 12/12 service (261 skipped,
+62,117 ms wall), and 80/80 Store (1,643 skipped, 43,799 ms wall).
+Store scope covers authority graph, physical graph readers, source-cohort
+commit/replay and local admission. Workspace fmt/check/lint-src exited
+0/no signal, 36,085 ms wall; configured arity advisories remain visible.
+**PASS 976:** every ordered entry in the 210-source compiled debug closure
+matches source digest
+`977450a2e404fed574aa935d946d5bb3c8addd760a17f4e014e0fd4c0949c1b1`.
+Receipts and logs are under `/tmp/athletic-work-20261021/` with the numbered
+`worksheet-current-revalidation-975` and `worksheet-current-source-compiled-976`
+prefixes. No further native Store run or query was used to derive these fixes.
+
+These focused checks do not qualify the repaired native full-corpus apply,
+ordinary acquisition continuation, eligibility, frozen publication, normal
+five-state coverage, UP completeness or a fully populated workbook. The
+preserved Downloads generation `7e9bfcc3` is still partial.
