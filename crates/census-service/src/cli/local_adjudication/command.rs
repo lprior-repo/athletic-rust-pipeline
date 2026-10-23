@@ -8,6 +8,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use super::{approve_prepared, input};
+mod demand;
 mod source;
 
 #[derive(Debug, Args)]
@@ -18,6 +19,10 @@ pub(in crate::cli) struct LocalAdjudicationArgs {
 
 #[derive(Debug, Subcommand)]
 enum LocalCommand {
+    #[command(
+        about = "Measure complete frozen identity JSON demand without creating a frozen bundle or publication"
+    )]
+    MeasureFrozenPublicIdentity,
     #[command(
         about = "Explicitly enroll bounded graph admission and all six input revisions for a fresh V3 qualification store"
     )]
@@ -114,6 +119,7 @@ enum LocalCommand {
 pub(in crate::cli) fn run(cli: &crate::cli::Cli, args: &LocalAdjudicationArgs) -> Result<()> {
     let root = require_root(cli.store.as_deref())?;
     match &args.command {
+        LocalCommand::MeasureFrozenPublicIdentity => demand::run(root),
         LocalCommand::EnrollGraphAdmission => {
             let (store, writer) = open(root)?;
             enroll_graph_admission(&store, &writer)?;

@@ -51,14 +51,14 @@ mod public_identity;
 pub use public_identity::paged_generation;
 pub use public_identity::{
     replay_frozen_public_identity_v1, replay_frozen_public_identity_v2,
-    FrozenPublicIdentityBundleV2, GraphAuthorityReferenceV1, IdentityCommitOutcomeV1,
-    LocalAdjudicationCommitOutcomeV1, LocalAdjudicationInventoryV1,
+    FrozenPublicIdentityBundleV2, FrozenPublicIdentityDemandV2, GraphAuthorityReferenceV1,
+    IdentityCommitOutcomeV1, LocalAdjudicationCommitOutcomeV1, LocalAdjudicationInventoryV1,
     MembershipWithholdingInventoryV1, MembershipWithholdingOutcomeV1, PreparedLocalAdjudicationV1,
     PreparedMembershipWithholdingV1, PublicIdentityAdmissionResource, PublicIdentityError,
     PublicIdentityQualificationStore, PublicIdentityWriterV1, ReviewedIdentityCommitOutcomeV1,
     ReviewedIdentityRequestV1, SourceCandidateMembershipOutcomeV1,
     SourceCandidateMembershipRequestV1, SourceCohortDemandV1, MAX_FROZEN_PUBLIC_IDENTITY_BYTES,
-    MAX_PUBLIC_IDENTITY_HISTORY_BYTES,
+    MAX_FROZEN_PUBLIC_IDENTITY_DEMAND_JSON_BYTES, MAX_PUBLIC_IDENTITY_HISTORY_BYTES,
 };
 mod inspect;
 mod installation;

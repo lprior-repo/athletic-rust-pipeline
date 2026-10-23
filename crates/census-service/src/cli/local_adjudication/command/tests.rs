@@ -6,6 +6,44 @@ use clap::{error::ErrorKind, Parser};
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 #[test]
+fn frozen_identity_demand_cli_is_explicitly_offline_and_has_no_cap_override() -> TestResult {
+    let cli = Cli::try_parse_from([
+        "census-service",
+        "local-identity-adjudication",
+        "measure-frozen-public-identity",
+    ])?;
+    let Command::LocalIdentityAdjudication(ref args) = cli.command else {
+        return Err("wrong diagnostic command".into());
+    };
+    check!(matches!(
+        args.command,
+        LocalCommand::MeasureFrozenPublicIdentity
+    ));
+    let error = run(&cli, args)
+        .err()
+        .ok_or("missing explicit store was accepted")?;
+    check!(error.to_string().contains("requires explicit --store"));
+    for extra in [
+        "--yes",
+        "--publish",
+        "--max-bytes",
+        "--operation",
+        "--ingress",
+    ] {
+        check!(Cli::try_parse_from([
+            "census-service",
+            "--store",
+            "synthetic-stopped-store",
+            "local-identity-adjudication",
+            "measure-frozen-public-identity",
+            extra,
+        ])
+        .is_err());
+    }
+    Ok(())
+}
+
+#[test]
 fn retained_demand_cli_requires_original_operation_and_explicit_year() -> TestResult {
     let cli = Cli::try_parse_from([
         "census-service",

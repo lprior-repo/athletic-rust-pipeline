@@ -4,6 +4,7 @@ use crate::{Store, Table};
 use census_domain::public_identity_history::PublicResolution;
 use census_domain::public_identity_qualification::PublicIdentityQualificationVersion;
 
+mod demand;
 mod tamper;
 
 fn two_births() -> TestResult<(

@@ -5557,3 +5557,52 @@ bounded error tail before the failure throw; controlled probe 1176 passed that
 output ordering through the supported execution-session polling path. It tested
 no automatic callback, Store operation or workbook acceptance. The next actual
 attempt requires a pinned qualified release and an attached terminal watch.
+
+## 2026-10-23: complete frozen identity JSON demand diagnostic
+
+Original-job attempt 1184 from main `9e4850ae` exited 1 at 21:33:24 UTC
+after 43m44s. Its protective guard did not trigger. The failure was `frozen
+public identity physical row JSON bytes would require 932505 but only 297982
+is available`. The attempted prefix is a lower bound, not a complete row or
+bundle size. Reconciliation 1194 found no promoted input, publication or proof
+object. The original Store, job, failed receipts and supported backup 1186
+remain preserved. Sampled RSS peaked at 25.960 GiB; the final peak is unknown.
+
+The read-only `local-identity-adjudication measure-frozen-public-identity`
+command uses the current qualified V3 snapshot and the same operation and
+authenticated graph traversal as normal V2 capture. It counts canonical bundle,
+operation, object and physical-row JSON, including actual escaping, framing and
+commas, with checked arithmetic and a separate finite 16-GiB diagnostic limit.
+It retains bounded references and per-object duplicate keys while discarding
+counted operation and row bodies. Normal capture's 4-GiB limit, component
+charging, wire bytes, hashes, refusal order and replay/projection checks remain.
+Normal component exhaustion is recorded separately and does not stop the
+diagnostic. No CLI budget override, publication or frozen-bundle constructor
+is exposed by the measurement result.
+
+The 16-GiB metric is canonical JSON demand only. It excludes qualification and
+graph-verification I/O, raw physical bytes and RSS; upstream repeated validation
+remains. A complete result means an authenticated byte walk, not final encoding,
+frozen replay, equal accepted projection, eligibility or workbook acceptance.
+
+Final focused qualification passed 48 Store tests in 1212, 12 CLI and 39 report
+tests in 1203, plus format/check/source lint. Tests compare real empty/one/two
+frozen bundles and independent literal JSON/base64 lengths, force all four normal
+component failures while completing the same scanner, check exact accounting and
+diagnostic refusal, and retain held-snapshot and corrupt-manifest controls.
+Initial 1199 compile errors were repaired. Test 1207 exposed an incorrect sorted
+row oracle; 1212 uses actual physical callback order without changing capture.
+
+Release check 1216 correctly refused the stale production kernel source digest
+in two of five tests. Recomputed 1215 binds all 210 ordered compiled inputs;
+only the existing Store lib.rs export entry changed. The current expected digest
+is `a31f32fb803fe190941f00a8007ba2e16b59772c169bc22ab889d04c71fa2fce`.
+After that single expected-digest refresh, 1218 passed all five kernel and 21
+roster tests plus format/check/source lint. Configured argument-count advisories
+remain. Independent CODE 1204 and TEST 1213 approved the exact demand slice;
+CODE and TEST 1217 approved the final pin with the kernel refresh. RTX 5090/3090 supplied bounded
+drafts; Main rejected unsafe or incorrect draft portions before integration.
+
+These results are focused qualification. The full release gate, actual original
+Store demand measurement, resource fit, final export, source PR totals, replay,
+cold verification and the fully populated five-state workbook remain unproved.

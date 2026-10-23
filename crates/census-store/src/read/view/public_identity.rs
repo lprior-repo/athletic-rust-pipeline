@@ -126,4 +126,19 @@ impl StoreSnapshot<'_> {
             &format,
         )
     }
+    pub fn measure_frozen_public_identity_v2(
+        &self,
+    ) -> StoreResult<crate::FrozenPublicIdentityDemandV2> {
+        let accepted = self
+            .accepted_public_identity_snapshot()?
+            .ok_or(PublicIdentityError::OptInRequired)?;
+        crate::public_identity::frozen::v2::measure(
+            &self.snapshot,
+            self.entities,
+            self.meta,
+            self.journal,
+            self.receipts,
+            &accepted,
+        )
+    }
 }
