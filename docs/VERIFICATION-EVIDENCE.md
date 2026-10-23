@@ -5155,3 +5155,59 @@ reported no concrete defect in its narrow quarantine scope.
 Combined-source qualification does not establish native demand/apply/replay,
 physical memory fit, source acquisition, eligibility or populated workbook
 acceptance. Those original-operation runs remain the next execution step.
+
+### 2026-10-23: complete retained demand and requested finite 16/64 GiB headroom
+
+**PASS 1015/1016:** clean main `03a249c2` portable build completed in
+282,550 ms. Immutable release `a52847ff7d0326ef8a603cac089b2bcda27cdfed48e7b2cd7d8d4632e4cf013b`
+contains CLI SHA256 `8fdf47a0bf30cfd0fb213829e444745219599d5683bd893e19524337cde8c3a1`.
+The actual embedded native kernel matched all 210 ordered combined source entries.
+
+**PASS 1017:** original-operation retained-only diagnostic completed at
+11:58:13.214 UTC, exit zero without a signal or protective stop, after
+1,007,572 ms. Six inventories were body-verified and all four authority sections
+reported `complete`. Raw athlete demand was 7,440,378,517 bytes for 1,796,172
+physical rows; performance demand was 6,026,622,424 bytes for 1,220,513 rows.
+Athlete authority entries measured 5,721,726,054 bytes across 372,608 merged rows,
+maximum entry 443,153 bytes; source observations measured 969,945,060 bytes across
+1,967,509 rows, maximum entry 681 bytes. Cases and verdicts were empty. Total
+authority entries were 6,691,671,114 bytes, with a separate 1,048,576-byte header
+reserve. Inspected and finished logical sequences were both 3,771,034; the three
+original paused invocation IDs and deployment pins were unchanged after exit.
+
+All measured tables and sections fit that exact build's existing 8/32 GiB limits.
+The later requested change to normal raw/section 16 GiB and aggregate 64 GiB
+supplies finite headroom; it is not justified by claiming 6.69 GB exceeds 8 GiB.
+The header remains inside the total, and four full 16 GiB sections therefore
+refuse when their header is added. Row, record, diagnostic, ledger, history and
+witness limits remain unchanged. The diagnostic remains a 32 GiB scan and does
+not certify the full new normal range. Source pin 1039 rechecked all 210 unchanged
+semantic source entries against 1023/1025; the two production edits are Store
+capacity constants outside that closure.
+
+**FAIL 1033/1034; PASS 1035:** the first format check required formatting the new
+tests; the next Store run passed 108/109 and exposed a stale report expectation
+for the old ordinary limit. The corrected candidate passed all 109 focused Store
+tests in 40,986 ms, format in 5,171 ms, workspace fmt/check/lint-src in 33,281 ms,
+and canonical production scan in 282,527 ms. All terminal codes were zero without
+signals. Tests cover exact and one-byte-over 16 GiB raw/section limits, 64 GiB
+aggregate including its header, preserved 32 GiB diagnostic reporting, cumulative
+accounting and existing refusal/replay fences. They allocate small fixtures and
+seed test counters rather than allocating 16 or 64 GiB.
+
+PR 124's code head `5fe9d47a` matched the independently reviewed seven-file diff;
+the reviewer found no additional concrete defect. The subsequent change to this
+ledger records execution evidence only. Both local GPU 1031/1032 review jobs
+completed HTTP 200/stop. The 5090 draft failed to implement the requested test
+changes and was rejected. Its later proposal to replace explicit boundary
+oracles with implementation-derived values was also rejected. The 3090 test
+review found no concrete defect; its earlier claim that the measured entries
+exceeded 8 GiB was rejected. No GPU advice establishes runtime acceptance.
+
+Fifteen-second diagnostic samples peaked at 2,428,649,472 RSS bytes; this is not
+peak-memory proof. OS process writes are not logical appends. Enrichment, accepted
+cohort, history, decision/witness bytes and atomic batch demand remain unmeasured.
+Original-key normal apply/replay, acquisition continuation, eligibility, frozen
+publication and normalized outputs remain outstanding. The preserved Downloads
+workbook SHA256 `48f08b76c393d8303705fdeb75a8b4bb51220a93e0fde52bb57ece2b82bdcbb6`
+was rechecked unchanged. The fully populated workbook is not complete.
