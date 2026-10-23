@@ -55,13 +55,70 @@ fn retained_section_boundary_does_not_reset_per_row() -> TestResult {
 
 #[test]
 fn aggregate_keeps_one_record_reserved_for_header() -> TestResult {
-    check!(eq; CONTEXT_TOTAL_BYTES, 34_359_738_368);
+    check!(eq; CONTEXT_TOTAL_BYTES, 68_719_476_736);
     let exact = CONTEXT_TOTAL_BYTES
         .checked_sub(CONTEXT_RECORD_BYTES)
         .ok_or("reserve")?;
     aggregate(exact)?;
     check!(aggregate(exact.checked_add(1).ok_or("overflow")?).is_err());
     check!(aggregate(usize::MAX).is_err());
+    Ok(())
+}
+
+#[test]
+fn section_bytes_accept_exact_16_gib_and_refuse_one_more_byte() -> TestResult {
+    let encoded = u64::try_from(entry_bytes("athlete", 0, &"")?)?;
+    let initial = 17_179_869_184_u64
+        .checked_sub(encoded)
+        .ok_or("section entry")?;
+    let mut sink = AuthorityBytes::default();
+    let mut section = Section::new("athlete");
+    section.bytes = initial;
+    section.record(&mut sink, &"")?;
+    check!(eq; section.bytes, 17_179_869_184);
+    let mut excess = Section::new("athlete");
+    excess.bytes = initial.checked_add(1).ok_or("section bytes")?;
+    match excess.record(&mut AuthorityBytes::default(), &"") {
+        Err(StoreError::BudgetExceeded {
+            what,
+            needed,
+            available,
+        }) => {
+            check!(eq; what, "graph authority section bytes");
+            check!(eq; needed, 17_179_869_185);
+            check!(eq; available, 17_179_869_184);
+        }
+        _ => return Err("one-byte section excess was not refused".into()),
+    }
+    Ok(())
+}
+
+#[test]
+fn four_full_sections_still_reserve_header_inside_64_gib_total() -> TestResult {
+    let sections = usize::try_from(BUDGET.bytes)?
+        .checked_mul(4)
+        .ok_or("four sections")?;
+    check!(eq; sections, 68_719_476_736);
+    let needed = sections
+        .checked_add(CONTEXT_RECORD_BYTES)
+        .ok_or("header bytes")?;
+    match aggregate(sections) {
+        Err(StoreError::BudgetExceeded {
+            what,
+            needed: actual,
+            available,
+        }) => {
+            check!(eq; what, "graph authority sections with header reserve");
+            check!(eq; actual, u64::try_from(needed)?);
+            check!(eq; available, 68_719_476_736);
+        }
+        _ => return Err("four full sections omitted the header reserve".into()),
+    }
+    aggregate(
+        sections
+            .checked_sub(CONTEXT_RECORD_BYTES)
+            .ok_or("reserve")?,
+    )?;
     Ok(())
 }
 
