@@ -8,6 +8,9 @@ use census_store::Store;
 use clap::Args;
 use std::path::PathBuf;
 
+#[cfg(test)]
+mod tests;
+
 #[derive(Debug, Args)]
 pub(super) struct NcesAddressAcceptArgs {
     #[arg(
@@ -51,7 +54,9 @@ pub(super) fn run(cli: &Cli, args: &NcesAddressAcceptArgs) -> Result<()> {
         .store
         .as_deref()
         .context("nces-address-accept requires an explicit --store and a stopped store owner")?;
-    let store = Store::open(root).context("opening the selected offline census Store")?;
+    let (store, _writer) = Store::open_public_identity_qualification_v3(root)
+        .context("opening the existing current qualification Store; stop its owner first")?
+        .into_parts();
     let run = store
         .run_manifest()
         .context("reading the selected Store run")?
