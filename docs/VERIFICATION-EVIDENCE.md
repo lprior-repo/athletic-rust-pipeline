@@ -4807,3 +4807,45 @@ failure is retained and is not a compatibility result. Native/browser cold
 backup, restored populated-journal continuation and actual resume remain
 unqualified. Source-cohort 917 still owns the original Fjall Store; no second
 owner, live-directory copy, replacement invocation or retry reset was used.
+
+### Roster review refusal and protective cohort stop (2026-10-23 UTC)
+
+**LIMITED preview 931:** retained-copy roster capability preview exited 0 in
+163,865 ms. Applying that reviewed request in 932 exited 1 / no signal in
+174,564 ms at 06:38:33.845 UTC: `roster source authority operation conflicts
+with retained approval`. The copy already has retained roster capability;
+this refusal is not a successful new enrollment or accepted membership.
+
+**FAIL genuine preview 933:** normal roster review for Quincy, Illinois,
+girls cross-country, school year 2026, exited 1 / no signal in 176,875 ms at
+06:42:30.056 UTC. Original packet
+`e1bef9656d153bf2d66fae2d0595f7e38cf2ff6833ee15bc107287bf6be7cde7`
+refused while preparing its capture objects:
+`owned provider school directory child projection differs`.
+No proposal digest was approved. The combined guard checks directory-child
+identity, URLs, parsed count, row digest, kernel digest and capture digest;
+the terminal error does not identify which predicate differed. It does not
+compare the canonical school postal address. Local GPU advice 934 completed
+on both cards, but no diagnostic patch was applied: editing the guarded
+production source also changes the compiled semantic-kernel digest and could
+change the failure being investigated.
+
+**STOPPED cohort 917, not accepted:** at 06:48:05.602 UTC Main sent SIGTERM
+only to owned CLI PID 3341694 after available filesystem capacity crossed the
+64-GiB protective floor, reaching 60,085,559,296 bytes. Receipt 935 binds the
+PID, argv and CLI SHA256
+`ec05c19f4168e1bb8721ce80c40b8a81d4ec2458d7415d78731340ddc3e0fb7c`.
+The native process terminated at 06:48:06.954 UTC after 2,883,997 ms with
+`code: null, signal: SIGTERM`. The previous running checkpoints are superseded
+by this terminal receipt. Fresh-process replay did not begin. The original
+operation key, staged graph, Store bytes, backup and invocation identities
+remain preserved; no replacement key or reset was used.
+
+The original Fjall directory reached about 269 GiB apparent size and roughly
+260 GiB physical allocation. At 06:54:55 UTC the filesystem had 56 GiB free
+and PID 3341694 was absent. Logical graph admission at 32 GiB does not bound
+physical storage growth; its cause and a safe continuation remain unqualified.
+No full workbook or release acceptance follows from these attempts. The
+Downloads generation `7e9bfcc3` remains the partial 62,950-row publication:
+32,436 addresses, 899 reported-best rows, no observed grade, declared PR,
+eligible observed best or recruiting coach cells, and all rows UNVERIFIED.
