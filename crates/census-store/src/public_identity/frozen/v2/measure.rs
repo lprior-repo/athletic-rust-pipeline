@@ -13,7 +13,7 @@ mod normal;
 use accounting::{checked_sum, ByteBudget, JsonArrayBytes};
 use normal::ComponentBudget;
 
-pub const MAX_FROZEN_PUBLIC_IDENTITY_DEMAND_JSON_BYTES: usize = 16 * 1024 * 1024 * 1024;
+pub const MAX_FROZEN_PUBLIC_IDENTITY_DEMAND_JSON_BYTES: usize = 128 * 1024 * 1024 * 1024;
 pub(super) struct JsonByteLimits {
     pub(super) diagnostic: usize,
     pub(super) normal: usize,
