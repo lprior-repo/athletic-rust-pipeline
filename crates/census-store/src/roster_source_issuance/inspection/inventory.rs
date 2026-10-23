@@ -132,9 +132,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn physical_inventory_budget_accepts_exact_32_mib_and_refuses_one_more(
+    fn physical_inventory_bills_cumulative_keys_and_values_at_exact_limit(
     ) -> Result<(), Box<dyn std::error::Error>> {
         let limit = usize::try_from(MAX_PHYSICAL_INVENTORY_BYTES)?;
+        let first = limit / 2;
         let mut inventory = Inventory {
             rows: Vec::new(),
             bytes: 0,
@@ -144,29 +145,33 @@ mod tests {
             &mut inventory,
             &mut grant,
             PhysicalReadAdmissionV1::Value {
-                key_bytes: 0,
-                value_bytes: limit - 1,
+                key_bytes: 13,
+                value_bytes: first - 13,
             },
         )?;
+        check!(eq; inventory.bytes, u64::try_from(first)?);
+        check!(eq; grant.usage().encoded_bytes(), first);
         admit(
             &mut inventory,
             &mut grant,
             PhysicalReadAdmissionV1::Value {
-                key_bytes: 0,
-                value_bytes: 1,
+                key_bytes: 29,
+                value_bytes: limit - first - 29,
             },
         )?;
         check!(eq; inventory.bytes, MAX_PHYSICAL_INVENTORY_BYTES);
+        check!(eq; grant.usage().encoded_bytes(), limit);
         check!(admit(
             &mut inventory,
             &mut grant,
             PhysicalReadAdmissionV1::Value {
-                key_bytes: 0,
-                value_bytes: 1,
+                key_bytes: 1,
+                value_bytes: 0,
             },
         )
         .is_err());
         check!(eq; inventory.bytes, MAX_PHYSICAL_INVENTORY_BYTES);
+        check!(eq; grant.usage().encoded_bytes(), limit);
         Ok(())
     }
 }
