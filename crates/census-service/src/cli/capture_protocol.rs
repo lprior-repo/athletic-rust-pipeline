@@ -6,6 +6,7 @@ use std::path::Path;
 
 use super::Cli;
 
+mod participation_intake;
 mod result_intake;
 mod roster_enrollment;
 mod roster_intake;
@@ -50,6 +51,10 @@ enum CaptureProtocolCommand {
     )]
     ResultIntake(result_intake::ResultIntakeArgs),
     #[command(
+        about = "Retain an independently checked participation packet without accepting identity or eligibility"
+    )]
+    ParticipationIntake(participation_intake::ParticipationIntakeArgs),
+    #[command(
         about = "Read the original reviewed roster receipt without re-inspection or new acceptance"
     )]
     RosterReplay(roster_replay::RosterReplayArgs),
@@ -90,6 +95,9 @@ fn run_to<W: Write>(root: Option<&Path>, args: &CaptureProtocolArgs, output: &mu
         }
         CaptureProtocolCommand::ResultIntake(args) => {
             return result_intake::run_to(root, args, output);
+        }
+        CaptureProtocolCommand::ParticipationIntake(args) => {
+            return participation_intake::run_to(root, args, output);
         }
         CaptureProtocolCommand::RosterReplay(args) => {
             return roster_replay::run_to(root, args, output);

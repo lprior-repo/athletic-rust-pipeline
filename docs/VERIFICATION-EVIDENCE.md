@@ -1,3 +1,35 @@
+### Ordinary independent participation intake (2026-10-24 00:46 UTC)
+
+The released CLI rejected `capture-protocol participation-intake --help` with
+exit 2 before any Store open. The new command accepts a bounded original
+`IndependentParticipationPacketV1` and stable operation, then uses the existing
+checked reader, Recording preparation and durable apply. It reports
+`intaken_unreviewed`, original capture references and the actual receipt. It
+does not accept identity, affiliation, calendar correspondence or eligibility.
+
+With `CI` unset, `MOON_RUST_BUILD_JOBS=4` and the owned qualification scratch,
+`tools/moon-local run pipeline:fmt pipeline:check pipeline:lint-src` exited 0.
+`MOON_RUST_TEST_THREADS=4 tools/moon-local run pipeline:tests-scoped --
+-p census-service --bins -E 'test(cli::capture_protocol)' --no-tests fail`
+exited 0: 32 passed, 250 outside-filter tests skipped. Existing forced argument
+count advisories remain. The first check failed on a private test-parser import;
+the repair uses the existing public checked reader without widening an API.
+
+The four new tests execute the ordinary CLI dispatcher over retained May 15
+Owen Courser result and school-schedule bytes, verify literal grade 11 and
+derived Class of 2027, reopen the original payload, replay the exact receipt,
+and check malformed, oversized and unsupported-version refusals without
+accepted-table or identity-head changes. This fixture is 51.27a on May 15;
+it does not establish the separate May 9 51.12a case or an eligible athlete.
+
+Logs `worksheet-participation-gates-1293.log` and
+`worksheet-participation-tests-1293.log` are retained under
+`/tmp/athletic-work-20261021/`, SHA256 respectively
+`eab29f235f23f6cacfc0c7e10d39c58a6db3c7de7fdd4986f90a7cc31f7b9608` and
+`e9841daa801cc07f597d1f29c2d74a401965a51b0c9b2a18ed481446fffa78a9`.
+Full release/native/workbook acceptance remains outstanding; this command has
+not been run against the original five-state Store.
+
 ### Selected physical capture capacity (2026-10-23 18:26 UTC)
 
 Original native Workbook `co2027-pr-1141`, invocation
