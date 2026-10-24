@@ -1,6 +1,8 @@
-use super::{charge, invalid, MAX_ARCHIVE_BYTES};
+use super::{charge, invalid};
 use census_store::StoreResult;
 use std::collections::BTreeSet;
+
+const MAX_CAPTURE_BYTES: u64 = 2 * 1024 * 1024 * 1024;
 
 #[derive(Default)]
 pub(super) struct Captures {
@@ -22,7 +24,7 @@ impl Captures {
         charge(
             &mut self.bytes,
             bytes,
-            MAX_ARCHIVE_BYTES,
+            MAX_CAPTURE_BYTES,
             "participation distinct source capture bytes",
         )?;
         self.seen.insert(key);
@@ -43,8 +45,50 @@ mod tests {
         budget.charge("second-owned-fixture", 1024 * 1024)?;
         check!(eq; budget.bytes, 2 * 1024 * 1024);
         check!(budget
-            .charge("oversized-fixture", MAX_ARCHIVE_BYTES as usize)
+            .charge("oversized-fixture", usize::try_from(MAX_CAPTURE_BYTES)?)
             .is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn capture_byte_boundary_is_inclusive_and_refusal_preserves_keys_and_bytes(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let mut budget = Captures::default();
+        budget.charge("first", 1024 * 1024 * 1024)?;
+        budget.charge("second", 1024 * 1024 * 1024)?;
+        check!(eq; budget.bytes, 2_147_483_648);
+        let before = budget.seen.clone();
+        budget.charge("first", 1)?;
+        check!(matches!(
+            budget.charge("over", 1),
+            Err(census_store::StoreError::BudgetExceeded {
+                what: "participation distinct source capture bytes",
+                needed: 2_147_483_649,
+                available: 2_147_483_648,
+            })
+        ));
+        check!(eq; budget.bytes, 2_147_483_648);
+        check!(budget.seen == before);
+        Ok(())
+    }
+
+    #[test]
+    fn capture_inventory_boundary_preserves_count_bytes_and_duplicate_identity(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let mut budget = Captures::default();
+        for ordinal in 0..40_000 {
+            budget.charge(&format!("capture-{ordinal}"), 1)?;
+        }
+        budget.charge("capture-0", 1)?;
+        check!(eq; (budget.bytes, budget.seen.len()), (40_000, 40_000));
+        let before = budget.seen.clone();
+        check!(matches!(
+            budget.charge("one-more", 1),
+            Err(census_store::StoreError::Refused { detail })
+                if detail == "participation distinct capture inventory exceeds 40000"
+        ));
+        check!(budget.seen == before);
+        check!(eq; (budget.bytes, budget.seen.len()), (40_000, 40_000));
         Ok(())
     }
 }
