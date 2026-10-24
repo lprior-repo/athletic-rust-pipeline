@@ -1,3 +1,56 @@
+### Ordinary reviewed attachment commands (2026-10-24 02:58 UTC)
+
+The normal CLI now exposes the existing retained evidence attachment review,
+apply and ReplayOnly APIs. `capture-protocol attachment-review --command PATH`
+with optional repeated `--inline PATH` and `--retained-leaf PATH` emits the exact
+approval bytes. Supplying `--approve-sha256 SHA` approves their plain SHA256;
+the separate domain approval digest remains unchanged. The original command
+and explicit approval SHA go to `capture-protocol attachment-replay` without
+suppliers or re-inspection. Both commands require an explicit stopped Store.
+
+Commands are capped at 4 MiB, inline suppliers at 4 MiB each, retained leaf JSON
+at 64 KiB each, and all suppliers together at 64 files and 16 MiB. The existing
+Store bounds also apply. Local malformed inputs, undeclared or duplicate
+suppliers, invalid root keys and wrong approval SHA refuse before Store open.
+Existing Store preparation authenticates roots, accepted targets and fences.
+The adapter does not construct accepted targets or establish eligibility,
+calendar correspondence, current school or Michigan UP membership.
+
+With CI unset and build jobs 1, canonical Moon fmt/check/lint-src exited 0.
+Scoped census-service binary tests for `test(cli::capture_protocol)` exited 0:
+51 passed, 250 outside-filter tests skipped, test threads 1. Nineteen new tests
+cover exact preview, explicit approval, retained nonempty HTML, Attach/Revoke,
+original receipt replay after in-process close/reopen, unchanged-state refusals
+and material bounds. Their target and review facts are controlled synthetic
+fixtures; they are not genuine-person or fresh-process acceptance. Initial
+checks failed on the fixture writer type and an ambiguous name conversion;
+the two test-only repairs and failed logs remain preserved.
+
+Logs under `/tmp/athletic-work-20261021/`:
+`worksheet-attachment-gates-1305.log`, SHA256
+`60ff925f844774348c3f32c7a2a3d8eecc5321c8d226e62876c60d9c8c5b26ca`;
+`worksheet-attachment-tests-1305.log`, SHA256
+`0b6e1092640d44edd67bd59d89dd8effaaeda4ec6c73a10a1b45d8aa9be4e352`.
+Independent CODE and TEST review bind the exact source. Actual normal CLI
+attachment-review help also exited 0 through Moon run-scoped. Full release,
+original-Store attachment execution and workbook acceptance remain outstanding.
+
+### Original workbook recovery proof-count refusal (2026-10-24 02:54 UTC)
+
+Recovery 1261 of the unchanged `workbook:co2027-pr-1141` job exited 1 with no
+signal after 7,844,822 ms. It refused the 1,000,001st verified result context
+proof against the 1,000,000 limit. The stop was not protective; no workbook or
+publication was produced. Actual owner PID 2751389 was absent at 02:54:41 UTC;
+the recovery and host observer sessions were reaped. Source remains immutable
+`7d6e1f6097c945e60c8c76dde59f2a316c5def24`. Store, original keys, failed receipts
+and staged proofs remain preserved, with no automatic retry or reset.
+
+The terminal receipt SHA256 is
+`5b5069f59e4e726ce4e29a124176f1bc1f71cb92f0de007ee8f87e9ab28fee01`.
+Maximum sampled RSS was 65,074,772 KiB and sampled HWM 65,162,320 KiB;
+the actual final peak is unknown. This refusal does not measure the complete
+proof demand or qualify the final workbook, replay or cold-read paths.
+
 ### Ordinary independent participation intake (2026-10-24 00:46 UTC)
 
 The released CLI rejected `capture-protocol participation-intake --help` with
