@@ -8,8 +8,8 @@ fn aggregate_boundary_accepts_duplicate_but_refusal_preserves_result_state() -> 
     let athlete = AthleteId::mint("ath_subject", &["context"]);
     let added = u64::try_from(athlete.as_str().len() + 33)?;
     let mut context = ResultContexts {
-        proofs: MAX_PROOFS - 1,
-        bytes: MAX_BYTES - added,
+        proofs: 15_999_999,
+        bytes: 1_073_741_824 - added,
         ..Default::default()
     };
     context.retain(Entity::Athlete(&athlete), [0; 32])?;
@@ -20,12 +20,12 @@ fn aggregate_boundary_accepts_duplicate_but_refusal_preserves_result_state() -> 
         context.retain(Entity::Athlete(&other), [0; 32]),
         Err(StoreError::BudgetExceeded {
             what: "verified result context proof count",
-            needed: 1_000_001,
-            available: 1_000_000
+            needed: 16_000_001,
+            available: 16_000_000
         })
     ));
     check!(context.entities == before);
-    check!(eq; (context.proofs, context.bytes), (1_000_000, 134_217_728));
+    check!(eq; (context.proofs, context.bytes), (16_000_000, 1_073_741_824));
     Ok(())
 }
 
@@ -35,15 +35,80 @@ fn byte_refusal_does_not_insert_result_entity_or_charge_count() -> TestResult {
     let added = u64::try_from(athlete.as_str().len() + 33)?;
     let mut context = ResultContexts {
         proofs: 7,
-        bytes: MAX_BYTES,
+        bytes: 1_073_741_825 - added,
         ..Default::default()
     };
-    check!(matches!(context.retain(Entity::Athlete(&athlete), [0; 32]),
+    check!(matches!(
+        context.retain(Entity::Athlete(&athlete), [0; 32]),
         Err(StoreError::BudgetExceeded {
-            what: "verified result context encoded bytes", needed, available: 134_217_728
-        }) if needed == 134_217_728 + added));
+            what: "verified result context encoded bytes",
+            needed: 1_073_741_825,
+            available: 1_073_741_824
+        })
+    ));
     check!(context.entities.is_empty());
-    check!(eq; (context.proofs, context.bytes), (7, 134_217_728));
+    check!(eq; (context.proofs, context.bytes), (7, 1_073_741_825 - added));
+    Ok(())
+}
+
+#[test]
+fn distinct_memberships_cross_one_million_without_charging_duplicates() -> TestResult {
+    let mut context = ResultContexts::default();
+    for entity_ordinal in 0..128_u64 {
+        let athlete = AthleteId::mint("ath_subject", &[&entity_ordinal.to_string()]);
+        check!(eq; athlete.as_str().len(), 28);
+        for ordinal in 0..8_192_u64 {
+            context.retain(Entity::Athlete(&athlete), ordinal_digest(ordinal)?)?;
+        }
+        let proofs = context
+            .entities
+            .get(&Kind::Athlete)
+            .and_then(|rows| rows.get(athlete.as_str()))
+            .ok_or("missing populated athlete context")?;
+        check!(eq; proofs.len(), 8_192);
+        check!(proofs.contains(&ordinal_digest(0)?));
+        check!(proofs.contains(&ordinal_digest(8_191)?));
+        check!(!proofs.contains(&ordinal_digest(8_192)?));
+        let counts = (context.proofs, context.bytes);
+        context.retain(Entity::Athlete(&athlete), ordinal_digest(0)?)?;
+        context.retain(Entity::Athlete(&athlete), ordinal_digest(8_191)?)?;
+        check!(eq; (context.proofs, context.bytes), counts);
+    }
+    let rows = context
+        .entities
+        .get(&Kind::Athlete)
+        .ok_or("missing athlete contexts")?;
+    check!(eq; rows.len(), 128);
+    check!(eq; context.entities.len(), 1);
+    check!(eq; (context.proofs, context.bytes), (1_048_576, 63_963_136));
+    Ok(())
+}
+
+#[test]
+fn same_fingerprint_is_distinct_for_each_entity_id_and_kind() -> TestResult {
+    let athlete = AthleteId::mint("ath_subject", &["context"]);
+    let other = AthleteId::mint("ath_subject", &["other"]);
+    let event: EventId = athlete.cast();
+    check!(eq; athlete.as_str(), event.as_str());
+    check!(athlete != other);
+    let evidence = result_evidence(0);
+    let digest = fingerprint(&evidence)?;
+    let mut context = ResultContexts::default();
+    context.retain(Entity::Athlete(&athlete), digest)?;
+    check!(context.contains(Entity::Athlete(&athlete), &evidence)?);
+    check!(!context.contains(Entity::Athlete(&other), &evidence)?);
+    check!(!context.contains(Entity::Event(&event), &evidence)?);
+    context.retain(Entity::Athlete(&other), digest)?;
+    context.retain(Entity::Event(&event), digest)?;
+    check!(context.contains(Entity::Athlete(&other), &evidence)?);
+    check!(context.contains(Entity::Event(&event), &evidence)?);
+    check!(eq; (context.proofs, context.bytes), (3, 183));
+    let before = context.entities.clone();
+    context.retain(Entity::Athlete(&athlete), digest)?;
+    context.retain(Entity::Athlete(&other), digest)?;
+    context.retain(Entity::Event(&event), digest)?;
+    check!(context.entities == before);
+    check!(eq; (context.proofs, context.bytes), (3, 183));
     Ok(())
 }
 

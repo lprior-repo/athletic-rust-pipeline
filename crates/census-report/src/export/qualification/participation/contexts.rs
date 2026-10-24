@@ -8,8 +8,8 @@ use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
 const MAX_PROOFS_PER_ENTITY: usize = 65_536;
-const MAX_PROOFS: u64 = 1_000_000;
-const MAX_BYTES: u64 = 128 * 1024 * 1024;
+const MAX_PROOFS: u64 = 16_000_000;
+const MAX_BYTES: u64 = 1024 * 1024 * 1024;
 
 #[derive(Clone, Copy)]
 pub(super) enum Entity<'a> {
