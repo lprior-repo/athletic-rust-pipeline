@@ -7,6 +7,7 @@ use std::path::Path;
 use super::Cli;
 
 mod attachment_review;
+mod journal_demand;
 mod participation_intake;
 mod result_intake;
 mod roster_enrollment;
@@ -29,6 +30,8 @@ enum CaptureProtocolCommand {
     Init,
     #[command(about = "Inspect an existing capture qualification without execution")]
     Show,
+    #[command(about = "Measure actual present retained source-journal values without publication")]
+    JournalDemand,
     #[command(
         about = "Explicitly enable graph admission and versioned input tracking on a stopped graph-V3 store"
     )]
@@ -83,6 +86,9 @@ fn run_to<W: Write>(root: Option<&Path>, args: &CaptureProtocolArgs, output: &mu
             &mut *output,
             &Store::capture_qualification_control_existing(root)?.show()?,
         )?,
+        CaptureProtocolCommand::JournalDemand => {
+            return journal_demand::run_to(root, output);
+        }
         CaptureProtocolCommand::EnableAdmission => {
             let (store, writer) = Store::open_public_identity_qualification_v3(root)?.into_parts();
             writer.enroll_graph_admission_v1(&store, store.snapshot().revision())?;

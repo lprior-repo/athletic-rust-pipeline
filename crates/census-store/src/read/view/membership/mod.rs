@@ -3,6 +3,7 @@ use crate::{Store, StoreResult, StoreRevision};
 use super::{ReadBudget, StoreSnapshot};
 
 mod contents;
+mod demand;
 mod namespace;
 mod roots;
 mod scan;
