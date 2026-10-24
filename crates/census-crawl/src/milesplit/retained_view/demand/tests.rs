@@ -242,3 +242,5 @@ fn canonical_counter_accepts_exact_32_gib_and_refuses_next_byte_and_overflow() -
     }
     Ok(())
 }
+
+mod progress;

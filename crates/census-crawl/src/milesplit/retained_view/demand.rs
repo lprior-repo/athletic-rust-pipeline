@@ -39,14 +39,20 @@ struct PresentDemand {
 
 pub fn measure_retained_journal_present(
     view: &StoreSnapshot<'_>,
+    mut observer: impl FnMut(&'static str) -> StoreResult<()>,
 ) -> StoreResult<RetainedJournalPresentDemand> {
     let store_identity = view.store_identity()?;
     let snapshot_sequence = view.sequence();
     let mut demand = PresentDemand::new(store_identity.clone(), snapshot_sequence)?;
+    observer("capture_phase_started")?;
     let capture = demand.phase(view, super::super::OWNED_CAPTURE_PHASE)?;
+    observer("capture_phase_completed")?;
+    observer("meet_phase_started")?;
     let meet = demand.phase(view, super::super::OWNED_MEET_PHASE)?;
+    observer("meet_phase_completed")?;
     write_fragment(&mut demand.canonical, b"]}")?;
     let (canonical_bundle_bytes, canonical_digest) = demand.canonical.finish();
+    observer("counter_completed")?;
     Ok(RetainedJournalPresentDemand {
         scope: "present_phase_superset",
         store_identity,

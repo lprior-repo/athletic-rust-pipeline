@@ -304,3 +304,5 @@ fn body_and_final_newline_output_failures_propagate_without_store_mutation() -> 
     }
     Ok(())
 }
+
+mod progress;

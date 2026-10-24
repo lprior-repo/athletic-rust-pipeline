@@ -1,4 +1,5 @@
 use super::{ExportDataset, Fixture, Table, TestResult, Value};
+use crate::export::dataset::initial_objects::InitialObjects;
 use crate::export::dataset::selected_proofs::SelectedProofs;
 use census_domain::model::{ProfileSelectionV1, StoreIdentity};
 use sha2::{Digest, Sha256};
@@ -65,6 +66,7 @@ async fn all_independent_physical_roots_are_enforced_on_capture_and_replay() -> 
                 .snapshot()
                 .capture_frozen_public_identity_v2()?,
             None,
+            &InitialObjects::fresh(),
         )
         .is_err());
         check!(std::fs::read_dir(fresh.path())?.next().is_none());
@@ -118,6 +120,7 @@ async fn foreign_and_stale_captured_identity_refuse_before_writing_chunks() -> T
             fresh.path(),
             captured,
             None,
+            &InitialObjects::fresh(),
         );
         let detail = result
             .err()

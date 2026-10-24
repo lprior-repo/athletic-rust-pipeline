@@ -4,7 +4,7 @@ use census_crawl::participation_evidence::provider_target::profile_pr::SourcePro
 use census_domain::model::{CanonicalAthlete, SourceIdentity, SourceNamespace};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 mod capture;
 mod replay;
@@ -61,9 +61,11 @@ impl ExportDataset {
         &'a self,
         athlete: &'a CanonicalAthlete,
     ) -> impl Iterator<Item = &'a ReportedProfilePrTable> {
+        let mut subjects = BTreeSet::new();
         athlete
             .identities()
             .filter(|source| source.namespace == SourceNamespace::MilesplitAthlete)
+            .filter(move |source| subjects.insert(source.id.as_str()))
             .flat_map(|source| self.reported_profile_prs.tables.get(&source.id))
             .flatten()
     }

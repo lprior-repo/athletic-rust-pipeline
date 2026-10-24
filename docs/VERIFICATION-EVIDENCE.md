@@ -5832,3 +5832,91 @@ normal original-job capture or publication, the full release gate, source-backed
 eligibility, five-state/UP coverage, replay/cold-read acceptance, or a completed
 populated recruiting workbook. The original failed native invocation, pending
 job, supported backup, and existing Downloads workbook remain preserved.
+
+### 2026-10-24: proof-only export recovery and complete source PR cells
+
+Explicit `RecoverExisting` now authenticates preserved proof-only staging,
+validates every initial object before capture, recaptures the current graph and
+authority, and unions the checked inventory with newly required objects. It
+reuses matching objects without replacement. Conflicting length/digest,
+symlinks, unexpected staging entries and authority differing from a committed
+capture still refuse. Proof-only recovery recaptures current authority; it does
+not certify equivalence to an earlier authority. Precommit staging has no
+durable original-request witness, so operational request binding remains a
+separate obligation. No replacement job key, reset or migration is introduced.
+
+Reported PR collection enumerates each distinct source subject once despite
+locator aliases. Worksheet cells first use the existing sorted-unique detailed
+format, preserving fitting bytes. On actual overflow, a second traversal emits
+one header per capture and every claim in frozen order, retaining duplicate
+claims across captures. The writer and independent verifier check the 32767
+UTF-16-unit bound before destination reservation and append. Temporary line
+allocations remain; a grouped header and row may coexist. This is no total
+allocation or RSS claim. If complete grouped content also exceeds the bound,
+publication refuses and preserves the previous current link, manifest and
+workbook. CSV values, evidence meaning, accepted marks and eligibility remain
+unchanged.
+
+The existing journal-demand command emits nine bounded, ordered stderr progress
+records on success, including a flushed marker before the normal opener and a
+completion marker after stdout succeeds. Failures can stop earlier; omitted
+`--store` emits no progress. Canonical stdout retains its existing
+`PRESENT_PHASE_SUPERSET` meaning, not a complete workload admission claim.
+
+Qualification 1326 used repository-root `tools/moon-local`, unset `CI`, compiler
+jobs 1, test threads 2 for test lanes, pinned Moon and owned SSD scratch. These
+commands all terminated with actual exit 0 and close 0, without a signal:
+
+```sh
+tools/moon-local run pipeline:tests-scoped -- -p census-report --lib -E 'test(workbook::recruiting::worksheet::profile_prs) | test(workbook::verify::worksheet::profile_prs)' --no-tests fail
+tools/moon-local run pipeline:tests-scoped -- -p census-report --lib -E 'test(jobs_recovery) | test(reported_profile_prs::tests::subjects)' --no-tests fail
+tools/moon-local run pipeline:tests-scoped -- -p census-report --lib -E 'test(workbook::publication::selected::reported_tests::end_to_end::profile_prs)' --no-tests fail
+tools/moon-local run pipeline:fmt pipeline:check pipeline:lint-src
+tools/moon-local run pipeline:tests-scoped -- -p census-report --lib -E 'test(export::dataset::initial_objects) | test(export::dataset::selected) | test(export::dataset::reported_profile_prs)' --no-tests fail
+```
+
+Results were 32 writer/reader boundary tests, 8 recovery/alias tests, 6
+publication tests, all three source gates, and 151 broader report tests passed.
+The 8 focused cases overlap the 151 and are not additional distinct tests.
+Broader execution includes all 30 initial-object tests, current-authority and
+revocation refusals, genuine retained-fixture publication and cold readback.
+Publication verifies all 138 claims/141 lines across three captures, complete
+20-field CSV equality, worksheet and late-CSV mutations, cold missing/changed
+proof refusal, and eight-capture overflow preserving the previous generation.
+Integration inputs are identity-controlled versions of genuine retained fixture
+bodies at controlled timestamps; these are not fresh external acquisitions.
+Gates retain 29 forced arity advisories. Independent cohesion review approved
+the newly eight-argument selected-proof capture without suppression.
+
+This is a qualification union: boundary/recovery lanes passed on 1326r1;
+publication, gates and broader report passed on 1326r2 after a test-fixture-only
+correction. Earlier 1323 crawl 30/30 and CLI 64/64 executions are explicitly
+reused for unchanged phase files and callers, not claimed rerun in 1326.
+Initial format failure and the 1326r1 publication result of 4 PASS/2 FAIL remain
+preserved. The latter used a two-capture fixture whose detailed form still fit;
+three captures establish real overflow without changing fitting production
+behavior. Executed assertions prove the bounds and counts; separately
+calculated detailed/grouped lengths are 48809/16259 UTF-16 units.
+
+Final 41-source manifest SHA256 is
+`5949e9e024d30ed8ba78a56edf68ab1eae3eedd6e8134c42591898e18d5f59f7`.
+All 210 semantic-kernel inputs remain unchanged. Native aggregate 1326 SHA256
+is `0a3a5a80745a6720e3c8c4874481c0fd7434505f0b52894dc0fdf5b598fb12a8`.
+Final independent CODE/evidence review SHA256 is
+`7a4a2896b9f91a414ba23d51c12d95b15fb34ed82653e3842625b0dc4c2de3a3`;
+independent integration TEST reconciliation is
+`ef6d0f1c9fc9194b7e36bf3786691bd7638adeb45b8af9e310455b0bc12bfcbf`.
+Independent executed UNIT approval is
+`a9a21e70aaa610f6829645b36a1c04e06747a7cd9bb449a6e3f880dd5ba17294`.
+These reviews exclude their own authored tests from independent approval.
+Local receipts/logs/reviews are under `/tmp/athletic-work-20261021/` with
+`worksheet-recovery-phase-1326`, `worksheet-recovery-lossless-` and
+`worksheet-source-pr-` prefixes. Window 1326 is returned; no successor lease
+follows from these results.
+
+These tests do not qualify original-Store job 1141 recovery/publication, a
+completed original-Store journal-PRESENT demand, full release gate, workload
+RAM fit, accepted five-state observed marks, current affiliations, Michigan UP
+membership or the requested full workbook. The original Store, pending proof
+objects, request identities, receipts and existing Downloads workbook remain
+preserved.

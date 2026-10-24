@@ -83,10 +83,16 @@ fn prepare(
     let snapshot = store.snapshot();
     let profile = snapshot.selected_profile(selection)?;
     let freshness = freshness::capture(&snapshot, &profile)?;
-    let objects = staging::directories(pending, stage)?;
+    let (objects, initial) = staging::directories(pending, stage)?;
     let archive = pending.join("input.json");
-    let dataset =
-        ExportDataset::selected_snapshot_for_job(store, &snapshot, selection, &objects, Some(job))?;
+    let dataset = ExportDataset::selected_snapshot_for_job(
+        store,
+        &snapshot,
+        selection,
+        &objects,
+        Some(job),
+        &initial,
+    )?;
     let commitment = Commitment::new(job, selection, &dataset, freshness)?;
     dataset.save_frozen(&archive)?;
     commitment.write(&pending.join("commitment.json"))?;

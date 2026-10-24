@@ -3,6 +3,8 @@ use crate::export::{ExportDataset, ExportJobRequest};
 use census_domain::model::serialized_digest;
 use std::path::PathBuf;
 
+mod proofs;
+
 #[tokio::test]
 async fn explicit_job_recovery_reuses_empty_staging_then_replays_the_same_committed_input(
 ) -> TestResult {
@@ -55,7 +57,19 @@ async fn explicit_job_recovery_requires_an_existing_job_and_preserves_partial_ar
         std::fs::create_dir_all(pending.join("input.json.proofs"))?;
         let path = pending.join(artifact);
         std::fs::write(&path, b"preserve-uncommitted-evidence")?;
-        check!(ExportDataset::recover_job_request(&fixture.store, job, &request).is_err());
+        let before = retained_staging(&pending)?;
+        let error = ExportDataset::recover_job_request(&fixture.store, job, &request)
+            .err()
+            .ok_or("partial artifacts unexpectedly captured")?;
+        let expected = if artifact == "input.json.proofs/retained" {
+            "selected proof inventory contains an invalid regular object"
+        } else {
+            "uncommitted selected staging is not exactly proof-only storage"
+        };
+        check!(
+            matches!(error, crate::report::ReportError::Invariant { detail } if detail == expected)
+        );
+        check!(eq; retained_staging(&pending)?, before);
         check!(eq; std::fs::read(&path)?, b"preserve-uncommitted-evidence");
         check!(!root.exists());
         check!(!pending.join("commitment.json").exists());
@@ -121,9 +135,10 @@ async fn explicit_job_recovery_keeps_the_committed_selection_and_archive_unchang
     let error = ExportDataset::recover_job_request(&fixture.store, job, &changed)
         .err()
         .ok_or("recovery changed committed selection")?;
-    check!(error
-        .to_string()
-        .contains("selected export job request, identity or store mismatch"));
+    check!(
+        matches!(error, crate::report::ReportError::Invariant { ref detail }
+        if detail == "selected export job request, identity or store mismatch")
+    );
     check!(eq; std::fs::read(root.join("input.json"))?, archive);
     check!(eq; std::fs::read(root.join("commitment.json"))?, commitment);
     check!(eq; fixture.store.snapshot().sequence(), sequence);
@@ -136,4 +151,53 @@ fn root(fixture: &Fixture, job: &str) -> TestResult<PathBuf> {
         .out_dir()
         .join("export-inputs")
         .join(format!("{}.selected-v1", serialized_digest(&job)?)))
+}
+
+#[tokio::test]
+async fn commitment_only_staging_refuses_before_capturing_and_preserves_all_bytes() -> TestResult {
+    let fixture = Fixture::composed(false).await?;
+    let job = "workbook:commitment-only-recovery";
+    let root = root(&fixture, job)?;
+    let pending = root.with_extension("selected-v1.pending");
+    let objects = pending.join("input.json.proofs");
+    std::fs::create_dir_all(&objects)?;
+    let retained = b"retained-proof-before-partial-commitment";
+    let digest = crate::export::proof_objects::install(&objects, retained)?;
+    let commitment = pending.join("commitment.json");
+    std::fs::write(&commitment, b"preserve-malformed-commitment")?;
+    let sequence = fixture.store.snapshot().sequence();
+    let error = ExportDataset::recover_job_request(&fixture.store, job, &request(&fixture))
+        .err()
+        .ok_or("commitment-only staging unexpectedly captured")?;
+    check!(
+        matches!(error, crate::report::ReportError::Decode { ref path, .. } if path == &commitment)
+    );
+    check!(eq; std::fs::read(objects.join(digest))?, retained);
+    check!(eq; std::fs::read(commitment)?, b"preserve-malformed-commitment");
+    check!(!pending.join("input.json").exists());
+    check!(!root.exists());
+    check!(eq; fixture.store.snapshot().sequence(), sequence);
+    Ok(())
+}
+
+fn retained_staging(
+    root: &std::path::Path,
+) -> TestResult<std::collections::BTreeMap<PathBuf, Option<Vec<u8>>>> {
+    let mut result = std::collections::BTreeMap::new();
+    for entry in std::fs::read_dir(root)? {
+        let entry = entry?;
+        let path = entry.path();
+        if entry.file_type()?.is_dir() {
+            result.insert(path.clone(), None);
+            for child in std::fs::read_dir(&path)? {
+                let child = child?;
+                check!(child.file_type()?.is_file());
+                result.insert(child.path(), Some(std::fs::read(child.path())?));
+            }
+        } else {
+            check!(entry.file_type()?.is_file());
+            result.insert(path.clone(), Some(std::fs::read(path)?));
+        }
+    }
+    Ok(result)
 }

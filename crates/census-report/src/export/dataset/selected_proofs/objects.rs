@@ -7,7 +7,7 @@ use std::path::{Component, Path};
 
 mod checksum;
 mod retained;
-pub(super) const MAX_OBJECTS: usize = 8_388_608;
+pub(in crate::export::dataset) const MAX_OBJECTS: usize = 8_388_608;
 pub(in crate::export::dataset) const MAX_BYTES: u64 = 17_592_186_044_416;
 const MAX_ANCESTORS: usize = 256;
 
@@ -34,7 +34,15 @@ pub(in crate::export::dataset) fn require_empty(directory: &Path) -> ReportResul
     Ok(())
 }
 
-pub(super) fn inventory(directory: &Path) -> ReportResult<Vec<Reference>> {
+pub(in crate::export::dataset) fn inventory(directory: &Path) -> ReportResult<Vec<Reference>> {
+    let references = initial_inventory(directory)?;
+    validate(&references)?;
+    Ok(references)
+}
+
+pub(in crate::export::dataset) fn initial_inventory(
+    directory: &Path,
+) -> ReportResult<Vec<Reference>> {
     require_directory(directory)?;
     let mut references = Vec::new();
     let mut total = 0u64;
@@ -68,11 +76,13 @@ pub(super) fn inventory(directory: &Path) -> ReportResult<Vec<Reference>> {
         });
     }
     references.sort_unstable_by(|left, right| left.digest.cmp(&right.digest));
-    validate(&references)?;
+    if !references.is_empty() {
+        validate(&references)?;
+    }
     Ok(references)
 }
 
-pub(super) fn validate(references: &[Reference]) -> ReportResult<()> {
+pub(in crate::export::dataset) fn validate(references: &[Reference]) -> ReportResult<()> {
     if references.is_empty() || references.len() > MAX_OBJECTS {
         return Err(invalid(
             "selected proof inventory has an invalid object count",

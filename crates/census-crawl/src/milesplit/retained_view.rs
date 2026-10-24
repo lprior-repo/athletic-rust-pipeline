@@ -78,7 +78,14 @@ enum RecordedPayload {
 
 impl RetainedJournalBundle {
     pub fn measure_present(view: &StoreSnapshot<'_>) -> StoreResult<impl Serialize> {
-        demand::measure_retained_journal_present(view)
+        Self::measure_present_with_progress(view, |_| Ok(()))
+    }
+
+    pub fn measure_present_with_progress(
+        view: &StoreSnapshot<'_>,
+        observer: impl FnMut(&'static str) -> StoreResult<()>,
+    ) -> StoreResult<impl Serialize> {
+        demand::measure_retained_journal_present(view, observer)
     }
 
     pub fn encode(&self) -> StoreResult<Vec<u8>> {
