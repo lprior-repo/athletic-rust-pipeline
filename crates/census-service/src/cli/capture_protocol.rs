@@ -6,6 +6,7 @@ use std::path::Path;
 
 use super::Cli;
 
+mod attachment_review;
 mod participation_intake;
 mod result_intake;
 mod roster_enrollment;
@@ -55,6 +56,12 @@ enum CaptureProtocolCommand {
     )]
     ParticipationIntake(participation_intake::ParticipationIntakeArgs),
     #[command(
+        about = "Preview exact evidence attachment approval bytes or apply their explicit SHA256"
+    )]
+    AttachmentReview(attachment_review::AttachmentReviewArgs),
+    #[command(about = "Replay an exact retained attachment command and its original receipt")]
+    AttachmentReplay(attachment_review::AttachmentReplayArgs),
+    #[command(
         about = "Read the original reviewed roster receipt without re-inspection or new acceptance"
     )]
     RosterReplay(roster_replay::RosterReplayArgs),
@@ -98,6 +105,12 @@ fn run_to<W: Write>(root: Option<&Path>, args: &CaptureProtocolArgs, output: &mu
         }
         CaptureProtocolCommand::ParticipationIntake(args) => {
             return participation_intake::run_to(root, args, output);
+        }
+        CaptureProtocolCommand::AttachmentReview(args) => {
+            return attachment_review::run_to(root, args, output);
+        }
+        CaptureProtocolCommand::AttachmentReplay(args) => {
+            return attachment_review::replay_to(root, args, output);
         }
         CaptureProtocolCommand::RosterReplay(args) => {
             return roster_replay::run_to(root, args, output);
