@@ -29,14 +29,15 @@ pub(super) fn balanced(table: &str) -> Result<(), &'static str> {
 
 fn open_tags(table: &str, tag: &str) -> usize {
     let pattern = format!("<{tag}");
-    let mut count = 0;
+    let mut count: usize = 0;
     let mut rest = table;
     while let Some(index) = rest.find(pattern.as_str()) {
-        let after = rest[index + pattern.len()..].chars().next();
+        let next = index.saturating_add(pattern.len());
+        let after = rest.get(next..).and_then(|tail| tail.chars().next());
         if matches!(after, Some('>' | '/' | ' ' | '\t' | '\n' | '\r' | '\u{C}')) {
-            count += 1;
+            count = count.saturating_add(1);
         }
-        rest = &rest[index + pattern.len()..];
+        rest = rest.get(next..).map_or("", |tail| tail);
     }
     count
 }

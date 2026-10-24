@@ -2,9 +2,7 @@ use super::*;
 use crate::model::{ProfileDate, SourceNamespace};
 use crate::public_identity_history::*;
 
-#[path = "../tests/fixture.rs"]
-mod fixture;
-use fixture::*;
+use super::super::tests::fixture::*;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 

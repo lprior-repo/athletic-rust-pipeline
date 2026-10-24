@@ -142,7 +142,12 @@ fn bounded_with_bytes(
         ));
     }
 
-    let actual_limit = std::cmp::min(limit, total - offset);
+    let actual_limit = std::cmp::min(
+        limit,
+        total.checked_sub(offset).ok_or_else(|| {
+            TerminalError::new_with_code(400, "paging cursor offset beyond inventory")
+        })?,
+    );
     let slice_start = usize::try_from(offset)
         .map_err(|_| TerminalError::new_with_code(500, "offset usize conversion failed"))?;
     let end = offset

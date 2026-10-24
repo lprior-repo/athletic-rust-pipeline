@@ -827,7 +827,9 @@ fn event_context_command(
     });
     facts.sort_by(|left, right| left.fact.cmp(&right.fact));
     ensure!(
-        facts.windows(2).all(|pair| pair[0].fact != pair[1].fact),
+        facts
+            .windows(2)
+            .all(|pair| matches!(pair, [first, second] if first.fact != second.fact)),
         "event-context fact digest duplicates original fact"
     );
     let mut scopes = original_command
@@ -838,7 +840,9 @@ fn event_context_command(
     scopes.push(scope);
     scopes.sort();
     ensure!(
-        scopes.windows(2).all(|pair| pair[0] != pair[1]),
+        scopes
+            .windows(2)
+            .all(|pair| matches!(pair, [first, second] if first != second)),
         "event-context scope digest duplicates original scope"
     );
     let additions = objects.references(inspection, grant)?;

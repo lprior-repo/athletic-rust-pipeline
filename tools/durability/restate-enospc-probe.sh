@@ -80,7 +80,7 @@ run_workflow() {
     curl -fsS --max-time 30 -X POST "http://127.0.0.1:$INGRESS_PORT/Consolidate/$1/run" \
         -H 'Content-Type: application/json' -d '{"tables":[]}'
 }
-"$SERVE_BINARY" --listen "127.0.0.1:$SERVE_PORT" --data-dir "$FJALL_DIR" > "$ENDPOINT_LOG" 2>&1 &
+"$SERVE_BINARY" --capture-protocol fresh-qualification-v3 --listen "127.0.0.1:$SERVE_PORT" --data-dir "$FJALL_DIR" > "$ENDPOINT_LOG" 2>&1 &
 ENDPOINT_PID=$!
 start_node
 registered=false

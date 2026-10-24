@@ -71,7 +71,11 @@ fn reserve(
             .ok_or(StoreError::CounterOverflow)?;
         charge(grant, bytes, 1)?;
         changes
-            .try_reserve_exact(capacity - changes.len())
+            .try_reserve_exact(
+                capacity
+                    .checked_sub(changes.len())
+                    .ok_or(StoreError::CounterOverflow)?,
+            )
             .map_err(|_| invalid("reviewed member withdrawal allocation refused"))?;
     }
     Ok(())

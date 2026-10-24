@@ -108,6 +108,7 @@ fn source_files(root: &Path) -> Result<Vec<std::path::PathBuf>> {
             "vendor",
             "node_modules",
             "local",
+            "output",
         ],
     )?;
     ensure!(

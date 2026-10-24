@@ -1,5 +1,5 @@
 use super::TestResult;
-use calamine::{open_workbook, Data, Reader, Xlsx};
+use calamine::{open_workbook, Data, DataType, Reader, Xlsx};
 
 pub(super) fn change_inventory(
     source: &std::path::Path,
@@ -59,7 +59,10 @@ pub(super) fn corrupt_cell(
             Some(
                 headers
                     .iter()
-                    .position(|cell| cell.to_string() == mutation.header)
+                    .position(|cell| {
+                        cell.get_string()
+                            .is_some_and(|text| text == mutation.header)
+                    })
                     .ok_or_else(|| format!("missing column {}", mutation.header))?,
             )
         } else {
@@ -67,18 +70,24 @@ pub(super) fn corrupt_cell(
         };
         let key_column = headers
             .iter()
-            .position(|cell| cell.to_string() == "Performance ID")
+            .position(|cell| {
+                cell.get_string()
+                    .is_some_and(|text| text == "Performance ID")
+            })
             .or_else(|| {
                 headers
                     .iter()
-                    .position(|cell| cell.to_string() == "Athlete ID")
+                    .position(|cell| cell.get_string().is_some_and(|text| text == "Athlete ID"))
             });
         let mut target_row = None;
         if name == mutation.sheet {
             for (index, row) in range.rows().enumerate().skip(1) {
                 if key_column
                     .and_then(|column| row.get(column))
-                    .is_some_and(|cell| cell.to_string() == mutation.row_key)
+                    .is_some_and(|cell| {
+                        cell.get_string()
+                            .is_some_and(|text| text == mutation.row_key)
+                    })
                 {
                     target_row = Some(index);
                     break;

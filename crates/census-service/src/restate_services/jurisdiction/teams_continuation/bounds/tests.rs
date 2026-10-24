@@ -50,13 +50,15 @@ fn closed_source_inventory_refuses_twenty_two_without_cloning_state() -> TestRes
         authorized_hosts: Vec::new(),
         source_parallelism: 1,
     };
-    let mut state = JurisdictionState::default();
-    state.plan = Some(crate::restate_services::wire::SourcePlan {
-        sweepable: (0..MAX_SOURCES)
-            .map(|value| format!("source-{value}"))
-            .collect(),
+    let mut state = JurisdictionState {
+        plan: Some(crate::restate_services::wire::SourcePlan {
+            sweepable: (0..MAX_SOURCES)
+                .map(|value| format!("source-{value}"))
+                .collect(),
+            ..Default::default()
+        }),
         ..Default::default()
-    });
+    };
     Budget::new()
         .parent(&state, &request)
         .map_err(|error| format!("{error:?}"))?;

@@ -153,13 +153,18 @@ fn parse_args() -> Result<Args, Error> {
     if raw.len() < 6 {
         return Err("usage: qualification_genuine_workbook <root> <selection> <captures> <ordinal:offset:length> <out> [objects]".into());
     }
-    let root = PathBuf::from(&raw[1]);
-    let selection = PathBuf::from(&raw[2]);
-    let captures = PathBuf::from(&raw[3]);
-    let locator = parse_locator(raw[4].to_str().ok_or("locator is not unicode")?)?;
-    let out = PathBuf::from(&raw[5]);
+    let arg = |index: usize| {
+        raw.get(index).ok_or(
+            "usage: qualification_genuine_workbook <root> <selection> <captures> <ordinal:offset:length> <out> [objects]",
+        )
+    };
+    let root = PathBuf::from(arg(1)?);
+    let selection = PathBuf::from(arg(2)?);
+    let captures = PathBuf::from(arg(3)?);
+    let locator = parse_locator(arg(4)?.to_str().ok_or("locator is not unicode")?)?;
+    let out = PathBuf::from(arg(5)?);
     let objects = if raw.len() > 6 {
-        PathBuf::from(&raw[6])
+        PathBuf::from(arg(6)?)
     } else {
         match root.parent() {
             Some(parent) => parent.join("genuine-workbook-objects"),
@@ -182,11 +187,20 @@ fn parse_locator(raw: &str) -> Result<SourceRowLocator, Error> {
     if parts.len() != 3 {
         return Err("locator must be ordinal:byte_offset:byte_length".into());
     }
-    let ordinal: u32 = parts[0].parse().map_err(|_| "locator ordinal invalid")?;
-    let byte_offset: usize = parts[1]
+    let shape = "locator must be ordinal:byte_offset:byte_length";
+    let ordinal: u32 = parts
+        .first()
+        .ok_or(shape)?
+        .parse()
+        .map_err(|_| "locator ordinal invalid")?;
+    let byte_offset: usize = parts
+        .get(1)
+        .ok_or(shape)?
         .parse()
         .map_err(|_| "locator byte offset invalid")?;
-    let byte_length: usize = parts[2]
+    let byte_length: usize = parts
+        .get(2)
+        .ok_or(shape)?
         .parse()
         .map_err(|_| "locator byte length invalid")?;
     if byte_length == 0 {

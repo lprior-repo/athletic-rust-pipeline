@@ -48,7 +48,7 @@ pub(super) fn capture(path: &Path, expected_bytes: u64, expected_sha: &str) -> R
         if consumed > expected_bytes {
             return Err(too_large().into());
         }
-        hasher.update(&buffer[..count]);
+        hasher.update(buffer.get(..count).ok_or_else(too_large)?);
     }
     if consumed != expected_bytes || format!("{:x}", hasher.finalize()) != expected_sha {
         bail!("retained NCES capture bytes differ from their Store receipt");

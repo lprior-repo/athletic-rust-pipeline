@@ -28,11 +28,13 @@ fn retained_redirect_chain_binds_actual_capture_and_preserves_observed_bytes() -
     Ok(())
 }
 
+type BodyMutation<'a> = (&'a str, fn(&mut FetchOutcome));
+
 #[test]
 fn changed_capture_request_response_or_declared_body_binding_refuses() -> TestResult {
     let (capture, expected) = fixture::original()?;
     let bytes = fixture::encoded(&expected)?;
-    let mutations: [(&str, fn(&mut FetchOutcome)); 9] = [
+    let mutations: [BodyMutation<'_>; 9] = [
         ("method", |value| value.method = "POST".into()),
         ("initial URL", |value| value.url = FINAL.into()),
         ("missing final URL", |value| value.response_url = None),

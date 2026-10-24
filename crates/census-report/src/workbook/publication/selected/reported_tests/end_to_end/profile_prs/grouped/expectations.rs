@@ -1,5 +1,5 @@
 use super::super::TestResult;
-use calamine::{open_workbook, Reader, Xlsx};
+use calamine::{open_workbook, DataType, Reader, Xlsx};
 use census_crawl::participation_evidence::provider_target::{
     profile_pr::{self, SourceProfilePrV1},
     SourceTargetPacketV1,
@@ -132,16 +132,22 @@ pub(in super::super) fn cell(workbook: &Path, athlete: &str) -> TestResult<Strin
     let headers = sheet.rows().next().ok_or("worksheet header")?;
     let id = headers
         .iter()
-        .position(|cell| cell.to_string() == "Athlete ID")
+        .position(|cell| cell.get_string().is_some_and(|text| text == "Athlete ID"))
         .ok_or("athlete ID")?;
     let prs = headers
         .iter()
-        .position(|cell| cell.to_string() == "Source-declared PRs")
+        .position(|cell| {
+            cell.get_string()
+                .is_some_and(|text| text == "Source-declared PRs")
+        })
         .ok_or("source PR column")?;
     let row = sheet
         .rows()
         .skip(1)
-        .find(|row| row.get(id).is_some_and(|cell| cell.to_string() == athlete))
+        .find(|row| {
+            row.get(id)
+                .is_some_and(|cell| cell.get_string().is_some_and(|text| text == athlete))
+        })
         .ok_or("profile athlete row")?;
     Ok(row.get(prs).ok_or("source PR cell")?.to_string())
 }

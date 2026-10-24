@@ -13,9 +13,9 @@ pub(super) fn current(store: &Store) -> TestResult<Vec<u8>> {
     let plan = discover_current_html_results(&current, &mut grant)?;
     check!(eq; plan.group_count(), 1);
     check!(eq; plan.diagnostic_count(), 0);
-    Ok(plan.with_group(0, &mut grant, |document, grant| {
+    plan.with_group(0, &mut grant, |document, grant| {
         Ok(document_view(document, grant))
-    })??)
+    })?
 }
 
 pub(super) fn freeze(store: &Store) -> TestResult<FrozenEvidenceSubjectAttachmentBundleV1> {
@@ -45,9 +45,9 @@ pub(super) fn frozen(
     let plan = discover_frozen_html_results(&frozen, &mut grant)?;
     check!(eq; plan.group_count(), 1);
     check!(eq; plan.diagnostic_count(), 0);
-    Ok(plan.with_group(0, &mut grant, |document, grant| {
+    plan.with_group(0, &mut grant, |document, grant| {
         Ok(document_view(document, grant))
-    })??)
+    })?
 }
 
 fn document_view(

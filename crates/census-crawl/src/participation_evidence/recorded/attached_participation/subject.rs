@@ -35,6 +35,8 @@ pub(super) fn require_window(
     require_subject(item, document, checked.boundary_proof(), grant)
 }
 
+const DOCUMENT_SUBJECT_PREFIX_BYTES: usize = "document_subject_v1".len() + 5;
+
 fn require_subject(
     item: &ActiveAttachmentSubjectV1<'_>,
     document: &DocumentSubjectV1,
@@ -51,7 +53,7 @@ fn require_subject(
         document.locator(),
     ]
     .into_iter()
-    .try_fold("document_subject_v1".len() + 5, |held, value| {
+    .try_fold(DOCUMENT_SUBJECT_PREFIX_BYTES, |held, value| {
         held.checked_add(value.len())
             .ok_or(census_store::StoreError::CounterOverflow)
     })?;

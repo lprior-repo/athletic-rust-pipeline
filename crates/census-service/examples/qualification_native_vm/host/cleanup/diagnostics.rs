@@ -248,7 +248,9 @@ fn retain(root: &Path, phase: &str, spec: &Spec, line: &str) -> Result<Value> {
         json!({"label":label,"source":match &spec.source { Source::File(path)=>path.as_str(),Source::Command(command)=>command },
         "status":status,"exit_code":code,"file":path,"bytes":bytes.len(),"sha256":artifacts::sha(&bytes),
         "source_bytes_before_tail":original,"tail_limit_bytes":spec.cap,
-        "tail_may_be_partial":original.is_some_and(|length|length > spec.cap as u64) || bytes.len() == spec.cap,
+        "tail_may_be_partial":original.is_some_and(|length| {
+            length > u64::try_from(spec.cap).map_or(u64::MAX, |cap| cap)
+        }) || bytes.len() == spec.cap,
         "successful":*status == "OK" && code == 0}),
     )
 }

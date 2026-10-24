@@ -165,7 +165,7 @@ fn end_record(file: &File, length: u64, scope: &Scope<'_>) -> ReportResult<(usiz
         if index == 0 {
             return Err(scope.corrupt("the container has no end record"));
         }
-        index -= 1;
+        index = index.saturating_sub(1);
     }
     if field16(&bytes, index.saturating_add(4), scope)? != 0
         || field16(&bytes, index.saturating_add(6), scope)? != 0

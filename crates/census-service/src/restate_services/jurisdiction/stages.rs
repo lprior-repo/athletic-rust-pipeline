@@ -246,8 +246,14 @@ fn satisfy_nces_from_receipt(plan: &mut SourcePlan, digest: &str) -> Result<(), 
         .enumerate()
         .filter_map(|(index, source)| (source.slug == "nces").then_some(index))
         .collect();
+    let only = matches.first().ok_or_else(|| {
+        super::jobs::invariant("NCES receipt cannot replace a noncanonical planner disposition")
+    })?;
+    let refused = plan.refused.get(*only).ok_or_else(|| {
+        super::jobs::invariant("NCES receipt cannot replace a noncanonical planner disposition")
+    })?;
     if matches.len() != 1
-        || plan.refused[matches[0]].reason != expected_reason
+        || refused.reason != expected_reason
         || plan.sweepable.iter().any(|slug| slug == "nces")
         || plan.satisfied.iter().any(|source| source.slug == "nces")
     {
@@ -255,7 +261,7 @@ fn satisfy_nces_from_receipt(plan: &mut SourcePlan, digest: &str) -> Result<(), 
             "NCES receipt cannot replace a noncanonical planner disposition",
         ));
     }
-    plan.refused.remove(matches[0]);
+    plan.refused.remove(*only);
     plan.satisfied.push(SatisfiedSource {
         slug: "nces".to_string(),
         evidence_digest: digest.to_string(),
@@ -280,7 +286,12 @@ fn validate_nces_plan_state(
     let swept = plan.sweepable.iter().any(|slug| slug == "nces");
     let valid = match receipt_digest {
         Some(digest) => {
-            retained.len() == 1 && retained[0].evidence_digest == digest && refused == 0 && !swept
+            retained.len() == 1
+                && retained
+                    .first()
+                    .is_some_and(|entry| entry.evidence_digest == digest)
+                && refused == 0
+                && !swept
         }
         None => retained.is_empty() && refused == 1 && !swept,
     };

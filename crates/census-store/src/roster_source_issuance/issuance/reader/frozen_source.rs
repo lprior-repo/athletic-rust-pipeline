@@ -99,8 +99,11 @@ impl<'a> FrozenRosterJournalSource<'a> {
 
     fn lookup(&self, key: &[u8]) -> StoreResult<Option<&CapturedJournalRow>> {
         let split = key.iter().position(|byte| *byte == 0).ok_or_else(outside)?;
-        let phase = std::str::from_utf8(&key[..split]).map_err(|_| outside())?;
-        let tail = key.get(split + 1..).ok_or_else(outside)?;
+        let phase =
+            std::str::from_utf8(key.get(..split).ok_or_else(outside)?).map_err(|_| outside())?;
+        let tail = key
+            .get(split.checked_add(1).ok_or_else(outside)?..)
+            .ok_or_else(outside)?;
         let root =
             std::str::from_utf8(tail.get(..64).ok_or_else(outside)?).map_err(|_| outside())?;
         let group = self.group(phase, root)?;
@@ -139,7 +142,10 @@ impl RetainedJournalReadSource for FrozenRosterJournalSource<'_> {
         let start = group
             .rows
             .partition_point(|row| row.key.as_slice() < prefix.as_slice());
-        for row in group.rows[start..]
+        for row in group
+            .rows
+            .get(start..)
+            .ok_or_else(outside)?
             .iter()
             .take_while(|row| row.key.starts_with(&prefix))
         {

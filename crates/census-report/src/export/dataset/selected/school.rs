@@ -16,9 +16,14 @@ pub(super) fn extend(loaded: &mut Loaded, projection: SchoolProjection) -> Repor
     reserve(&mut loaded.performances, count)?;
     for row in projection.rows {
         if let Some(original) = &row.original_event_label {
-            let physical = &mut loaded.events[..physical_event_count];
+            let physical = loaded
+                .events
+                .get_mut(..physical_event_count)
+                .ok_or_else(|| invalid("selected school event inventory unavailable"))?;
             let first = physical.partition_point(|event| event.id < row.event.id);
-            for existing in physical[first..]
+            for existing in physical
+                .get_mut(first..)
+                .ok_or_else(|| invalid("selected school event inventory unavailable"))?
                 .iter_mut()
                 .take_while(|event| event.id == row.event.id)
             {

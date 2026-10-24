@@ -45,6 +45,7 @@ SCRATCH_STORE="$(cd "$SCRATCH_STORE" && pwd)"
 WORK="$(mktemp -d "$SCRATCH_STORE/scenario-18-XXXXXX")"
 DATA="$WORK/store"
 mkdir -p "$DATA"
+"$CLIENT" --store "$DATA" capture-protocol init > "$WORK/store-init.log" 2>&1 || { echo "FAIL: capture store init refused for $DATA"; exit 1; }
 echo "EVIDENCE: $WORK"
 
 cat > "$WORK/restate.toml" <<EOF
@@ -115,6 +116,7 @@ PY
 
 start_endpoint() {
     "$SERVE" \
+        --capture-protocol fresh-qualification-v3 \
         --listen "127.0.0.1:$ENDPOINT_PORT" --data-dir "$DATA" --max-concurrent 16 \
         --drain-timeout 30 --browser-profile "$WORK/browser-profile" \
         --browser-executable "$CHROMIUM" --browser-headless >> "$WORK/endpoint.log" 2>&1 &

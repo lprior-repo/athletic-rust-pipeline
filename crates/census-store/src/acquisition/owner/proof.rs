@@ -20,8 +20,8 @@ impl OwnerScopeProof {
     }
     pub(in crate::acquisition) fn owned_bytes(owner: CaptureOwnerRef<'_>) -> usize {
         match owner.0 {
-            super::OwnerRef::Results(owner) => owner.scope.owner_key().len() + 128,
-            super::OwnerRef::Public(owner) => owner.scope.owner_key().len() + 320,
+            super::OwnerRef::Results(owner) => owner.scope.owner_key().len().saturating_add(128),
+            super::OwnerRef::Public(owner) => owner.scope.owner_key().len().saturating_add(320),
         }
     }
     pub(in crate::acquisition) fn matches(&self, owner: CaptureOwnerRef<'_>) -> bool {

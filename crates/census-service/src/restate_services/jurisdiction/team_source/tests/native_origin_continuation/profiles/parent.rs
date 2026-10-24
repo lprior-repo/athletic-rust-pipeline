@@ -59,7 +59,7 @@ pub(super) async fn replace(
     let detail = response.text().await?;
     check!(eq; status, reqwest::StatusCode::ACCEPTED,
         "isolated controlled profile parent seed refused: {detail}");
-    await_seed(client, node, &key, &state).await?;
+    await_seed(client, node, key, state).await?;
     Ok(())
 }
 

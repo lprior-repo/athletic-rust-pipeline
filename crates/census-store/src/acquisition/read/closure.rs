@@ -60,6 +60,8 @@ fn validate_terminal_protocols(
     }
     Ok(())
 }
+const DISPATCH_CLOSURE_HINT_BYTES: usize = 5 * std::mem::size_of::<(Armed, Option<Observed>)>();
+
 fn dispatches(
     rows: &mut BTreeMap<String, Vec<u8>>,
     id: &AcquisitionAttemptId,
@@ -74,7 +76,7 @@ fn dispatches(
     dispatches.try_reserve_exact(5).map_err(|source| {
         CaptureError::allocation_reservation_failed(
             "dispatch closure buffer",
-            Some(5 * std::mem::size_of::<(Armed, Option<Observed>)>()),
+            Some(DISPATCH_CLOSURE_HINT_BYTES),
             source,
         )
     })?;

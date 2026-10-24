@@ -54,12 +54,14 @@ pub(super) fn verify(directory: &Path, dataset: &ExportDataset) -> ReportResult<
     )
 }
 
+const SUBJECT_ENTRY_BYTES: usize = std::mem::size_of::<(&str, &AthleteId)>() * 4;
+
 fn subjects(dataset: &ExportDataset) -> ReportResult<BTreeMap<&str, &AthleteId>> {
     let mut athletes = BTreeMap::new();
     let mut budget = Admission::new("current affiliation subject inventory");
     for athlete in &dataset.athletes {
         budget.record(&athlete.id)?;
-        budget.charge(std::mem::size_of::<(&str, &AthleteId)>() * 4, 0)?;
+        budget.charge(SUBJECT_ENTRY_BYTES, 0)?;
         if athletes.insert(athlete.id.as_str(), &athlete.id).is_some() {
             return Err(defect(
                 "current affiliation inventory contains a duplicate athlete",

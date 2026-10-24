@@ -79,7 +79,9 @@ impl Collector {
                 "school contact page exceeds 320 staff profiles",
             ));
         }
-        self.recognized += 1;
+        self.recognized = self.recognized.checked_add(1).ok_or(Failure::Budget(
+            "school contact page exceeds 320 staff profiles",
+        ))?;
         self.current = Some(Profile::default());
         self.stack.push(b"ul".to_vec());
         Ok(())

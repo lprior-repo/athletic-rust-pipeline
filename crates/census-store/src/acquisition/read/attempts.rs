@@ -8,6 +8,8 @@ use census_domain::model::{
 use fjall::{Keyspace, Snapshot};
 use std::collections::BTreeMap;
 
+const ATTEMPT_FACTS_HINT_BYTES: usize = 3 * std::mem::size_of::<AttemptFacts>();
+
 pub(super) fn reconstruct(
     rows: &mut BTreeMap<String, Vec<u8>>,
     work: &AcquisitionWorkV1,
@@ -25,7 +27,7 @@ pub(super) fn reconstruct(
     attempts.try_reserve_exact(3).map_err(|source| {
         CaptureError::allocation_reservation_failed(
             "attempt facts buffer",
-            Some(3 * std::mem::size_of::<AttemptFacts>()),
+            Some(ATTEMPT_FACTS_HINT_BYTES),
             source,
         )
     })?;

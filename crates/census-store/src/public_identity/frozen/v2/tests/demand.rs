@@ -122,10 +122,7 @@ fn corrupt_original_graph_refuses_measurement_without_further_mutation() -> Test
     let tampered = retained_state(&store)?;
     match store.snapshot().measure_frozen_public_identity_v2() {
         Err(crate::StoreError::Decode { key, .. })
-            if key.starts_with("journal object manifest for ") =>
-        {
-            ()
-        }
+            if key.starts_with("journal object manifest for ") => {}
         Err(error) => return Err(format!("wrong corrupt manifest refusal: {error:?}").into()),
         Ok(_) => return Err("corrupt manifest measurement succeeded".into()),
     }

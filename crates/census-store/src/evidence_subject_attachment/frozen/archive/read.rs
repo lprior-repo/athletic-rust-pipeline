@@ -115,7 +115,13 @@ fn row<'a>(raw: &'a RawValue, state: &mut State<'_>) -> StoreResult<Row<'a>> {
     for pair in row.key.as_bytes().chunks_exact(2) {
         let high = pair.first().copied().ok_or(StoreError::CounterOverflow)?;
         let low = pair.get(1).copied().ok_or(StoreError::CounterOverflow)?;
-        key.push((digit(high) << 4) | digit(low));
+        let high = digit(high).ok_or(StoreError::CounterOverflow)?;
+        let low = digit(low).ok_or(StoreError::CounterOverflow)?;
+        key.push(
+            high.checked_mul(16)
+                .and_then(|shifted| shifted.checked_add(low))
+                .ok_or(StoreError::CounterOverflow)?,
+        );
     }
     Ok(Row {
         key,
@@ -123,11 +129,11 @@ fn row<'a>(raw: &'a RawValue, state: &mut State<'_>) -> StoreResult<Row<'a>> {
     })
 }
 
-fn digit(byte: u8) -> u8 {
+fn digit(byte: u8) -> Option<u8> {
     if byte <= b'9' {
-        byte - b'0'
+        byte.checked_sub(b'0')
     } else {
-        byte - b'a' + 10
+        byte.checked_sub(b'a')?.checked_add(10)
     }
 }
 pub(super) fn lower_hex(byte: u8) -> bool {

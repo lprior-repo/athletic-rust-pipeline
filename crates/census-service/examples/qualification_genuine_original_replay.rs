@@ -24,7 +24,7 @@ fn require_file(path: &Path, digest: &str, length: u64) -> Result<(), Error> {
         if count == 0 {
             break;
         }
-        hasher.update(&buffer[..count]);
+        hasher.update(buffer.get(..count).ok_or("file fragment unavailable")?);
         bytes = bytes
             .checked_add(u64::try_from(count)?)
             .ok_or("file length overflow")?;

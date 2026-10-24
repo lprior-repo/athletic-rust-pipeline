@@ -150,7 +150,11 @@ fn keys(
     budget: &mut AcquisitionReadBudget,
 ) -> StoreResult<Vec<Vec<u8>>> {
     let mut keys = Vec::new();
-    for (position, guard) in snapshot.prefix(table, prefix).take(maximum + 1).enumerate() {
+    for (position, guard) in snapshot
+        .prefix(table, prefix)
+        .take(maximum.saturating_add(1))
+        .enumerate()
+    {
         if position >= maximum {
             return Err(refused("public school intake inventory limit"));
         }

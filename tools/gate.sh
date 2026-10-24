@@ -276,7 +276,7 @@ lane_durability() {
     local plain_bin="$PWD/target/moon-portable/x86_64-unknown-linux-gnu/release/census-serve"
     local vm_host="$PWD/target/moon-build/x86_64-unknown-linux-gnu/release/examples/qualification_native_vm"
     local oracle_bin="$PWD/target/moon-build/x86_64-unknown-linux-gnu/release/examples/receipt-oracle"
-    local vm_captures="${CENSUS_NATIVE_VM_CAPTURES:-$PWD/var/native-vm-captures-sol-20261006.json}"
+    local vm_captures="${CENSUS_NATIVE_VM_CAPTURES:-$PWD/var/native-vm-captures-20261024.json}"
     if [ ! -f "$vm_captures" ]; then
       echo "durability: native VM captures missing at $vm_captures"
       return 1

@@ -217,9 +217,10 @@ fn closure(
     if count > census_domain::roster_affiliation_authority::MAX_ROSTER_CLOSURE_OBJECTS {
         return Err(Error::BudgetExceeded.into());
     }
+    const OBJECT_REF_ESTIMATE_BYTES: usize = std::mem::size_of::<ObjectRef>() + 64;
     let bytes = added
         .len()
-        .checked_mul(std::mem::size_of::<ObjectRef>() + 64)
+        .checked_mul(OBJECT_REF_ESTIMATE_BYTES)
         .ok_or(Error::BudgetExceeded)?;
     grant.charge_bytes(bytes).map_err(source_error)?;
     grant.charge_steps(count).map_err(source_error)?;

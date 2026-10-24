@@ -15,7 +15,7 @@ pub(super) fn require_capacity(
     let mut count = 0_usize;
     for (position, guard) in snapshot
         .prefix(journal, prefix.as_bytes())
-        .take(entry.parsed_teams + 1)
+        .take(entry.parsed_teams.saturating_add(1))
         .enumerate()
     {
         if position >= entry.parsed_teams {
@@ -55,7 +55,7 @@ pub(crate) fn validate_all(
     let mut counts = BTreeMap::new();
     for (position, guard) in snapshot
         .prefix(journal, b"public_resource_child_frontier")
-        .take(maximum + 1)
+        .take(maximum.saturating_add(1))
         .enumerate()
     {
         if position >= maximum {
@@ -98,7 +98,7 @@ fn receipts_inventory(
 ) -> StoreResult<()> {
     for (position, guard) in snapshot
         .prefix(receipts, b"public_resource_child_frontier")
-        .take(maximum + 1)
+        .take(maximum.saturating_add(1))
         .enumerate()
     {
         if position >= maximum {

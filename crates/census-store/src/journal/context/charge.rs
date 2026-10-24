@@ -138,7 +138,7 @@ pub(crate) fn verify_retained_charge(store: &Store, charge: &ContextCharge) -> S
             .db
             .snapshot()
             .prefix(&store.journal, &prefix)
-            .take(limit + 1)
+            .take(limit.saturating_add(1))
             .enumerate()
         {
             if index >= limit {

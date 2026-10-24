@@ -79,7 +79,11 @@ fn centiseconds(mark: &str) -> StoreResult<u32> {
     }
     minute
         .checked_mul(6000)
-        .and_then(|value| value.checked_add(second * 100))
+        .and_then(|value| {
+            second
+                .checked_mul(100)
+                .and_then(|scaled| value.checked_add(scaled))
+        })
         .and_then(|value| value.checked_add(fraction))
         .ok_or(StoreError::CounterOverflow)
 }

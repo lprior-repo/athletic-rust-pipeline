@@ -70,7 +70,9 @@ fn reported_tables_include_each_distinct_subject_once_when_locator_aliases_are_p
     Ok(())
 }
 
-fn retain_subjects(store: &Store) -> TestResult<(Vec<String>, Vec<(String, String)>)> {
+type RetainedSubjects = (Vec<String>, Vec<(String, String)>);
+
+fn retain_subjects(store: &Store) -> TestResult<RetainedSubjects> {
     let mut references = Vec::new();
     let mut pairs = Vec::new();
     for subject in [SUBJECT_A, SUBJECT_B] {

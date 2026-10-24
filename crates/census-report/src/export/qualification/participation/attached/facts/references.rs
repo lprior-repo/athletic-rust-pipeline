@@ -86,7 +86,12 @@ fn append_calendar(
         source.calendar.locator.as_str(),
     ];
     grant
-        .charge_bytes(values.len() * std::mem::size_of::<String>())
+        .charge_bytes(
+            values
+                .len()
+                .checked_mul(std::mem::size_of::<String>())
+                .ok_or(census_store::StoreError::CounterOverflow)?,
+        )
         .map_err(domain)?;
     output.try_reserve_exact(values.len()).map_err(|_| {
         crate::grouping::GroupingError::Allocation {

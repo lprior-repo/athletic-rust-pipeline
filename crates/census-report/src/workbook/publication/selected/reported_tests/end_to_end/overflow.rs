@@ -1,7 +1,7 @@
 use super::fixture::IncludedFixture;
 use super::mutation::{corrupt_cell, WorkbookMutation};
 use super::TestResult;
-use calamine::{open_workbook, Reader, Xlsx};
+use calamine::{open_workbook, DataType, Reader, Xlsx};
 
 #[test]
 fn aggregate_evidence_overflow_preserves_full_frozen_and_csv_evidence_without_marker() -> TestResult
@@ -76,33 +76,41 @@ fn aggregate_evidence_overflow_preserves_full_frozen_and_csv_evidence_without_ma
     let headers = athletes.rows().next().ok_or("athlete header")?;
     let id = headers
         .iter()
-        .position(|cell| cell.to_string() == "Athlete ID")
+        .position(|cell| cell.get_string().is_some_and(|text| text == "Athlete ID"))
         .ok_or("athlete ID column")?;
     let name = headers
         .iter()
-        .position(|cell| cell.to_string() == "Name")
+        .position(|cell| cell.get_string().is_some_and(|text| text == "Name"))
         .ok_or("athlete name column")?;
     let basis = headers
         .iter()
-        .position(|cell| cell.to_string() == "Record Basis")
+        .position(|cell| cell.get_string().is_some_and(|text| text == "Record Basis"))
         .ok_or("record basis column")?;
     let status = headers
         .iter()
-        .position(|cell| cell.to_string() == "Verification Status")
+        .position(|cell| {
+            cell.get_string()
+                .is_some_and(|text| text == "Verification Status")
+        })
         .ok_or("verification status column")?;
     let reported = headers
         .iter()
-        .position(|cell| cell.to_string() == "Reported bests")
+        .position(|cell| {
+            cell.get_string()
+                .is_some_and(|text| text == "Reported bests")
+        })
         .ok_or("reported bests column")?;
-    check!(headers
-        .iter()
-        .all(|cell| cell.to_string() != "Reported Source Evidence"));
+    check!(headers.iter().all(|cell| !cell
+        .get_string()
+        .is_some_and(|text| text == "Reported Source Evidence")));
     let row = athletes
         .rows()
         .skip(1)
         .find(|row| {
-            row.get(id)
-                .is_some_and(|cell| cell.to_string() == athlete.id.as_str())
+            row.get(id).is_some_and(|cell| {
+                cell.get_string()
+                    .is_some_and(|text| text == athlete.id.as_str())
+            })
         })
         .ok_or("reported athlete row")?;
     check!(eq; row.get(name).ok_or("name cell")?.to_string(), athlete.canonical_name);

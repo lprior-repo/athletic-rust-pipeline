@@ -2,7 +2,7 @@ use super::*;
 use crate::export::ReportedProfilePrTable;
 use crate::report::Scope;
 use crate::workbook::publication;
-use calamine::{open_workbook, Reader, Xlsx};
+use calamine::{open_workbook, DataType, Reader, Xlsx};
 use census_crawl::participation_evidence::provider_target::profile_pr::SourceProfilePrV1;
 use census_domain::model::{CanonicalAthlete, GradYear};
 use std::collections::BTreeSet;
@@ -186,15 +186,18 @@ fn profile_cell(workbook: &Path, athlete: &str) -> TestResult<String> {
     let headers = sheet.rows().next().ok_or("Athletes headers")?;
     let id = headers
         .iter()
-        .position(|cell| cell.to_string() == "Athlete ID")
+        .position(|cell| cell.get_string().is_some_and(|text| text == "Athlete ID"))
         .ok_or("Athlete ID column")?;
     let claims = headers
         .iter()
-        .position(|cell| cell.to_string() == "Source-declared PRs")
+        .position(|cell| {
+            cell.get_string()
+                .is_some_and(|text| text == "Source-declared PRs")
+        })
         .ok_or("Source-declared PRs column")?;
     let mut rows = sheet.rows().skip(1).filter(|row| {
         row.get(id)
-            .is_some_and(|value| value.to_string() == athlete)
+            .is_some_and(|value| value.get_string().is_some_and(|text| text == athlete))
     });
     let row = rows.next().ok_or("source PR athlete worksheet row")?;
     check!(rows.next().is_none());

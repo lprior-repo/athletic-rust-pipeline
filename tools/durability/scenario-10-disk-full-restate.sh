@@ -33,6 +33,9 @@ print(*(sock.getsockname()[1] for sock in sockets))
 TMPFS_DIR="$TEST_DIR/tmpfs"
 FJALL_DIR="$TEST_DIR/endpoint-store"
 mkdir -p "$TMPFS_DIR" "$FJALL_DIR"
+CLIENT="${BINARY:-$REPO_ROOT/target/moon-portable/x86_64-unknown-linux-gnu/release/census-service}"
+[ -x "$CLIENT" ] || { echo "SKIPPED: census-service binary missing at $CLIENT"; exit 0; }
+"$CLIENT" --store "$FJALL_DIR" capture-protocol init > "$WORK/store-init.log" 2>&1 || { echo "FAIL: capture store init refused for $FJALL_DIR"; exit 1; }
 export RESTATE_SERVER_BIN SERVE_BINARY ADMIN_PORT INGRESS_PORT NODE_PORT SERVE_PORT
 export TEST_DIR TMPFS_DIR FJALL_DIR
 set +e

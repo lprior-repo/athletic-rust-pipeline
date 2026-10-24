@@ -95,6 +95,8 @@ mkdir -p "$SCRATCH_STORE"
 WORK="$(mktemp -d "$SCRATCH_STORE/scenario-05-XXXXXX")"
 HTTP_STORE="$WORK/http-store"
 ENDPOINT_STORE="$WORK/endpoint-store"
+mkdir -p "$ENDPOINT_STORE"
+"$CLIENT" --store "$ENDPOINT_STORE" capture-protocol init > "$WORK/store-init.log" 2>&1 || { echo "FAIL: capture store init refused for $ENDPOINT_STORE"; exit 1; }
 REQUESTS="$WORK/requests.jsonl"
 FAULT_ORIGIN="http://127.0.0.1:$FAULT_PORT"
 # Chromium's ProcessSingleton falls back to a socket under the temp dir when the profile path
@@ -395,6 +397,7 @@ done
 check "the Restate admin surface answered" test "$ADMIN_UP" = true
 
 TMPDIR="$LANE_TMP" CENSUS_BROWSER_SOURCE_ORIGIN="$FAULT_ORIGIN" "$FAULT_SERVE" \
+    --capture-protocol fresh-qualification-v3 \
     --listen "127.0.0.1:$ENDPOINT_PORT" \
     --data-dir "$ENDPOINT_STORE" \
     --max-concurrent 16 \

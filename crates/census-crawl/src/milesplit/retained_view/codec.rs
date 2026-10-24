@@ -34,9 +34,14 @@ pub(super) fn entries<'de, D: serde::Deserializer<'de>>(
                     let target = entries
                         .capacity()
                         .saturating_mul(2)
-                        .max(entries.len() + 1)
+                        .max(entries.len().saturating_add(1))
                         .min(MAX_ENTRIES);
-                    if entries.try_reserve_exact(target - entries.len()).is_err() {
+                    let Some(reserved) = target.checked_sub(entries.len()) else {
+                        return ControlFlow::Break(Err(A::Error::custom(
+                            "retained journal entry allocation",
+                        )));
+                    };
+                    if entries.try_reserve_exact(reserved).is_err() {
                         return ControlFlow::Break(Err(A::Error::custom(
                             "retained journal entry allocation",
                         )));
@@ -83,7 +88,11 @@ impl Write for LimitedBytes {
                 .max(needed)
                 .min(MAX_BYTES);
             self.0
-                .try_reserve_exact(target - self.0.len())
+                .try_reserve_exact(
+                    target.checked_sub(self.0.len()).ok_or_else(|| {
+                        std::io::Error::other("retained journal capacity underflow")
+                    })?,
+                )
                 .map_err(std::io::Error::other)?;
         }
         self.0.extend_from_slice(bytes);

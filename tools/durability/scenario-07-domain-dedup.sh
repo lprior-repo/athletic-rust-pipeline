@@ -53,6 +53,7 @@ SCRATCH_STORE="$(cd "$SCRATCH_STORE" && pwd)"
 WORK="$(mktemp -d "$SCRATCH_STORE/scenario-07-XXXXXX")"
 DATA="$WORK/store"
 mkdir -p "$DATA"
+"$CLIENT" --store "$DATA" capture-protocol init > "$WORK/store-init.log" 2>&1 || { echo "FAIL: capture store init refused for $DATA"; exit 1; }
 echo "EVIDENCE: $WORK"
 sha256sum "$CLIENT" "$SERVE" "$NODE" > "$WORK/binary-hashes.sha256"
 cat "$WORK/binary-hashes.sha256"
@@ -129,6 +130,7 @@ NODE_PID=$!
 wait_admin || { echo "FAIL: node did not answer on the admin port"; exit 1; }
 echo "NODE: restate-server pid $NODE_PID admin $ADMIN_PORT ingress $INGRESS_PORT"
 "$SERVE" \
+    --capture-protocol fresh-qualification-v3 \
     --listen "127.0.0.1:$ENDPOINT_PORT" --data-dir "$DATA" --max-concurrent 64 \
     --drain-timeout 30 --browser-profile "$WORK/browser-profile" \
     --browser-executable "$CHROMIUM" --browser-headless > "$WORK/endpoint.log" 2>&1 &

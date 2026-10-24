@@ -78,7 +78,8 @@ impl Fixture {
     }
 
     pub(super) fn clear_eligible(&self) -> TestResult {
-        for kind in [PublicResourceRootKindV1::MileSplitTeamDirectory] {
+        let kind = PublicResourceRootKindV1::MileSplitTeamDirectory;
+        {
             let work = self.work(kind)?;
             let representation = crate::net::RepresentationHeaders::from_entries(
                 work.request().representation_headers().to_vec(),

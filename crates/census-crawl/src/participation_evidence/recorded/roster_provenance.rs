@@ -184,11 +184,11 @@ fn encode_note(note: &RowNote<'_>) -> CrawlResult<String> {
         .and_then(|remaining| remaining.checked_sub(note.capture_url.len()))
         .ok_or_else(attachment_resource)?;
     let mut bytes = [0u8; MAX_ATTACHMENT_BYTES];
-    let mut writer = io::Cursor::new(&mut bytes[..limit]);
+    let mut writer = io::Cursor::new(bytes.get_mut(..limit).ok_or_else(attachment_resource)?);
     serde_json::to_writer(&mut writer, note).map_err(|_| attachment_resource())?;
     let length = usize::try_from(writer.position()).map_err(|_| attachment_resource())?;
-    let text =
-        std::str::from_utf8(&bytes[..length]).map_err(|_| invalid("roster note is not UTF-8"))?;
+    let text = std::str::from_utf8(bytes.get(..length).ok_or_else(attachment_resource)?)
+        .map_err(|_| invalid("roster note is not UTF-8"))?;
     Ok(text.to_string())
 }
 

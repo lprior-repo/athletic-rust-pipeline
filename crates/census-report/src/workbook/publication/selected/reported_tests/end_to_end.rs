@@ -1,5 +1,5 @@
 use super::TestResult;
-use calamine::{open_workbook, Reader, Xlsx};
+use calamine::{open_workbook, DataType, Reader, Xlsx};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
@@ -142,7 +142,7 @@ fn include_publication_writes_only_reported_rows_from_reopened_retained_facts() 
     let column = |name: &str| -> TestResult<usize> {
         headers
             .iter()
-            .position(|cell| cell.to_string() == name)
+            .position(|cell| cell.get_string().is_some_and(|text| text == name))
             .ok_or_else(|| format!("missing worksheet column {name}").into())
     };
     for name in [

@@ -60,6 +60,7 @@ WORK="$(mktemp -d "$SCRATCH_STORE/scenario-04-XXXXXX")"
 DATA="$WORK/store"
 BOUNDARY="$WORK/boundary"
 mkdir -p "$DATA" "$BOUNDARY" "$WORK/bin"
+"$CLIENT" --store "$DATA" capture-protocol init > "$WORK/store-init.log" 2>&1 || { echo "FAIL: capture store init refused for $DATA"; exit 1; }
 chmod 700 "$BOUNDARY"
 echo "EVIDENCE: $WORK"
 
@@ -156,10 +157,10 @@ echo "NODE: $("$NODE" --version 2>&1 | head -1) pid $NODE_PID admin $ADMIN_PORT 
 
 start_endpoint() { # $1=binary $2=port $3=log $4=with-seam
     if [ "$4" = true ]; then
-        ( cd "$WORK"; exec env CENSUS_NATIVE_SOURCE_BOUNDARY="$CONFIG" "$1" --listen "127.0.0.1:$2" \
+        ( cd "$WORK"; exec env CENSUS_NATIVE_SOURCE_BOUNDARY="$CONFIG" "$1" --capture-protocol fresh-qualification-v3 --listen "127.0.0.1:$2" \
             --data-dir "$DATA" --max-concurrent 64 --drain-timeout 30 ) > "$3" 2>&1 &
     else
-        ( cd "$WORK"; exec "$1" --listen "127.0.0.1:$2" \
+        ( cd "$WORK"; exec "$1" --capture-protocol fresh-qualification-v3 --listen "127.0.0.1:$2" \
             --data-dir "$DATA" --max-concurrent 64 --drain-timeout 30 ) > "$3" 2>&1 &
     fi
     echo $!

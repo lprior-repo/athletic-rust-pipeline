@@ -13,12 +13,7 @@ use chrono::{DateTime, Utc};
 use serde::Serialize;
 use serde_json::json;
 
-use crate::participation_evidence::provider_school::{
-    CheckedProviderSchoolPacketV1, ProviderSchoolPacketV1,
-};
-use census_domain::model::SourceNamespace;
-#[path = "provider_school/fixtures.rs"]
-mod school_fixtures;
+use super::provider_school::fixtures as school_fixtures;
 
 mod bridge;
 mod context;

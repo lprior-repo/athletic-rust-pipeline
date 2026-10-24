@@ -7,7 +7,7 @@ pub(super) fn serialize<S: Serializer>(body: &[u8], serializer: S) -> Result<S::
 
 pub(super) fn deserialize<'de, D: Deserializer<'de>>(parser: D) -> Result<Vec<u8>, D::Error> {
     let text = String::deserialize(parser)?;
-    let maximum = super::MAX_BODY.div_ceil(3) * 4;
+    let maximum = super::MAX_BODY.div_ceil(3).saturating_mul(4);
     if text.len() > maximum {
         return Err(serde::de::Error::custom("public school intake body limit"));
     }

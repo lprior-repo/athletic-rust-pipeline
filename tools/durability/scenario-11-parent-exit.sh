@@ -52,6 +52,7 @@ WORK="$(mktemp -d "$SCRATCH_STORE/scenario-11-XXXXXX")"
 DATA="$WORK/store"
 TRIGGER="$WORK/trigger"
 mkdir -p "$DATA"
+"$CLIENT" --store "$DATA" capture-protocol init > "$WORK/store-init.log" 2>&1 || { echo "FAIL: capture store init refused for $DATA"; exit 1; }
 echo "EVIDENCE: $WORK"
 sha256sum "$CLIENT" "$SERVE" "$NODE" > "$WORK/binary-hashes.sha256"
 cat "$WORK/binary-hashes.sha256"
@@ -143,6 +144,7 @@ NODE_PID=$!
 wait_admin || { echo "FAIL: node did not answer on the admin port"; exit 1; }
 
 RUST_LOG=info ATHLETIC_FAULT_HTTP_EXIT="$TRIGGER" CENSUS_NATIVE_SOURCE_BOUNDARY="$CONFIG" "$SERVE" \
+    --capture-protocol fresh-qualification-v3 \
     --listen "127.0.0.1:$ENDPOINT_PORT" --data-dir "$DATA" --max-concurrent 64 \
     --drain-timeout 60 --browser-profile "$WORK/browser-profile" \
     --browser-executable "$CHROMIUM" --browser-headless > "$WORK/endpoint.log" 2>&1 &
@@ -329,6 +331,7 @@ echo "RESTARTED: Restate node from same base-dir"
 
 sha256sum -c "$WORK/binary-hashes.sha256" > "$WORK/restart-binary-hashes.txt"
 env -u ATHLETIC_FAULT_HTTP_EXIT -u CENSUS_NATIVE_SOURCE_BOUNDARY "$SERVE" \
+    --capture-protocol fresh-qualification-v3 \
     --listen "127.0.0.1:$ENDPOINT_PORT" --data-dir "$DATA" --max-concurrent 64 \
     --drain-timeout 60 --browser-profile "$WORK/browser-profile" \
     --browser-executable "$CHROMIUM" --browser-headless > "$WORK/endpoint-second.log" 2>&1 &

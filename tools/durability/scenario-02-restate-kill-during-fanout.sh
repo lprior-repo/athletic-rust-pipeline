@@ -51,6 +51,7 @@ WORK="$(mktemp -d "$SCRATCH_STORE/scenario-02-XXXXXX")"
 DATA="$WORK/store"
 BOUNDARY="$WORK/boundary"
 mkdir -p "$DATA" "$BOUNDARY"
+"$CLIENT" --store "$DATA" capture-protocol init > "$WORK/store-init.log" 2>&1 || { echo "FAIL: capture store init refused for $DATA"; exit 1; }
 chmod 700 "$BOUNDARY"
 echo "EVIDENCE: $WORK"
 sha256sum "$CLIENT" "$SERVE" "$NODE" > "$WORK/binary-hashes.sha256"
@@ -122,6 +123,7 @@ trap cleanup EXIT
 NODE_PID=$!
 wait_admin || { echo "FAIL: node did not answer on the admin port"; exit 1; }
 CENSUS_NATIVE_SOURCE_BOUNDARY="$CONFIG" "$SERVE" \
+    --capture-protocol fresh-qualification-v3 \
     --listen "127.0.0.1:$ENDPOINT_PORT" --data-dir "$DATA" --max-concurrent 64 \
     --drain-timeout 30 --browser-profile "$WORK/browser-profile" \
     --browser-executable "$CHROMIUM" --browser-headless > "$WORK/endpoint.log" 2>&1 &

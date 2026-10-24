@@ -81,6 +81,15 @@ pub(super) fn load_bounded_bytes(
     )
 }
 
+fn chunk_expected(total: usize, index: usize) -> ReportResult<usize> {
+    let consumed = index
+        .checked_mul(CHUNK_BYTES)
+        .ok_or_else(|| invalid("participation replay chunk limit overflow"))?;
+    total
+        .checked_sub(consumed)
+        .ok_or_else(|| invalid("participation replay chunk boundary differs"))
+}
+
 fn load_bytes_with_limits(
     directory: &Path,
     anchored_descriptor: &str,
@@ -123,7 +132,7 @@ fn load_bytes_with_limits(
             let chunk_limit = u64::try_from(CHUNK_BYTES)
                 .map_err(|_| invalid("participation replay chunk limit overflow"))?;
             let chunk = proof_objects::read(directory, digest, chunk_limit)?;
-            let expected = (descriptor.bytes - index * CHUNK_BYTES).min(CHUNK_BYTES);
+            let expected = chunk_expected(descriptor.bytes, index)?.min(CHUNK_BYTES);
             if chunk.len() != expected {
                 return Err(invalid("participation replay chunk boundary differs"));
             }
@@ -188,7 +197,10 @@ impl<'a> Chunks<'a> {
         if needed > MAX_BYTES {
             return Err(invalid("participation replay exceeds 512 MiB"));
         }
-        let (first, rest) = bytes.split_at(bytes.len().min(CHUNK_BYTES - self.buffer.len()));
+        let room = CHUNK_BYTES
+            .checked_sub(self.buffer.len())
+            .ok_or_else(|| invalid("participation replay length overflow"))?;
+        let (first, rest) = bytes.split_at(bytes.len().min(room));
         self.buffer.extend_from_slice(first);
         if self.buffer.len() == CHUNK_BYTES {
             self.store()?;

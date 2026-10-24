@@ -64,7 +64,7 @@ fn checked_recovery_refuses_missing_new_root_without_adopting_a_foreign_director
     let missing = foreign.install(b"new expected but absent here")?;
     let policy = InitialObjects::checked_recovery(&fixture.directory)?;
     invariant(
-        policy.require_with_roots(&fixture.directory, &[missing.clone()]),
+        policy.require_with_roots(&fixture.directory, std::slice::from_ref(&missing)),
         "selected proof directory differs from its authenticated object inventory",
     )?;
     check!(!fixture.directory.join(&missing.digest).exists());
@@ -82,7 +82,7 @@ fn checked_recovery_refuses_unreported_extra_created_after_initial_admission() -
     let expected = fixture.install(b"new expected root")?;
     let extra = fixture.install(b"new unexpected root")?;
     invariant(
-        policy.require_with_roots(&fixture.directory, &[expected.clone()]),
+        policy.require_with_roots(&fixture.directory, std::slice::from_ref(&expected)),
         "selected proof directory differs from its authenticated object inventory",
     )?;
     fixture.object(&initial, b"initial existing proof")?;
@@ -98,7 +98,7 @@ fn fresh_accepts_exact_new_roots_and_rejects_any_unreported_existing_proof() -> 
     let first = fixture.install(b"first new root")?;
     let second = fixture.install(b"second new root")?;
     invariant(
-        policy.require_with_roots(&fixture.directory, &[first.clone()]),
+        policy.require_with_roots(&fixture.directory, std::slice::from_ref(&first)),
         "selected proof directory differs from its authenticated object inventory",
     )?;
     policy.require_with_roots(
@@ -152,7 +152,7 @@ fn new_root_checksum_is_verified_after_initial_policy_admission() -> TestResult 
     let path = fixture.directory.join(&root.digest);
     fs::write(&path, &changed)?;
     corrupt(
-        policy.require_with_roots(&fixture.directory, &[root.clone()]),
+        policy.require_with_roots(&fixture.directory, std::slice::from_ref(&root)),
         &path,
     )?;
     fixture.object(&initial, b"initial sound proof")?;

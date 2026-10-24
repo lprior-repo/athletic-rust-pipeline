@@ -4,24 +4,24 @@ use crate::model::{
 
 use super::*;
 
-pub(super) const FIRST: &str =
+pub(in super::super) const FIRST: &str =
     "ath_public_v1_2e4fb039913a48c1fc1c41f2308f4ffc47f0e2b356e2cf14887893066269fa60";
-pub(super) const SECOND: &str =
+pub(in super::super) const SECOND: &str =
     "ath_public_v1_afcea59d6afd88c8f0174ae3261f8fcd425bef80224ccd8a1a9a12981aa2c339";
-pub(super) const THIRD: &str =
+pub(in super::super) const THIRD: &str =
     "ath_public_v1_6522bfe506b5c67435c61ed3da84dd92e1e65f8889a239cc56b3c0b6c1e20266";
-pub(super) const SPLIT_A: &str =
+pub(in super::super) const SPLIT_A: &str =
     "ath_public_v1_44c9ffde4a8068cb6d975d01cf404f8c76017792dab789899b4a63de6699280c";
-pub(super) const SPLIT_B: &str =
+pub(in super::super) const SPLIT_B: &str =
     "ath_public_v1_3eca8b5f6df95cfface1b198cef6e6f374b777159a5336f3b4e057a375a71c7d";
-pub(super) const SPLIT_C: &str =
+pub(in super::super) const SPLIT_C: &str =
     "ath_public_v1_ce459e4b42ad30398400daac53f9c3f7ea40ad177191f57f9da268e42ce490a9";
 
-pub(super) fn candidate(label: &str) -> AthleteCandidateId {
+pub(in super::super) fn candidate(label: &str) -> AthleteCandidateId {
     AthleteCandidateId::mint("ath", &[label])
 }
 
-pub(super) fn evidence(
+pub(in super::super) fn evidence(
     id: &str,
     kind: CandidateEvidenceKind,
     members: &[&str],
@@ -34,7 +34,7 @@ pub(super) fn evidence(
     }
 }
 
-pub(super) fn binding(label: &str, source_id: &str) -> BindingClaim {
+pub(in super::super) fn binding(label: &str, source_id: &str) -> BindingClaim {
     BindingClaim {
         id: format!("binding:{label}"),
         source: SourceObjectKey {
@@ -47,14 +47,14 @@ pub(super) fn binding(label: &str, source_id: &str) -> BindingClaim {
     }
 }
 
-pub(super) fn closed(from: &str, through: &str) -> TestResult<EffectiveScope> {
+pub(in super::super) fn closed(from: &str, through: &str) -> TestResult<EffectiveScope> {
     Ok(EffectiveScope::Closed(ProfileDateRangeV1::new(
         ProfileDate::parse(from)?,
         ProfileDate::parse(through)?,
     )?))
 }
 
-pub(super) fn establish(label: &str, source_id: &str) -> HistoryRequest {
+pub(in super::super) fn establish(label: &str, source_id: &str) -> HistoryRequest {
     HistoryRequest::Establish {
         binding: binding(label, source_id),
         evidence: evidence(
@@ -65,7 +65,7 @@ pub(super) fn establish(label: &str, source_id: &str) -> HistoryRequest {
     }
 }
 
-pub(super) fn successor(
+pub(in super::super) fn successor(
     id: &str,
     label: &str,
     sequence: u64,
@@ -78,7 +78,7 @@ pub(super) fn successor(
     })
 }
 
-pub(super) struct Fixture {
+pub(in super::super) struct Fixture {
     pub installation: StoreIdentity,
     pub head: RegistryHead,
     pub records: Vec<HistoryRecord>,
@@ -129,7 +129,7 @@ impl Fixture {
     }
 }
 
-pub(super) fn chain() -> TestResult<Fixture> {
+pub(in super::super) fn chain() -> TestResult<Fixture> {
     let mut fixture = Fixture::new()?;
     for (label, source) in [("a", "1"), ("b", "2"), ("c", "3")] {
         let _births = fixture.append(establish(label, source))?;
@@ -139,7 +139,10 @@ pub(super) fn chain() -> TestResult<Fixture> {
     Ok(fixture)
 }
 
-pub(super) fn split_request(groups: &[&[&str]], revoked: Vec<u64>) -> TestResult<SplitRequest> {
+pub(in super::super) fn split_request(
+    groups: &[&[&str]],
+    revoked: Vec<u64>,
+) -> TestResult<SplitRequest> {
     let partitions = groups
         .iter()
         .map(|labels| {

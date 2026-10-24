@@ -62,7 +62,7 @@ pub(in super::super) fn validate(
         || expected.ordinal != head.ordinal
         || expected.digest != head.digest
         || state.used_objects.len() != objects.len()
-        || receipts.len() != state.used_operations.len() + 1
+        || receipts.len() != state.used_operations.len().saturating_add(1)
     {
         return Err(Error::Corrupt("review complete inventory mismatch").into());
     }
@@ -82,7 +82,7 @@ fn check_chained(
     }
     let prior = AuthorityHead {
         version: 1,
-        ordinal: head.ordinal - 1,
+        ordinal: head.ordinal.checked_sub(1).ok_or(Error::BudgetExceeded)?,
         digest: head.digest.clone(),
     };
     validate_record(&record, state.objects, state.identity, &prior, state.rows)?;

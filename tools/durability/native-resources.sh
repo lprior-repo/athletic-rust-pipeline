@@ -264,7 +264,7 @@ IMAGE_DIGEST="$(sha256sum -- "$IMAGE" | awk '{print $1}')"
     fail "guest image digest differs from the pinned digest: $IMAGE_DIGEST"
 record_artifact 'guest-image' "$IMAGE" "sha256 $IMAGE_SHA256" "$IMAGE_DIGEST"
 
-CAPTURES="${CENSUS_NATIVE_VM_CAPTURES:-$REPO_ROOT/var/native-vm-captures-sol-20261006.json}"
+CAPTURES="${CENSUS_NATIVE_VM_CAPTURES:-$REPO_ROOT/var/native-vm-captures-20261024.json}"
 budget_artifact 'guest capture manifest' "$CAPTURES" "$CAPTURES_BUDGET"
 CAPTURES_PATH="$(resolved "$CAPTURES")"
 for field in '.index.body' '.index.metadata' '.roster.body' '.roster.metadata'; do

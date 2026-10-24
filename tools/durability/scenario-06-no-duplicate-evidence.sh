@@ -174,6 +174,7 @@ for KIND in before_source_request response_received capture_committed page_chunk
     CONFIG="$BOUNDARY/native-source-boundary-config.json"
     MARKER="$BOUNDARY/teams-source-reservation-reached.json"
     mkdir -p "$DATA" "$BOUNDARY"
+    "$CLIENT" --store "$DATA" capture-protocol init > "$WORK/store-init.log" 2>&1 || { echo "FAIL: capture store init refused for $DATA"; exit 1; }
     chmod 700 "$BOUNDARY"
     write_node_config
     
@@ -190,6 +191,7 @@ for KIND in before_source_request response_received capture_committed page_chunk
     
     # Start endpoint with boundary config
     CENSUS_NATIVE_SOURCE_BOUNDARY="$CONFIG" "$SERVE" \
+        --capture-protocol fresh-qualification-v3 \
         --listen "127.0.0.1:$ENDPOINT_PORT" --data-dir "$DATA" --max-concurrent 64 \
         --drain-timeout 30 --browser-profile "$WORK/browser-profile-$KIND" \
         --browser-executable "$CHROMIUM" --browser-headless > "$WORK/endpoint-$KIND.log" 2>&1 &
@@ -286,6 +288,7 @@ PY
     # Restart endpoint against the same store and directories
     sha256sum -c "$WORK/binary-hashes.sha256" > "$WORK/restart-binary-hashes-$KIND.txt"
     env -u CENSUS_NATIVE_SOURCE_BOUNDARY "$SERVE" \
+        --capture-protocol fresh-qualification-v3 \
         --listen "127.0.0.1:$ENDPOINT_PORT" --data-dir "$DATA" --max-concurrent 64 \
         --drain-timeout 30 --browser-profile "$WORK/browser-profile-$KIND" \
         --browser-executable "$CHROMIUM" --browser-headless > "$WORK/endpoint-restart-$KIND.log" 2>&1 &

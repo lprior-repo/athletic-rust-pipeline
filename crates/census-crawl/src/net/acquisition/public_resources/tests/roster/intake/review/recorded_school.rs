@@ -112,8 +112,8 @@ async fn genuine_owned_school_recorded_and_original_readers_preserve_current_col
         return Err("exactly one frozen observed school claim".into());
     };
     let original = claim.evidence(&mut grant)?.retained_root(&mut grant)?;
-    check!(eq; original.root(), &held.root);
+    check!(eq; *original.root(), held.root);
     check!(eq; original.payload().get().as_bytes(), held.bytes);
-    original_projection(&original, &held, &mut grant)?;
+    original_projection(original, &held, &mut grant)?;
     Ok(())
 }

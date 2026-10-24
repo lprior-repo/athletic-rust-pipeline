@@ -80,7 +80,9 @@ pub(super) fn close(f: Fixture) -> TestResult<(tempfile::TempDir, PathBuf)> {
     Ok((directory, root))
 }
 
-pub(super) fn raw_rows(root: &Path) -> TestResult<Vec<(usize, Vec<u8>, Vec<u8>)>> {
+pub(super) type RawRows = Vec<(usize, Vec<u8>, Vec<u8>)>;
+
+pub(super) fn raw_rows(root: &Path) -> TestResult<RawRows> {
     use fjall::Readable;
     let (db, entities, journal, meta, receipts) = crate::open_keyspaces(root, 8_388_608)?;
     let snapshot = db.snapshot();

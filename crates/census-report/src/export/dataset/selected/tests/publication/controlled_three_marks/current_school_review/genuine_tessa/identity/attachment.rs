@@ -21,9 +21,9 @@ pub(in super::super) fn linked(
     let plan = discover_current_html_results(&current, &mut grant)?;
     check!(eq; plan.group_count(),1);
     check!(eq; plan.diagnostic_count(),0);
-    Ok(plan.with_group(0, &mut grant, |linked, _| {
+    plan.with_group(0, &mut grant, |linked, _| {
         Ok(read(&linked, target, command, receipt))
-    })??)
+    })?
 }
 
 fn read(
