@@ -91,12 +91,27 @@ pub(crate) fn scan_contents<G>(
     namespace: JournalNamespace<'_>,
     budget: ReadBudget,
     state: &mut G,
+    preadmit: impl FnMut(&mut G, super::super::PhysicalReadAdmissionV1) -> StoreResult<()>,
+    admit_row: impl FnMut(&mut G) -> StoreResult<()>,
+    visit: impl FnMut(&mut G, &[u8], &[u8]) -> StoreResult<()>,
+) -> StoreResult<JournalNamespaceContents> {
+    admission::namespace(namespace, budget)?;
+    scan_contents_admitted(
+        snapshot, journal, namespace, budget, state, preadmit, admit_row, visit,
+    )
+}
+
+pub(super) fn scan_contents_admitted<G>(
+    snapshot: &fjall::Snapshot,
+    journal: &fjall::Keyspace,
+    namespace: JournalNamespace<'_>,
+    budget: ReadBudget,
+    state: &mut G,
     mut preadmit: impl FnMut(&mut G, super::super::PhysicalReadAdmissionV1) -> StoreResult<()>,
     mut admit_row: impl FnMut(&mut G) -> StoreResult<()>,
     mut visit: impl FnMut(&mut G, &[u8], &[u8]) -> StoreResult<()>,
 ) -> StoreResult<JournalNamespaceContents> {
     use super::super::PhysicalReadAdmissionV1;
-    admission::namespace(namespace, budget)?;
     let prefix = namespace.physical_prefix()?;
     preadmit(state, PhysicalReadAdmissionV1::KeyProbe)?;
     let mut physical = snapshot.prefix(journal, &prefix);

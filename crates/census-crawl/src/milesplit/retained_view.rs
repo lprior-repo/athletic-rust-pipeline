@@ -5,6 +5,7 @@ use serde_json::Value;
 use std::collections::BTreeMap;
 
 mod codec;
+mod demand;
 mod frozen;
 mod recording;
 mod sealed {
@@ -76,6 +77,10 @@ enum RecordedPayload {
 }
 
 impl RetainedJournalBundle {
+    pub fn measure_present(view: &StoreSnapshot<'_>) -> StoreResult<impl Serialize> {
+        demand::measure_retained_journal_present(view)
+    }
+
     pub fn encode(&self) -> StoreResult<Vec<u8>> {
         let mut bytes = codec::LimitedBytes::default();
         serde_json::to_writer(&mut bytes, self).map_err(encoding)?;
