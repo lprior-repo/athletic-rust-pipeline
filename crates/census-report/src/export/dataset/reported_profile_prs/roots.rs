@@ -2,6 +2,7 @@ use super::{
     invalid, ReportedProfilePrs, ReportedProfileRootSchemaV1, ReportedProfileRootV1,
     MAX_PACKET_BYTES, MAX_ROOTS,
 };
+use crate::export::dataset::initial_objects::InitialObjects;
 use crate::export::dataset::selected_proofs::objects;
 use crate::report::ReportResult;
 use serde::de::{Error, SeqAccess, Visitor};
@@ -11,12 +12,10 @@ impl ReportedProfilePrs {
     pub(in crate::export::dataset) fn require_initial_objects(
         &self,
         directory: &Path,
+        initial: &InitialObjects,
     ) -> ReportResult<()> {
         self.validate_roots()?;
-        if self.roots.is_empty() {
-            return objects::require_empty(directory);
-        }
-        let mut expected = self
+        let expected = self
             .roots
             .iter()
             .map(|root| objects::Reference {
@@ -24,9 +23,7 @@ impl ReportedProfilePrs {
                 bytes: root.payload.bytes,
             })
             .collect::<Vec<_>>();
-        expected.sort_unstable_by(|a, b| a.digest.cmp(&b.digest));
-        expected.dedup();
-        objects::verify(directory, &expected)
+        initial.require_with_roots(directory, &expected)
     }
 
     pub(super) fn validate_roots(&self) -> ReportResult<()> {

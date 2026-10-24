@@ -1,4 +1,5 @@
 use super::{invalid, replay, ReportedProfilePrs, ReportedProfileRootV1, MAX_ROOTS};
+use crate::export::dataset::initial_objects::InitialObjects;
 use crate::export::dataset::proof_objects;
 use crate::export::dataset::selected_proofs::objects;
 use crate::report::ReportResult;
@@ -22,6 +23,7 @@ impl ReportedProfilePrs {
         scope: super::SourceScope<'_>,
         directory: &Path,
         grant: &mut AttachmentReplayGrantV1,
+        initial: &InitialObjects,
     ) -> ReportResult<()> {
         if scope.profile.input().include_provisional
             == census_domain::model::ProvisionalInclusionV1::Include
@@ -33,6 +35,7 @@ impl ReportedProfilePrs {
                 as_of,
                 directory,
                 grant,
+                initial,
             )?;
         }
         Ok(())
@@ -44,8 +47,9 @@ impl ReportedProfilePrs {
         as_of: &ProfileDate,
         directory: &Path,
         grant: &mut AttachmentReplayGrantV1,
+        initial: &InitialObjects,
     ) -> ReportResult<Self> {
-        objects::require_empty(directory)?;
+        initial.require_initial(directory)?;
         let selected = athletes
             .into_iter()
             .flat_map(CanonicalAthlete::identities)

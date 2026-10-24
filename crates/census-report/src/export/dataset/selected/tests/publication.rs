@@ -80,7 +80,11 @@ async fn published_selected_proof_loss_and_tampering_fail_verification_and_recov
     Ok(())
 }
 
-fn publish(fixture: &Fixture, dataset: &ExportDataset, root: &Path) -> TestResult<PathBuf> {
+pub(super) fn publish(
+    fixture: &Fixture,
+    dataset: &ExportDataset,
+    root: &Path,
+) -> TestResult<PathBuf> {
     let options = Options {
         grad_year: Some(2027),
         out: Some(root.to_path_buf()),

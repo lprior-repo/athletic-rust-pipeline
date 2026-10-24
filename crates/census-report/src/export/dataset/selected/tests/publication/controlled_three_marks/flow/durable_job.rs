@@ -48,6 +48,7 @@ fn selected_durable_job_preserves_best_school_public_id_retry_and_revocation() -
     };
     check!(ExportDataset::for_job_request(&installed.store, job, &mismatch).is_err());
     super::super::documentary_lifecycle::revoke(&installed, &accepted50)?;
+    require_stale_recovery_preserved(&installed.store, job, &request, &root, &workbook)?;
     check!(ExportDataset::for_job_request(&installed.store, job, &request).is_err());
     check!(super::super::publish::publish(&retry, &installed.store, &profile, &root).is_err());
     check!(eq; std::fs::read(&workbook)?, bytes);
@@ -206,5 +207,42 @@ fn selected_job_interrupted_intent_requires_verified_current_input_for_recovery(
     check!(super::super::publish::publish(&stale, &installed.store, &profile, &root).is_err());
     check!(eq; std::fs::read_link(root.join("current"))?, recovered_pointer);
     check!(eq; publication::verify_published(&workbook)?.generation_digest, original);
+    Ok(())
+}
+
+fn require_stale_recovery_preserved(
+    store: &census_store::Store,
+    job: &str,
+    request: &ExportJobRequest,
+    publication_root: &std::path::Path,
+    workbook: &std::path::Path,
+) -> TestResult {
+    let input_root = store.out_dir().join("export-inputs").join(format!(
+        "{}.selected-v1",
+        census_domain::model::serialized_digest(&job)?
+    ));
+    let archive = std::fs::read(input_root.join("input.json"))?;
+    let commitment = std::fs::read(input_root.join("commitment.json"))?;
+    let pointer = std::fs::read_link(publication_root.join("current"))?;
+    let manifest_path = workbook
+        .parent()
+        .ok_or("published generation")?
+        .join("manifest.json");
+    let manifest = std::fs::read(&manifest_path)?;
+    let bytes = std::fs::read(workbook)?;
+    let sequence = store.snapshot().sequence();
+    let error = ExportDataset::recover_job_request(store, job, request)
+        .err()
+        .ok_or("stale committed recovery unexpectedly accepted")?;
+    check!(
+        matches!(error, crate::report::ReportError::Invariant { ref detail }
+        if detail == "selected export job authority changed; retained input is preserved")
+    );
+    check!(eq; store.snapshot().sequence(), sequence);
+    check!(eq; std::fs::read(input_root.join("input.json"))?, archive);
+    check!(eq; std::fs::read(input_root.join("commitment.json"))?, commitment);
+    check!(eq; std::fs::read_link(publication_root.join("current"))?, pointer);
+    check!(eq; std::fs::read(&manifest_path)?, manifest);
+    check!(eq; std::fs::read(workbook)?, bytes);
     Ok(())
 }

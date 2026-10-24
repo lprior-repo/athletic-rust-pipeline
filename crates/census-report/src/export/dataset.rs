@@ -12,6 +12,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 mod frozen;
+mod initial_objects;
 mod job_request;
 mod loaded;
 pub use job_request::ExportJobRequest;

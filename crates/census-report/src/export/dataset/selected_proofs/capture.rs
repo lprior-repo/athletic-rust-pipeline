@@ -2,6 +2,7 @@ use super::{
     athlete_fingerprint, identity, invalid, objects, require_binding, require_physical_roots,
     HydratedProofs, SelectedProofs, Version,
 };
+use crate::export::dataset::initial_objects::InitialObjects;
 use crate::export::dataset::ExportDataset;
 use crate::export::qualification::current_affiliation::{self, FrozenAffiliationDescriptor};
 use crate::export::qualification::participation::PinnedParticipation;
@@ -20,12 +21,13 @@ impl SelectedProofs {
         directory: &Path,
         identity: census_store::CapturedFrozenPublicIdentityV2,
         school: Option<crate::export::qualification::participation::SchoolContext<'_, '_>>,
+        initial: &InitialObjects,
     ) -> ReportResult<(Self, HydratedProofs)> {
         require_binding(dataset, profile, expected_fingerprints)?;
         require_physical_roots(snapshot, expected_fingerprints)?;
         dataset
             .reported_profile_prs
-            .require_initial_objects(directory)?;
+            .require_initial_objects(directory, initial)?;
         let (identity, accepted) = identity.into_parts();
         dataset.prepare_selected_public_identities(accepted)?;
         let public_identity = identity::Bundle::capture(directory, &identity)?;

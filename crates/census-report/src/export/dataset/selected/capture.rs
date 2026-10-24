@@ -1,4 +1,5 @@
 use super::{invalid, SelectedAuthority};
+use crate::export::dataset::initial_objects::InitialObjects;
 use crate::export::dataset::{frozen, read, ExportDataset, Loaded};
 use crate::export::qualification::participation::{archive, school_projection, CalendarContext};
 use crate::export::qualification::SelectionBinding;
@@ -23,7 +24,14 @@ impl ExportDataset {
         selection: &ProfileSelectionV1,
         objects_directory: &Path,
     ) -> ReportResult<Self> {
-        Self::selected_snapshot_for_job(store, snapshot, selection, objects_directory, None)
+        Self::selected_snapshot_for_job(
+            store,
+            snapshot,
+            selection,
+            objects_directory,
+            None,
+            &InitialObjects::fresh(),
+        )
     }
 
     pub(in crate::export::dataset) fn selected_snapshot_for_job(
@@ -32,6 +40,7 @@ impl ExportDataset {
         selection: &ProfileSelectionV1,
         objects_directory: &Path,
         job: Option<&str>,
+        initial: &InitialObjects,
     ) -> ReportResult<Self> {
         let (profile, authority, accepted) = selected_authority(store, snapshot, selection)?;
         let mut lineage = frozen::lineage(store, snapshot)?;
@@ -62,6 +71,7 @@ impl ExportDataset {
             },
             objects_directory,
             &mut grant,
+            initial,
         )?;
         let mut dataset = selected_dataset(loaded, lineage, &profile, authority)?;
         attach_selected_proofs(
@@ -70,6 +80,7 @@ impl ExportDataset {
                 snapshot,
                 profile: &profile,
                 objects_directory,
+                initial,
                 identity,
                 grant: &mut grant,
                 closure: school_closure.as_ref(),
@@ -88,6 +99,7 @@ struct SelectedProofInputs<'a, 'store, 'source> {
     snapshot: &'a StoreSnapshot<'store>,
     profile: &'a QueryProfileV1,
     objects_directory: &'a Path,
+    initial: &'a InitialObjects,
     identity: CapturedFrozenPublicIdentityV2,
     grant: &'a mut AttachmentReplayGrantV1,
     closure: Option<&'a archive::SchoolClosure>,
@@ -116,6 +128,7 @@ fn attach_selected_proofs(
         inputs.objects_directory,
         inputs.identity,
         school_context,
+        inputs.initial,
     )?;
     dataset.attach_selected_proofs(proofs, hydrated)
 }

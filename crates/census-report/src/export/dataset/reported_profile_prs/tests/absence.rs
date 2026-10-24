@@ -1,4 +1,5 @@
 use super::{source, ReportedProfilePrs, TestResult};
+use crate::export::dataset::initial_objects::InitialObjects;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::model::{
     CanonicalAthlete, Gender, GradYear, ProfileDate, SchoolId, SourceIdentity, SourceNamespace,
@@ -25,6 +26,7 @@ fn capture_for(
         &ProfileDate::parse(day)?,
         directory,
         &mut AttachmentReplayGrantV1::new(),
+        &InitialObjects::fresh(),
     )?)
 }
 
@@ -65,7 +67,7 @@ fn selected_valid_target_without_a_pr_table_retains_unknown_and_cold_replays() -
         .values()
         .flatten()
         .all(|table| table.rows.is_empty()));
-    reported.require_initial_objects(objects.path())?;
+    reported.require_initial_objects(objects.path(), &InitialObjects::fresh())?;
     let root = reported.roots.first().ok_or("retained profile root")?;
     let bytes = crate::export::proof_objects::read(
         objects.path(),
@@ -98,7 +100,7 @@ fn unrelated_and_future_captures_are_filtered_before_optional_pr_parsing() -> Te
             let objects = tempfile::tempdir()?;
             let reported = capture_for(&store, subject, day, objects.path())?;
             check!(reported.is_empty());
-            reported.require_initial_objects(objects.path())?;
+            reported.require_initial_objects(objects.path(), &InitialObjects::fresh())?;
         }
     }
     Ok(())

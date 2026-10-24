@@ -1,8 +1,10 @@
 use super::*;
+use crate::export::dataset::initial_objects::InitialObjects;
 
 mod absence;
 mod bounds;
 pub(crate) mod source;
+mod subjects;
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 #[test]
@@ -46,8 +48,9 @@ fn retained_genuine_prs_freeze_and_reparse_without_accepting_a_canonical_mark() 
         &ProfileDate::parse("2026-10-21")?,
         objects.path(),
         &mut AttachmentReplayGrantV1::new(),
+        &InitialObjects::fresh(),
     )?;
-    reported.require_initial_objects(objects.path())?;
+    reported.require_initial_objects(objects.path(), &InitialObjects::fresh())?;
     check!(eq; reported.roots.len(), 1);
     let serialized = serde_json::to_vec(&reported)?;
     let reopened: ReportedProfilePrs = serde_json::from_slice(&serialized)?;
@@ -77,10 +80,14 @@ fn retained_genuine_prs_freeze_and_reparse_without_accepting_a_canonical_mark() 
         .any(|r| r.source_mode() == "all" && r.source_level() == "all"));
     let file = objects.path().join(root.payload.digest.as_str());
     std::fs::write(&file, b"controlled corruption")?;
-    check!(reopened.require_initial_objects(objects.path()).is_err());
+    check!(reopened
+        .require_initial_objects(objects.path(), &InitialObjects::fresh())
+        .is_err());
     check!(replay::read(root, b"controlled corruption").is_err());
     std::fs::remove_file(&file)?;
-    check!(reopened.require_initial_objects(objects.path()).is_err());
+    check!(reopened
+        .require_initial_objects(objects.path(), &InitialObjects::fresh())
+        .is_err());
     Ok(())
 }
 
@@ -117,9 +124,10 @@ fn captured_prs_respect_exact_source_identity_and_capture_cutoff() -> TestResult
             &ProfileDate::parse(day)?,
             objects.path(),
             &mut AttachmentReplayGrantV1::new(),
+            &InitialObjects::fresh(),
         )?;
         check!(reported.is_empty());
-        reported.require_initial_objects(objects.path())?;
+        reported.require_initial_objects(objects.path(), &InitialObjects::fresh())?;
     }
     Ok(())
 }
