@@ -258,7 +258,11 @@ fn given_oversized_family_when_readback_starts_then_declared_byte_budget_refuses
     std::fs::OpenOptions::new()
         .write(true)
         .open(directory.path().join("athletes.csv"))?
-        .set_len(512 * 1024 * 1024 + 1)?;
+        .set_len(
+            u64::try_from(crate::grouping::STAGE_BYTES)?
+                .checked_add(1)
+                .ok_or("normalized test byte budget overflow")?,
+        )?;
     rejected(
         super::verify(directory.path(), &given.inputs()?, 3),
         "athletes.csv",
