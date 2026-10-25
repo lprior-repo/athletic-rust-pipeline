@@ -23,18 +23,29 @@ fn frozen(value: &RetainedJournalBundle) -> TestResult<FrozenRetainedJournal> {
 }
 
 #[test]
-fn entry_count_is_admitted_at_max_and_refused_before_decoding_max_plus_one() -> TestResult {
-    let mut value = counted_bundle(MAX_ENTRIES)?;
-    frozen(&value)?;
-    value.entries.push(Entry {
-        phase: super::super::super::OWNED_CAPTURE_PHASE.into(),
-        key: format!("synthetic/{MAX_ENTRIES:06}"),
-        payload: RecordedPayload::Absent,
-    });
-    let failure = frozen(&value).err().ok_or("entry count accepted")?;
-    check!(failure
-        .to_string()
-        .contains("entry envelope exceeds its admission budget"));
+fn numeric_maximum_and_small_real_frozen_inventory_have_distinct_evidence() -> TestResult {
+    // The maximum is a production-predicate test, not a four-million-row fixture.
+    admit_new_entry(MAX_ENTRIES - 1)?;
+    let error = admit_new_entry(MAX_ENTRIES).err().ok_or("count admitted")?;
+    check!(matches!(
+        error,
+        StoreError::BudgetExceeded {
+            what: "retained journal entries",
+            needed: 4_000_001,
+            available: 4_000_000
+        }
+    ));
+    check!(matches!(
+        admit_new_entry(usize::MAX),
+        Err(StoreError::CounterOverflow)
+    ));
+    let value = counted_bundle(64)?;
+    let view = frozen(&value)?;
+    for index in 0..64 {
+        check!(eq; view.journal_payload_bounded(
+            super::super::super::OWNED_CAPTURE_PHASE,
+            &format!("synthetic/{index:06}"), JournalReadBudget::new(1)?)?, None);
+    }
     Ok(())
 }
 

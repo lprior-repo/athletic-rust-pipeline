@@ -21,10 +21,8 @@ pub(super) fn entries<'de, D: serde::Deserializer<'de>>(
                     Ok(None) => return ControlFlow::Break(Ok(entries)),
                     Err(error) => return ControlFlow::Break(Err(error)),
                 };
-                if index == MAX_ENTRIES || raw.get().len() > MAX_PAYLOAD + 2048 {
-                    return ControlFlow::Break(Err(A::Error::custom(
-                        "retained journal entry envelope exceeds its admission budget",
-                    )));
+                if let Err(error) = admit_entry(index, raw.get().len()) {
+                    return ControlFlow::Break(Err(A::Error::custom(error)));
                 }
                 let entry = match serde_json::from_str::<Entry>(raw.get()) {
                     Ok(entry) => entry,
@@ -70,16 +68,7 @@ impl LimitedBytes {
 }
 impl Write for LimitedBytes {
     fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-        let needed = self
-            .0
-            .len()
-            .checked_add(bytes.len())
-            .ok_or_else(|| std::io::Error::other("retained journal size overflow"))?;
-        if needed > MAX_BYTES {
-            return Err(std::io::Error::other(
-                "retained journal encoding exceeds byte budget",
-            ));
-        }
+        let needed = encoding_needed(self.0.len(), bytes.len())?;
         if needed > self.0.capacity() {
             let target = self
                 .0
@@ -111,15 +100,7 @@ pub(super) fn canonical_digest(bundle: &RetainedJournalBundle) -> StoreResult<St
     }
     impl Write for Hash {
         fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-            let count = self
-                .count
-                .checked_add(bytes.len())
-                .ok_or_else(|| std::io::Error::other("retained journal size overflow"))?;
-            if count > MAX_BYTES {
-                return Err(std::io::Error::other(
-                    "retained journal encoding exceeds byte budget",
-                ));
-            }
+            let count = encoding_needed(self.count, bytes.len())?;
             self.hash.update(bytes);
             self.count = count;
             Ok(bytes.len())
@@ -135,3 +116,27 @@ pub(super) fn canonical_digest(bundle: &RetainedJournalBundle) -> StoreResult<St
     serde_json::to_writer(&mut output, bundle).map_err(encoding)?;
     Ok(format!("{:x}", output.hash.finalize()))
 }
+
+pub(super) fn admit_entry(index: usize, raw_bytes: usize) -> Result<(), &'static str> {
+    let error = "retained journal entry envelope exceeds its admission budget";
+    let maximum = MAX_PAYLOAD.checked_add(2048).ok_or(error)?;
+    if index >= MAX_ENTRIES || raw_bytes > maximum {
+        return Err(error);
+    }
+    Ok(())
+}
+
+pub(super) fn encoding_needed(current: usize, added: usize) -> std::io::Result<usize> {
+    let needed = current
+        .checked_add(added)
+        .ok_or_else(|| std::io::Error::other("retained journal size overflow"))?;
+    if needed > MAX_BYTES {
+        return Err(std::io::Error::other(
+            "retained journal encoding exceeds byte budget",
+        ));
+    }
+    Ok(needed)
+}
+
+#[cfg(test)]
+mod tests;
