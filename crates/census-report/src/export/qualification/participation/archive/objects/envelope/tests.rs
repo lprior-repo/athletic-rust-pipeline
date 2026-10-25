@@ -91,8 +91,6 @@ fn both_large_descriptor_gates_admit_metadata_before_expected_length_refusal() -
         let digest = install(directory.path(), &expected)?;
         check!(eq; version(directory.path(), &digest)?, 4);
         check!(eq; read(directory.path(), &digest, 4, 17_179_869_184, None)?, expected);
-        // Expected-length mismatch precedes try_reserve_exact and chunk reads.
-        // No absent-chunk maximum loader invocation or 16-GiB reservation.
         refused(
             super::super::load_bounded_bytes(directory.path(), &digest, 4, 1, 17_179_869_184),
             "participation replay payload length differs",

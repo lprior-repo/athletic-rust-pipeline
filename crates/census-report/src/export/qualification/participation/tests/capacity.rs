@@ -103,7 +103,6 @@ async fn historical_conflict_roundtrip(reverse: bool) -> TestResult {
             "historical event",
             "retained contradiction",
         ));
-    // Both cases contain the same physical versions; their actual append order differs.
     let versions = if reverse {
         [&original, &historical]
     } else {

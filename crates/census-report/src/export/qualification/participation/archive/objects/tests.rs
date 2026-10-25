@@ -39,7 +39,6 @@ fn seeded_writer_byte_and_chunk_refusals_preserve_preexisting_state() -> TestRes
         let directory = tempfile::tempdir()?;
         let envelope = Envelope::for_version(version)?;
         let mut writer = Chunks::new(directory.path(), envelope)?;
-        // Synthetic counters only; no maximum-size stream/digest is constructed.
         writer.bytes = envelope.max_bytes - 1;
         writer.write_all(b"a")?;
         check!(eq; writer.bytes, envelope.max_bytes);

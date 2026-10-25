@@ -18,29 +18,6 @@ fn present(value: Value, grant: usize) -> RecordedPayload {
     }
 }
 
-fn bundle(payload: RecordedPayload) -> TestResult<RetainedJournalBundle> {
-    Ok(RetainedJournalBundle {
-        version: 1,
-        store_identity: StoreIdentity::parse(&"a".repeat(64))?,
-        snapshot_sequence: 7,
-        entries: vec![Entry {
-            phase: PHASE.into(),
-            key: "synthetic/a".into(),
-            payload,
-        }],
-    })
-}
-
-fn frozen(bundle: &RetainedJournalBundle) -> StoreResult<FrozenRetainedJournal> {
-    let bytes = bundle.encode()?;
-    FrozenRetainedJournal::from_descriptor(
-        &crate::net::cache::content_digest(&bytes),
-        &"a".repeat(64),
-        7,
-        &bytes,
-    )
-}
-
 #[test]
 fn numeric_recording_limits_are_inclusive_checked_and_finite() -> TestResult {
     check!(eq; MAX_ENTRIES, 4_000_000);
@@ -140,7 +117,6 @@ fn synthetic_near_limit_seed_refuses_actual_read_without_mutation_and_poisons_fi
     store.store_identity()?;
     let snapshot = store.snapshot();
     let recorder = RecordingRetainedJournal::new(&snapshot);
-    // Synthetic counter seed only: this is not an eight-GiB historical recording.
     recorder.bytes.set(MAX_BYTES);
     let charge = serde_json::to_vec(&RecordedPayload::Absent)?.len() as u64;
     match recorder.journal_payload_bounded(PHASE, "missing", JournalReadBudget::new(1)?) {

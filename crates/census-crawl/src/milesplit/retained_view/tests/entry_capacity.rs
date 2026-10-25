@@ -24,7 +24,6 @@ fn frozen(value: &RetainedJournalBundle) -> TestResult<FrozenRetainedJournal> {
 
 #[test]
 fn numeric_maximum_and_small_real_frozen_inventory_have_distinct_evidence() -> TestResult {
-    // The maximum is a production-predicate test, not a four-million-row fixture.
     admit_new_entry(MAX_ENTRIES - 1)?;
     let error = admit_new_entry(MAX_ENTRIES).err().ok_or("count admitted")?;
     check!(matches!(
