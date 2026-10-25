@@ -15,8 +15,8 @@ mod sealed {
 pub use frozen::FrozenRetainedJournal;
 pub use recording::RecordingRetainedJournal;
 
-const MAX_BYTES: usize = 512 * 1024 * 1024;
-const MAX_ENTRIES: usize = 262_144;
+const MAX_BYTES: usize = 8 * 1024 * 1024 * 1024;
+const MAX_ENTRIES: usize = 4_000_000;
 const MAX_PAYLOAD: usize = 4 * 1024 * 1024;
 
 pub trait RetainedJournalView: sealed::Sealed {
@@ -115,6 +115,19 @@ fn bound(needed: usize, max: usize, what: &'static str) -> StoreResult<()> {
         });
     }
     Ok(())
+}
+
+fn admit_new_entry(current: usize) -> StoreResult<()> {
+    let needed = current.checked_add(1).ok_or(StoreError::CounterOverflow)?;
+    bound(needed, MAX_ENTRIES, "retained journal entries")
+}
+
+fn admit_recording_bytes(current: usize, added: usize) -> StoreResult<usize> {
+    let needed = current
+        .checked_add(added)
+        .ok_or(StoreError::CounterOverflow)?;
+    bound(needed, MAX_BYTES, "retained journal recording bytes")?;
+    Ok(needed)
 }
 
 fn key(phase: &str, key: &str) -> StoreResult<(String, String)> {

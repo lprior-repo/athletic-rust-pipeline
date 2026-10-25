@@ -6,6 +6,7 @@ use census_domain::participation_candidates::{CandidateOutcome, ParticipationRea
 use census_store::Table;
 use serde_json::{json, Value};
 
+mod capacity;
 mod fixture;
 mod groups;
 mod historical;

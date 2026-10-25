@@ -1,23 +1,15 @@
 use super::ParticipationReplayV1;
 use crate::export::proof_objects;
 use crate::report::{ReportError, ReportResult};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use sha2::{Digest, Sha256};
 use std::io::Write;
 use std::path::Path;
 
-const CHUNK_BYTES: usize = 4 * 1024 * 1024;
-const MAX_BYTES: usize = 512 * 1024 * 1024;
-const MAX_CHUNKS: usize = MAX_BYTES / CHUNK_BYTES;
+mod envelope;
+use envelope::{Descriptor, Envelope};
 
-#[derive(Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Descriptor {
-    version: u32,
-    bytes: usize,
-    sha256: String,
-    chunks: Vec<String>,
-}
+const CHUNK_BYTES: usize = 4 * 1024 * 1024;
 
 impl ParticipationReplayV1 {
     pub(crate) fn install(&self, directory: &Path) -> ReportResult<String> {
@@ -33,14 +25,15 @@ pub(super) fn install<T: Serialize>(
     directory: &Path,
     version: u32,
 ) -> ReportResult<String> {
-    let mut writer = Chunks::new(directory)?;
+    let envelope = Envelope::for_version(version)?;
+    let mut writer = Chunks::new(directory, envelope)?;
     let encoded = serde_json::to_writer(&mut writer, value);
     if let Some(error) = writer.failure.take() {
         return Err(error);
     }
     encoded.map_err(encoding)?;
-    let descriptor = writer.finish(version)?;
-    let bytes = serde_json::to_vec(&descriptor).map_err(encoding)?;
+    let descriptor = writer.finish()?;
+    let bytes = envelope.encode(&descriptor)?;
     proof_objects::install(directory, &bytes)
 }
 
@@ -62,7 +55,14 @@ pub(super) fn load_bytes(
     anchored_descriptor: &str,
     version: u32,
 ) -> ReportResult<Vec<u8>> {
-    load_bytes_with_limits(directory, anchored_descriptor, version, None, MAX_BYTES)
+    let envelope = Envelope::for_version(version)?;
+    load_bytes_with_limits(
+        directory,
+        anchored_descriptor,
+        version,
+        None,
+        envelope.max_bytes,
+    )
 }
 
 pub(super) fn load_bounded_bytes(
@@ -97,29 +97,13 @@ fn load_bytes_with_limits(
     expected_bytes: Option<u64>,
     max_bytes: usize,
 ) -> ReportResult<Vec<u8>> {
-    if max_bytes > MAX_BYTES {
-        return Err(invalid("participation replay exceeds absolute maximum"));
-    }
-    let bytes = proof_objects::read(directory, anchored_descriptor, 32 * 1024)?;
-    let descriptor: Descriptor = serde_json::from_slice(&bytes).map_err(encoding)?;
-    if descriptor.version != version
-        || descriptor.bytes == 0
-        || descriptor.bytes > max_bytes
-        || descriptor.chunks.len() > MAX_CHUNKS
-        || descriptor.chunks.len() != descriptor.bytes.div_ceil(CHUNK_BYTES)
-        || serde_json::to_vec(&descriptor).map_err(encoding)? != bytes
-    {
-        return Err(invalid(
-            "participation replay descriptor shape or budget differs",
-        ));
-    }
-    if let Some(expected) = expected_bytes {
-        let actual = u64::try_from(descriptor.bytes)
-            .map_err(|_| invalid("participation replay payload length overflow"))?;
-        if actual != expected {
-            return Err(invalid("participation replay payload length differs"));
-        }
-    }
+    let descriptor = envelope::read(
+        directory,
+        anchored_descriptor,
+        version,
+        max_bytes,
+        expected_bytes,
+    )?;
     let mut payload = Vec::new();
     payload
         .try_reserve_exact(descriptor.bytes)
@@ -146,13 +130,12 @@ fn load_bytes_with_limits(
 }
 
 pub(super) fn version(directory: &Path, anchored_descriptor: &str) -> ReportResult<u32> {
-    let bytes = proof_objects::read(directory, anchored_descriptor, 32 * 1024)?;
-    let descriptor: Descriptor = serde_json::from_slice(&bytes).map_err(encoding)?;
-    Ok(descriptor.version)
+    envelope::version(directory, anchored_descriptor)
 }
 
 struct Chunks<'a> {
     directory: &'a Path,
+    envelope: Envelope,
     buffer: Vec<u8>,
     chunks: Vec<String>,
     hash: Sha256,
@@ -161,13 +144,14 @@ struct Chunks<'a> {
 }
 
 impl<'a> Chunks<'a> {
-    fn new(directory: &'a Path) -> ReportResult<Self> {
+    fn new(directory: &'a Path, envelope: Envelope) -> ReportResult<Self> {
         let mut buffer = Vec::new();
         buffer
             .try_reserve_exact(CHUNK_BYTES)
             .map_err(|_| invalid("participation proof chunk allocation refused"))?;
         Ok(Self {
             directory,
+            envelope,
             buffer,
             chunks: Vec::new(),
             hash: Sha256::new(),
@@ -180,9 +164,12 @@ impl<'a> Chunks<'a> {
         if self.buffer.is_empty() {
             return Ok(());
         }
-        if self.chunks.len() >= MAX_CHUNKS {
+        if self.chunks.len() >= self.envelope.max_chunks {
             return Err(invalid("participation replay chunk count exceeded"));
         }
+        self.chunks
+            .try_reserve_exact(1)
+            .map_err(|_| invalid("participation replay chunk inventory allocation refused"))?;
         self.chunks
             .push(proof_objects::install(self.directory, &self.buffer)?);
         self.buffer.clear();
@@ -190,13 +177,7 @@ impl<'a> Chunks<'a> {
     }
 
     fn accept(&mut self, bytes: &[u8]) -> ReportResult<()> {
-        let needed = self
-            .bytes
-            .checked_add(bytes.len())
-            .ok_or_else(|| invalid("participation replay length overflow"))?;
-        if needed > MAX_BYTES {
-            return Err(invalid("participation replay exceeds 512 MiB"));
-        }
+        let needed = self.envelope.admit_bytes(self.bytes, bytes.len())?;
         let room = CHUNK_BYTES
             .checked_sub(self.buffer.len())
             .ok_or_else(|| invalid("participation replay length overflow"))?;
@@ -217,14 +198,16 @@ impl<'a> Chunks<'a> {
         Ok(())
     }
 
-    fn finish(mut self, version: u32) -> ReportResult<Descriptor> {
+    fn finish(mut self) -> ReportResult<Descriptor> {
         self.store()?;
-        Ok(Descriptor {
-            version,
+        let descriptor = Descriptor {
+            version: self.envelope.version,
             bytes: self.bytes,
             sha256: format!("{:x}", self.hash.finalize()),
             chunks: self.chunks,
-        })
+        };
+        self.envelope.check(&descriptor, self.envelope.max_bytes)?;
+        Ok(descriptor)
     }
 }
 
@@ -256,3 +239,6 @@ fn invalid(detail: &str) -> ReportError {
 pub(in crate::export::qualification::participation) fn hash(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
+
+#[cfg(test)]
+mod tests;

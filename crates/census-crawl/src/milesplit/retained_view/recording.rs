@@ -72,22 +72,10 @@ impl RecordingRetainedJournal<'_, '_> {
             reconcile(previous, &recorded)?;
             return Ok(payload);
         }
-        bound(
-            entries
-                .len()
-                .checked_add(1)
-                .ok_or(StoreError::CounterOverflow)?,
-            MAX_ENTRIES,
-            "retained journal entries",
-        )?;
+        admit_new_entry(entries.len())?;
         let size = serde_json::to_vec(&recorded).map_err(encoding)?.len();
         bound(size, MAX_PAYLOAD, "retained journal payload bytes")?;
-        let bytes = self
-            .bytes
-            .get()
-            .checked_add(size)
-            .ok_or(StoreError::CounterOverflow)?;
-        bound(bytes, MAX_BYTES, "retained journal recording bytes")?;
+        let bytes = admit_recording_bytes(self.bytes.get(), size)?;
         entries.insert(key, recorded);
         self.bytes.set(bytes);
         Ok(payload)
@@ -147,3 +135,7 @@ impl RetainedJournalView for RecordingRetainedJournal<'_, '_> {
         result
     }
 }
+
+#[cfg(test)]
+#[path = "tests/capacity.rs"]
+mod capacity;
