@@ -1,11 +1,11 @@
 use census_domain::public_identity_history::ReplayLimits;
 
 pub(crate) const REPLAY_LIMITS: ReplayLimits = ReplayLimits {
-    records: 524_288,
-    identities: 262_144,
-    bindings: 524_288,
+    records: 2_097_152,
+    identities: 1_048_576,
+    bindings: 2_097_152,
     total_text_bytes: 256 * 1024 * 1024,
-    traversal_steps: 524_288,
+    traversal_steps: 2_097_152,
     graph_steps: 67_108_864,
     ..ReplayLimits::SMALL
 };

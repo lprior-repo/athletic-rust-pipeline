@@ -50,7 +50,7 @@ pub(crate) const OPERATION_PREFIX: &str = "public_identity_v1:";
 pub(crate) const DECLARATION: &str = "public_identity:v1:qualification";
 const HEAD: &str = "public_identity:v1:head";
 const HISTORY: &str = "public_identity:v1:history";
-pub const MAX_PUBLIC_IDENTITY_HISTORY_BYTES: usize = 256 * 1024 * 1024;
+pub const MAX_PUBLIC_IDENTITY_HISTORY_BYTES: usize = 1024 * 1024 * 1024;
 
 pub use correction::{ReviewedIdentityCommitOutcomeV1, ReviewedIdentityRequestV1};
 pub use frozen::{
