@@ -95,7 +95,8 @@ pub(in crate::workbook::publication) fn read_table(
     mut visit: impl FnMut(&Row<'_>) -> ReportResult<()>,
 ) -> ReportResult<u64> {
     let limits = read::Limits {
-        bytes: 512 * 1024 * 1024,
+        bytes: u64::try_from(crate::grouping::STAGE_BYTES)
+            .map_err(|error| defect(format!("normalized CSV byte budget: {error}")))?,
         records: decoder::add(expected, 2)?,
     };
     let total = stream::csv(

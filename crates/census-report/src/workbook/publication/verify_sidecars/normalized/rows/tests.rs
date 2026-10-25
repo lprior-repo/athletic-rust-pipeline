@@ -1,3 +1,5 @@
+mod capacity;
+
 use super::super::super::read::Limits;
 use super::stream;
 use crate::report::{ReportError, ReportResult};
