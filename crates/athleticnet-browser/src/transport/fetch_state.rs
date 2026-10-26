@@ -175,14 +175,22 @@ impl<'a> FetchCapture<'a> {
         event: &Arc<EventRequestWillBeSent>,
         remaining: Duration,
     ) -> Result<(), BrowserError> {
-        let origin = self
-            .same_site_origin
-            .clone()
-            .ok_or(BrowserError::Redirect)?;
+        let Some(origin) = self.same_site_origin.clone() else {
+            tracing::debug!("lane refusing redirect: same-site following disabled");
+            return Err(BrowserError::Redirect);
+        };
         if self.redirect_hops >= MAX_REDIRECT_HOPS {
+            tracing::debug!(
+                hops = self.redirect_hops,
+                "lane refusing redirect: hop budget spent"
+            );
             return Err(BrowserError::Redirect);
         }
         if !hop_within_origin(&event.request.url, &origin) {
+            tracing::debug!(
+                hop = event.request.url.as_str(),
+                "lane refusing redirect: hop leaves the bound site"
+            );
             return Err(BrowserError::Redirect);
         }
         if !event
@@ -190,8 +198,14 @@ impl<'a> FetchCapture<'a> {
             .method
             .eq_ignore_ascii_case(request_method(self.request))
         {
+            tracing::debug!("lane refusing redirect: method changed across the hop");
             return Err(BrowserError::Redirect);
         }
+        tracing::debug!(
+            hop = event.request.url.as_str(),
+            hops = self.redirect_hops,
+            "lane following same-site redirect"
+        );
         let confirm = timeout(
             remaining,
             capture::matches_request_body(self.page, event, self.request_body),
