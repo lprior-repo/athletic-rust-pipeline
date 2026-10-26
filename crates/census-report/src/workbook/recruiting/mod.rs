@@ -7,6 +7,7 @@ use super::cells::{write_sheet_rows, SheetChrome, SheetLayout};
 use dataset::Dataset;
 
 mod athletes;
+pub(in crate::workbook) use athletes::cells::{athletes_event_key, pr_event_name};
 pub(in crate::workbook) mod bounded;
 pub(in crate::workbook) mod coach_projection;
 pub(in crate::workbook) mod coach_spelling;

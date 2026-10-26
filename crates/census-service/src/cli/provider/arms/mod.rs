@@ -3,6 +3,7 @@ const DEFAULT_COLLECT_CONCURRENCY: usize = 4;
 mod association_sources;
 mod meet_sources;
 mod native_associations;
+mod profile_sources;
 
 pub(super) use association_sources::{
     aia_report, arbiter_orgs_report, ciac_report, coach_contacts_report, coach_directories_report,
@@ -17,3 +18,4 @@ pub(super) use native_associations::{
     bound_report, chsaa_report, home_campus_report, sidearm_staff_report, tssaa_report,
     uhsaa_report,
 };
+pub(super) use profile_sources::milesplit_profiles_report;

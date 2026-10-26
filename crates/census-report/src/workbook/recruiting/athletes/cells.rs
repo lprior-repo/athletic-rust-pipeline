@@ -2,7 +2,9 @@ use super::super::super::cells::{row, Cell};
 use super::super::columns::{flag, published};
 use super::rules::PR_EVENTS;
 use crate::bests::SharedSelection;
+use crate::export::ReportedProfilePrTable;
 use crate::workbook::recruiting::profiles::Profiles;
+use crate::workbook::reported_profile::{self, GapLine};
 use crate::workbook::ReportResult;
 use census_domain::model::performance_comparison::SurfaceClass;
 use census_domain::model::{CanonicalAthlete, EventKind, Sport};
@@ -21,8 +23,18 @@ pub(super) fn tf_flag(athlete: &CanonicalAthlete) -> Vec<Cell> {
     }))]
 }
 
-pub(super) fn event_list(_athlete: &CanonicalAthlete, prs: &[&SharedSelection]) -> Vec<Cell> {
-    if prs.is_empty() {
+pub(super) fn reported_gaps(
+    prs: &[&SharedSelection],
+    tables: &[&ReportedProfilePrTable],
+) -> Vec<GapLine> {
+    let covered = reported_profile::covered_events(&PR_EVENTS, |event| {
+        prs.iter().any(|pr| selection_matches_event(pr, event))
+    });
+    reported_profile::gap_lines(&covered, tables)
+}
+
+pub(super) fn event_list(prs: &[&SharedSelection], gaps: &[GapLine]) -> Vec<Cell> {
+    if prs.is_empty() && gaps.is_empty() {
         return vec![Cell::Empty];
     }
     let events: std::collections::BTreeMap<_, _> = prs
@@ -36,33 +48,79 @@ pub(super) fn event_list(_athlete: &CanonicalAthlete, prs: &[&SharedSelection]) 
             (event, *pr)
         })
         .collect();
-    let names: Vec<_> = events
+    let mut names: Vec<_> = events
         .iter()
-        .map(|(event, pr)| pr_mark_name(pr, event))
+        .map(|(event, pr)| pr_mark_name(pr, event).to_owned())
         .collect();
+    names.extend(
+        gaps.iter()
+            .map(|gap| reported_profile::display(gap.event_key)),
+    );
+    names.sort();
+    names.dedup();
     vec![Cell::text(names.join("; "))]
 }
 
-pub(super) fn headline_pr_summary(
-    _athlete: &CanonicalAthlete,
-    prs: &[&SharedSelection],
-) -> Vec<Cell> {
-    vec![qualified_summary(prs.iter().copied())]
+pub(super) fn headline_pr_summary(prs: &[&SharedSelection], gaps: &[GapLine]) -> Vec<Cell> {
+    vec![merge_headline(qualified_summary(prs.iter().copied()), gaps)]
 }
 
-pub(super) fn pr_event_cells(prs: &[&SharedSelection]) -> Vec<Cell> {
+fn merge_headline(headline: Cell, gaps: &[GapLine]) -> Cell {
+    if gaps.is_empty() {
+        return headline;
+    }
+    let mut text = match headline {
+        Cell::Text(text) => text,
+        Cell::Empty => String::new(),
+        other => return other,
+    };
+    let mut used = text.encode_utf16().count();
+    let mut end = text.len();
+    for gap in gaps {
+        let separator = if text.is_empty() { 0 } else { 2 };
+        let needed = gap.line.encode_utf16().count().saturating_add(separator);
+        if used.saturating_add(needed) > SUMMARY_LIMIT {
+            text.truncate(end);
+            text.push_str(SUMMARY_OVERFLOW);
+            return Cell::text(text);
+        }
+        if separator != 0 {
+            text.push_str("; ");
+        }
+        text.push_str(gap.line.as_str());
+        used = used.saturating_add(needed);
+        end = text.len();
+    }
+    Cell::text(text)
+}
+
+pub(super) fn pr_event_cells(
+    prs: &[&SharedSelection],
+    gaps: &std::collections::BTreeMap<&str, &str>,
+) -> Vec<Cell> {
     PR_EVENTS
         .iter()
-        .map(|event| event_cell(prs, event))
+        .map(|event| event_cell(prs, event, gaps))
         .collect()
 }
 
-fn event_cell(prs: &[&SharedSelection], event: &str) -> Cell {
-    qualified_summary(
-        prs.iter()
-            .copied()
-            .filter(|pr| selection_matches_event(pr, event)),
-    )
+fn event_cell(
+    prs: &[&SharedSelection],
+    event: &str,
+    gaps: &std::collections::BTreeMap<&str, &str>,
+) -> Cell {
+    let observed: Vec<_> = prs
+        .iter()
+        .copied()
+        .filter(|pr| selection_matches_event(pr, event))
+        .collect();
+    if !observed.is_empty() {
+        return qualified_summary(observed.into_iter());
+    }
+    match gaps.get(event) {
+        Some(line) => Cell::text((*line).to_owned()),
+        None => Cell::Empty,
+    }
 }
 
 fn selection_matches_event(pr: &SharedSelection, event: &str) -> bool {
@@ -222,6 +280,13 @@ pub(super) fn gpa_source() -> Vec<Cell> {
     vec![Cell::Empty]
 }
 
+pub(in crate::workbook) fn athletes_event_key(display: &str) -> Option<&'static str> {
+    PR_EVENTS
+        .iter()
+        .copied()
+        .find(|key| pr_event_name(key) == display)
+}
+
 pub(super) fn eligible_prs<'a>(
     prs: &'a [&'a SharedSelection],
 ) -> impl Iterator<Item = &'a SharedSelection> + 'a {
@@ -230,7 +295,7 @@ pub(super) fn eligible_prs<'a>(
         .filter(|pr| !pr.key.event_kind.is_relay())
 }
 
-pub(super) fn pr_event_name(key: &str) -> &str {
+pub(in crate::workbook) fn pr_event_name(key: &str) -> &str {
     match key {
         "Track100m" => "100m",
         "Track200m" => "200m",

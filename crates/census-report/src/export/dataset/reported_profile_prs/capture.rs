@@ -3,9 +3,14 @@ use crate::export::dataset::initial_objects::InitialObjects;
 use crate::export::dataset::proof_objects;
 use crate::export::dataset::selected_proofs::objects;
 use crate::report::ReportResult;
+use census_crawl::milesplit::PROFILE_PR_PHASE;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::model::{CanonicalAthlete, ProfileDate, SourceNamespace};
-use census_store::{ReadBudget, RetainedCaptureRootSchemaV1, StoreError, StoreSnapshot};
+use census_store::read::JournalNamespace;
+use census_store::{
+    ReadBudget, RetainedCaptureRootSchemaV1, StoreError, StoreResult, StoreSnapshot,
+};
+use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 use std::path::Path;
 
@@ -88,11 +93,67 @@ impl ReportedProfilePrs {
                 detail: error.to_string(),
             })
         })?;
+        for ordinal in 0_u16..256 {
+            scan_prefix(snapshot, &shard(ordinal), &mut reported, &mut selection)?;
+        }
         reported.roots.sort_unstable_by(|a, b| a.key.cmp(&b.key));
         reported.validate_roots()?;
         Ok(reported)
     }
+}
 
+fn shard(ordinal: u16) -> String {
+    format!("{ordinal:02x}")
+}
+
+fn scan_prefix(
+    snapshot: &StoreSnapshot<'_>,
+    prefix: &str,
+    reported: &mut ReportedProfilePrs,
+    selection: &mut Selection<'_>,
+) -> ReportResult<()> {
+    snapshot.for_each_journal_root_bounded(
+        JournalNamespace::new(PROFILE_PR_PHASE, prefix)?,
+        ReadBudget {
+            rows: 25_000,
+            bytes: 64 * 1024 * 1024,
+            record_bytes: census_store::MAX_JOURNAL_VALUE_BYTES,
+        },
+        |key| visit_journal_row(snapshot, reported, selection, key),
+    )?;
+    Ok(())
+}
+
+fn visit_journal_row(
+    snapshot: &StoreSnapshot<'_>,
+    reported: &mut ReportedProfilePrs,
+    selection: &mut Selection<'_>,
+    key: &str,
+) -> StoreResult<()> {
+    let payload = snapshot
+        .journal_payload(PROFILE_PR_PHASE, key)?
+        .ok_or_else(|| StoreError::Refused {
+            detail: format!("profile PR journal key {key} has no payload"),
+        })?;
+    let bytes = serde_json::to_vec(&payload).map_err(|error| StoreError::Refused {
+        detail: error.to_string(),
+    })?;
+    let digest = format!("{:x}", Sha256::digest(&bytes));
+    let count = u64::try_from(bytes.len()).map_err(|_| StoreError::Refused {
+        detail: "profile PR journal row byte count".to_string(),
+    })?;
+    let root =
+        ReportedProfileRootV1::journal(&digest, count).map_err(|error| StoreError::Refused {
+            detail: error.to_string(),
+        })?;
+    reported
+        .capture_root(&root, &bytes, selection)
+        .map_err(|error| StoreError::Refused {
+            detail: error.to_string(),
+        })
+}
+
+impl ReportedProfilePrs {
     fn capture_root(
         &mut self,
         root: &ReportedProfileRootV1,

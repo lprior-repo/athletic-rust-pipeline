@@ -38,6 +38,24 @@ pub struct SourceProfilePrV1 {
 }
 
 impl SourceProfilePrV1 {
+    pub fn replayed(
+        event: String,
+        mark: String,
+        date: String,
+        mode: String,
+        level: String,
+        locator: SourceRowLocator,
+    ) -> Self {
+        Self {
+            event,
+            mark,
+            date,
+            mode,
+            level,
+            locator,
+        }
+    }
+
     pub fn event(&self) -> &str {
         &self.event
     }

@@ -32,9 +32,15 @@ impl RowValues<'_, '_> {
     pub(super) fn values(&mut self, athlete: &CanonicalAthlete) -> ReportResult<Vec<Value>> {
         let identity = Expected::of(&self.expectations.identities, athlete.id.as_str())?;
         let prs: Vec<&SharedSelection> = self.expectations.prs_of(athlete.id.as_str()).collect();
+        let tables: Vec<_> = self
+            .expectations
+            .dataset
+            .reported_profile_prs_for(athlete)
+            .collect();
+        let gaps = cells::reported_gaps(&prs, self.schema, &tables);
         let mut values = Vec::with_capacity(self.schema.headers().len());
         values.extend(self.identity(athlete, &identity.athlete_id));
-        append_performance_cells(&mut values, athlete, &prs, self.schema);
+        append_performance_cells(&mut values, athlete, &prs, self.schema, &gaps);
         values.extend(self.tally_cells(athlete));
         let reach = reach::Reach::of(self.expectations, athlete);
         append_reach(
@@ -173,6 +179,7 @@ fn append_performance_cells(
     athlete: &CanonicalAthlete,
     prs: &[&SharedSelection],
     schema: Schema,
+    gaps: &[crate::workbook::reported_profile::GapLine],
 ) {
     values.push(cells::flag(athlete.sports.iter().any(|sport| {
         matches!(sport, Sport::IndoorTrack | Sport::OutdoorTrack)
@@ -180,9 +187,13 @@ fn append_performance_cells(
     values.push(cells::flag(athlete.sports.contains(&Sport::CrossCountry)));
     values.push(cells::flag(athlete.sports.contains(&Sport::IndoorTrack)));
     values.push(cells::flag(athlete.sports.contains(&Sport::OutdoorTrack)));
-    values.push(cells::event_list(prs, schema));
-    values.push(cells::headline(prs, schema));
-    values.extend(cells::pr_events(prs, schema));
+    values.push(cells::event_list(prs, schema, gaps));
+    values.push(cells::headline(prs, schema, gaps));
+    values.extend(cells::pr_events(
+        prs,
+        schema,
+        &crate::workbook::reported_profile::gap_lookup(gaps),
+    ));
 }
 
 fn append_reach(values: &mut Vec<Value>, reach: reach::Reach, athletics_url: Option<&str>) {

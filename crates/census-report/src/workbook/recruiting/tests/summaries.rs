@@ -48,7 +48,7 @@ fn event_list_and_headline_name_cross_country_5000m_as_xc() -> TestResult {
     let row = row_of(&athletes, fixture.julian.as_str())?;
     let headline = text(&athletes, row, column_of(&athletes, "Headline PR summary")?);
 
-    check!(eq; text(&athletes, row, column_of(&athletes, "Event list")?), "XC; 400m");
+    check!(eq; text(&athletes, row, column_of(&athletes, "Event list")?), "400m; XC");
     for policy in ["observed_fastest", "same_course"] {
         check!(
             headline.split("; ").any(|entry| {

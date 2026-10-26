@@ -44,7 +44,7 @@ pub fn read_if_published<'a>(
     }))
 }
 
-fn read_source_rows(
+pub(crate) fn read_source_rows(
     body: &str,
     url: &str,
     site: UsJurisdiction,

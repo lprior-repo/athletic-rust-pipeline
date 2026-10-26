@@ -12,6 +12,8 @@ pub(crate) use qualification::{
 };
 mod dataset;
 pub(crate) use dataset::reported_profile_prs::ReportedProfilePrTable;
+#[cfg(test)]
+pub(crate) use dataset::reported_profile_prs::ReportedProfileRootV1;
 pub mod link;
 pub mod postal;
 pub mod provenance;

@@ -11,7 +11,7 @@ mod replay;
 mod root;
 mod roots;
 mod scope;
-use root::{ReportedProfileRootSchemaV1, ReportedProfileRootV1};
+pub(crate) use root::{ReportedProfileRootSchemaV1, ReportedProfileRootV1};
 pub(in crate::export::dataset) use scope::SourceScope;
 
 #[cfg(test)]

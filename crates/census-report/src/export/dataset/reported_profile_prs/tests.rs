@@ -3,6 +3,7 @@ use crate::export::dataset::initial_objects::InitialObjects;
 
 mod absence;
 mod bounds;
+mod journal;
 pub(crate) mod source;
 mod subjects;
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;

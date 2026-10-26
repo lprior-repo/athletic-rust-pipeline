@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 pub(crate) enum ReportedProfileRootSchemaV1 {
     ProviderTargetPacketV1,
     OwnedPublicProfileCaptureV1,
+    MilesplitProfilePrJournalV1,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,6 +28,23 @@ impl ReportedProfileRootV1 {
             schema: ReportedProfileRootSchemaV1::ProviderTargetPacketV1,
             key: root.key.clone(),
             payload: root.payload.clone(),
+        })
+    }
+
+    pub(crate) fn journal(digest: &str, bytes: u64) -> ReportResult<Self> {
+        if bytes == 0 || bytes > MAX_PACKET_BYTES {
+            return Err(invalid("profile journal root byte limit"));
+        }
+        let parsed = census_domain::evidence_subject_attachment::AttachmentDigestV1::parse(digest)
+            .map_err(census_store::EvidenceSubjectAttachmentStoreError::Domain)
+            .map_err(census_store::StoreError::from)?;
+        Ok(Self {
+            schema: ReportedProfileRootSchemaV1::MilesplitProfilePrJournalV1,
+            key: digest.to_owned(),
+            payload: AttachmentObjectReferenceV1 {
+                digest: parsed,
+                bytes,
+            },
         })
     }
 

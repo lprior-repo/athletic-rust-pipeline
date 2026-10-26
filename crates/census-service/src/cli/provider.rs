@@ -16,12 +16,15 @@ mod offline_tests;
 #[derive(Args, Debug)]
 pub(super) struct ProviderArgs {
     #[arg(
-        help = "Adapter name, matching its registry slug: ks, wiaa, wiaa_results, ihsa, ihsa_tournament, ohsaa, mshsl, plain_names, aia, ciac, uhsaa, mpa, riil, pa_piaa, chsaa, tssaa, wayzata, athleticlive, athleticlive_results, athleticlive_athletes, athleticnet, milesplit, milesplit_results, coach_contacts, coach_directories, home_campus, sidearm_staff, bound, arbiter_orgs, tfrrs"
+        help = "Adapter name, matching its registry slug: ks, wiaa, wiaa_results, ihsa, ihsa_tournament, ohsaa, mshsl, plain_names, aia, ciac, uhsaa, mpa, riil, pa_piaa, chsaa, tssaa, wayzata, athleticlive, athleticlive_results, athleticlive_athletes, athleticnet, milesplit, milesplit_results, milesplit_profiles, coach_contacts, coach_directories, home_campus, sidearm_staff, bound, arbiter_orgs, tfrrs"
     )]
     name: String,
     #[arg(help = "Cap the number of schools processed (smoke runs)")]
     #[arg(long)]
     limit: Option<usize>,
+    #[arg(help = "Graduation year cohort for the milesplit_profiles arm; defaults to 2027")]
+    #[arg(long)]
+    grad_year: Option<i16>,
     #[arg(
         help = "Restrict meet selection to this season year. Without it, all stored seasons are selected"
     )]
@@ -161,6 +164,7 @@ async fn dispatch(
         "athleticnet" => arms::athleticnet_report(context, args, observed_on).await,
         "milesplit" => arms::milesplit_report(context, args, observed_on).await,
         "milesplit_results" => arms::milesplit_results_report(context, args).await,
+        "milesplit_profiles" => arms::milesplit_profiles_report(context, args).await,
         "coach_contacts" => arms::coach_contacts_report(context.store, args, observed_on),
         "coach_directories" => {
             arms::coach_directories_report(context, args, observed_on).await
@@ -171,7 +175,7 @@ async fn dispatch(
         "arbiter_orgs" => arms::arbiter_orgs_report(context, args, observed_on).await,
         "tfrrs" => arms::tfrrs_report(context, args, observed_on).await,
         other => bail!(
-            "unknown adapter {other}; expected one of ks, wiaa, wiaa_results, ihsa, ihsa_tournament, ohsaa, mshsl, plain_names, aia, ciac, uhsaa, mpa, riil, pa_piaa, chsaa, tssaa, wayzata, athleticlive, athleticlive_results, athleticlive_athletes, athleticnet, milesplit, milesplit_results, coach_contacts, coach_directories, home_campus, sidearm_staff, bound, arbiter_orgs, tfrrs"
+            "unknown adapter {other}; expected one of ks, wiaa, wiaa_results, ihsa, ihsa_tournament, ohsaa, mshsl, plain_names, aia, ciac, uhsaa, mpa, riil, pa_piaa, chsaa, tssaa, wayzata, athleticlive, athleticlive_results, athleticlive_athletes, athleticnet, milesplit, milesplit_results, milesplit_profiles, coach_contacts, coach_directories, home_campus, sidearm_staff, bound, arbiter_orgs, tfrrs"
         ),
     }
 }

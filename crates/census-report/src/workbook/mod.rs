@@ -18,6 +18,7 @@ pub use performances::{PerformanceProjection, PerformanceRow, ProjectedValue};
 mod recruiting;
 pub use recruiting::{write_recruiting_csv, RecruitingCsvCounts};
 mod options;
+pub(in crate::workbook) mod reported_profile;
 pub use options::{options_for_selected_dataset, options_for_selected_request, Options};
 pub mod publication;
 pub mod reference_comparison;

@@ -1,6 +1,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::bests::SharedSelection;
+use crate::export::ReportedProfilePrTable;
+use crate::workbook::reported_profile::{self, GapLine};
 use census_domain::model::performance_comparison::SurfaceClass;
 use census_domain::model::{CanonicalAthlete, EventKind, ObservedGrade, SchoolYear};
 
@@ -79,8 +81,19 @@ fn classify_profile(profiles: &mut Profiles, url: String) {
     }
 }
 
-pub(super) fn event_list(prs: &[&SharedSelection], schema: Schema) -> Value {
-    if prs.is_empty() {
+pub(super) fn reported_gaps(
+    prs: &[&SharedSelection],
+    schema: Schema,
+    tables: &[&ReportedProfilePrTable],
+) -> Vec<GapLine> {
+    let covered = reported_profile::covered_events(schema.pr_events(), |event| {
+        prs.iter().any(|pr| selection_matches_event(pr, event))
+    });
+    reported_profile::gap_lines(&covered, tables)
+}
+
+pub(super) fn event_list(prs: &[&SharedSelection], schema: Schema, gaps: &[GapLine]) -> Value {
+    if prs.is_empty() && gaps.is_empty() {
         return Value::Empty;
     }
     let events: BTreeMap<_, _> = prs
@@ -94,32 +107,82 @@ pub(super) fn event_list(prs: &[&SharedSelection], schema: Schema) -> Value {
             (event, *pr)
         })
         .collect();
-    let names: Vec<&str> = events
+    let mut names: Vec<String> = events
         .iter()
-        .map(|(event, pr)| labels::mark_name(pr, event, schema))
+        .map(|(event, pr)| labels::mark_name(pr, event, schema).to_owned())
         .collect();
+    names.extend(
+        gaps.iter()
+            .map(|gap| reported_profile::display(gap.event_key)),
+    );
+    names.sort();
+    names.dedup();
     Value::text(names.join("; "))
 }
 
-pub(super) fn headline(prs: &[&SharedSelection], schema: Schema) -> Value {
-    qualified_summary(prs.iter().copied(), schema)
+pub(super) fn headline(prs: &[&SharedSelection], schema: Schema, gaps: &[GapLine]) -> Value {
+    merge_gaps(qualified_summary(prs.iter().copied(), schema), gaps)
 }
 
-pub(super) fn pr_events(prs: &[&SharedSelection], schema: Schema) -> Vec<Value> {
+fn merge_gaps(headline: Value, gaps: &[GapLine]) -> Value {
+    if gaps.is_empty() {
+        return headline;
+    }
+    let mut text = match headline {
+        Value::Text(text) => text,
+        Value::Empty => String::new(),
+        other => return other,
+    };
+    let mut used = text.encode_utf16().count();
+    let mut end = text.len();
+    for gap in gaps {
+        let separator = if text.is_empty() { 0 } else { 2 };
+        let needed = gap.line.encode_utf16().count().saturating_add(separator);
+        if used.saturating_add(needed) > 32_767 {
+            text.truncate(end);
+            text.push_str(SUMMARY_OVERFLOW);
+            return Value::text(text);
+        }
+        if separator != 0 {
+            text.push_str("; ");
+        }
+        text.push_str(gap.line.as_str());
+        used = used.saturating_add(needed);
+        end = text.len();
+    }
+    Value::text(text)
+}
+
+pub(super) fn pr_events(
+    prs: &[&SharedSelection],
+    schema: Schema,
+    gaps: &BTreeMap<&str, &str>,
+) -> Vec<Value> {
     schema
         .pr_events()
         .iter()
-        .map(|event| event_cell(prs, event, schema))
+        .map(|event| event_cell(prs, event, schema, gaps))
         .collect()
 }
 
-pub(super) fn event_cell(prs: &[&SharedSelection], event: &str, schema: Schema) -> Value {
-    qualified_summary(
-        prs.iter()
-            .copied()
-            .filter(|pr| selection_matches_event(pr, event)),
-        schema,
-    )
+pub(super) fn event_cell(
+    prs: &[&SharedSelection],
+    event: &str,
+    schema: Schema,
+    gaps: &BTreeMap<&str, &str>,
+) -> Value {
+    if prs.iter().any(|pr| selection_matches_event(pr, event)) {
+        return qualified_summary(
+            prs.iter()
+                .copied()
+                .filter(|pr| selection_matches_event(pr, event)),
+            schema,
+        );
+    }
+    match gaps.get(event) {
+        Some(line) => Value::text(line),
+        None => Value::Empty,
+    }
 }
 
 fn selection_matches_event(pr: &SharedSelection, event: &str) -> bool {

@@ -1,4 +1,4 @@
-mod cells;
+pub(in crate::workbook) mod cells;
 mod reported;
 mod rules;
 
@@ -106,10 +106,12 @@ fn row_for(
     let tally = dataset.tallies.get(athlete.id.as_str());
     let performances: Vec<&SharedSelection> = dataset.prs_of(athlete.id.as_str()).collect();
     let prs: Vec<&SharedSelection> = cells::eligible_prs(&performances).collect();
+    let tables: Vec<_> = dataset.source.reported_profile_prs_for(athlete).collect();
+    let gaps = cells::reported_gaps(&prs, &tables);
     let contacts = contact::scoped(dataset.contacts.get(school), athlete);
     let identity = Identity::of(dataset.public_identities, athlete.id.as_str())?;
     let mut cells = identity_cells(dataset, athlete, identity.athlete_id(), schools);
-    append_performance_cells(&mut cells, athlete, &prs, tally)?;
+    append_performance_cells(&mut cells, athlete, &prs, &gaps, tally)?;
     append_staff_cells(&mut cells, &contacts);
     cells.extend(school_athletics_url(dataset, school));
     cells.extend(public_recruiting_gpa());
@@ -126,13 +128,17 @@ fn append_performance_cells(
     cells: &mut Vec<Cell>,
     athlete: &CanonicalAthlete,
     prs: &[&SharedSelection],
+    gaps: &[crate::workbook::reported_profile::GapLine],
     tally: Option<&AthleteTally>,
 ) -> ReportResult<()> {
     cells.extend(tf_flag(athlete));
     cells.extend(participation_flags(athlete));
-    cells.extend(event_list(athlete, prs));
-    cells.extend(headline_pr_summary(athlete, prs));
-    cells.extend(pr_event_cells(prs));
+    cells.extend(event_list(prs, gaps));
+    cells.extend(headline_pr_summary(prs, gaps));
+    cells.extend(pr_event_cells(
+        prs,
+        &crate::workbook::reported_profile::gap_lookup(gaps),
+    ));
     cells.extend(participation_metrics(tally)?);
     Ok(())
 }
