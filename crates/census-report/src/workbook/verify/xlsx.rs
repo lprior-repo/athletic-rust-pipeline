@@ -69,11 +69,11 @@ pub(in crate::workbook) struct Profile {
 impl Profile {
     pub(in crate::workbook) const fn inline() -> Self {
         Self {
-            container: 256 * 1024 * 1024,
-            member: 256 * 1024 * 1024,
-            inflated: 512 * 1024 * 1024,
+            container: 1024 * 1024 * 1024,
+            member: 1024 * 1024 * 1024,
+            inflated: 2 * 1024 * 1024 * 1024,
             token: 1024 * 1024,
-            cells: 32 * 1024 * 1024,
+            cells: 128 * 1024 * 1024,
             members: 1_024,
         }
     }
