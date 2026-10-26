@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use athleticnet_browser::clock::Clock as EngineClock;
 use athleticnet_browser::drain::DrainReport;
-use athleticnet_browser::request::{same_origin, RequestSpec};
+use athleticnet_browser::request::{same_origin, same_site, RequestSpec};
 use athleticnet_browser::{BrowserManager, BrowserOutcome, BrowserSettings, BrowserStatus};
 use restate_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -111,10 +111,13 @@ impl BrowserSession {
         if same_origin(&request.url, origin) {
             return None;
         }
+        if self.settings.follow_same_site_redirects && same_site(&request.url, origin) {
+            return None;
+        }
         Some(format!(
-            "the browser lane is bound to {origin} and refuses {}: a request must share the \
-             configured source origin's scheme, host and port, so a foreign scheme or host never \
-             reaches a page, a capture or a receipt",
+            "the browser lane is bound to {origin} and refuses {}: a request must stay inside the \
+             bound source site, so a foreign scheme, host or registrable domain never reaches a \
+             page, a capture or a receipt",
             sanitized_url(&request.url)
         ))
     }

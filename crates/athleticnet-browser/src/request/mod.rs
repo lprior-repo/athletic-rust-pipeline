@@ -7,4 +7,4 @@ mod tests;
 
 pub use self::action::{RankingsAction, RequestAction, RequestSpec};
 pub use self::body::{RankingsQParamsInner, RankingsQuery};
-pub use self::build::{endpoint, rankings_spec, safe, safe_text, same_origin};
+pub use self::build::{endpoint, rankings_spec, safe, safe_text, same_origin, same_site};

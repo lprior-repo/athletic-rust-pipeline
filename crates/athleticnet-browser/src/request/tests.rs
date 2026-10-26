@@ -101,3 +101,42 @@ fn same_origin_holds_scheme_host_and_port_together() -> Result<(), Box<dyn std::
     );
     Ok(())
 }
+
+#[test]
+fn same_site_covers_sibling_subdomains_but_nothing_else(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let origin = url::Url::parse("https://www.milesplit.com/")?;
+    let verdict =
+        |value: &str| -> Result<bool, Box<dyn std::error::Error>> {
+            Ok(super::same_site(&url::Url::parse(value)?, &origin))
+        };
+    check!(
+        verdict("https://www.milesplit.com/athletes/1-a")?,
+        "the bound host itself stays inside"
+    );
+    check!(
+        verdict("https://al.milesplit.com/athletes/1-a")?,
+        "a sibling state subdomain shares the source site"
+    );
+    check!(
+        !verdict("http://al.milesplit.com/athletes/1-a")?,
+        "a scheme downgrade leaves the site"
+    );
+    check!(
+        !verdict("https://al.milesplit.com.evil.example/athletes/1-a")?,
+        "a lookalike suffix leaves the site"
+    );
+    check!(
+        !verdict("https://a.b.milesplit.com/athletes/1-a")?,
+        "a deeper nesting is not a sibling"
+    );
+    check!(
+        !verdict("https://lane:secret@al.milesplit.com/")?,
+        "userinfo never shares the site"
+    );
+    check!(
+        !verdict("https://evil.example/athletes/1-a")?,
+        "another registrable domain is foreign"
+    );
+    Ok(())
+}
