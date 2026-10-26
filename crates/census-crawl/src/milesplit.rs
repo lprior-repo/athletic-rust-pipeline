@@ -41,8 +41,9 @@ pub use owned::{
 };
 pub(crate) use parse::parse_captured_roster_with_witness_v1;
 pub use parse::{
-    has_next_page, parse_captured_roster, parse_meet_index, parse_meet_result_files, parse_roster,
-    parse_team_index, TeamIndexRead,
+    has_next_page, parse_captured_roster, parse_meet_index, parse_meet_result_files, parse_profile,
+    parse_roster, parse_team_index, ParsedProfile, ProfileHeader, ProfilePersonalRecord,
+    ProfileQuarantine, ProfileRowRejection, ProfileRowRejectionKind, ProfileVerdict, TeamIndexRead,
 };
 pub(crate) use raw::located::{parse_raw_located_bound, ProvisionalRawRowLocatorV1};
 pub use raw::{parse_raw, RawPage};

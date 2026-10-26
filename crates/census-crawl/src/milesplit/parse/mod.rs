@@ -85,8 +85,141 @@ fn season_cell_regex() -> CrawlResult<&'static Regex> {
         })
 }
 
+static PROFILE_NAME_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
+    Regex::new(r#"<h1 id="athleteName"[^>]*>([^<]+)</h1>"#)
+});
+
+static PROFILE_SCHOOL_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
+    Regex::new(r#"<span class="current-school"><a\s+href="([^"]+)">([^<]+)</a></span>"#)
+});
+
+static PROFILE_TEAM_ID_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r#"/teams/(\d+)"#));
+
+static PROFILE_GRAD_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
+    Regex::new(r#"<span class="grad-year">Class of (\d{4})</span>"#)
+});
+
+static PROFILE_CITY_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
+    Regex::new(r#"<span class="city-state">([^<]*)</span>"#)
+});
+
+static PROFILE_GENDER_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r#""gender":\s*"([^"]+)""#));
+
+static PROFILE_CANONICAL_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
+    Regex::new(r#"<link rel="canonical" href="([^"]+/athletes/(\d+)[^"]*)""#)
+});
+
+static PROFILE_TABLE_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
+    Regex::new(r#"(?s)<table id="prTable".*?<tbody>(.*?)</tbody>"#)
+});
+
+static PROFILE_ROW_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
+    Regex::new(r#"(?s)<tr data-pr-mode="([^"]*)" data-pr-level="([^"]*)"[^>]*>(.*?)</tr>"#)
+});
+
+static PROFILE_CELL_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r#"(?s)<td[^>]*>(.*?)</td>"#));
+
+fn profile_name_regex() -> CrawlResult<&'static Regex> {
+    PROFILE_NAME_REGEX
+        .as_ref()
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "PROFILE_NAME_REGEX",
+            source: source.clone(),
+        })
+}
+
+fn profile_school_regex() -> CrawlResult<&'static Regex> {
+    PROFILE_SCHOOL_REGEX
+        .as_ref()
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "PROFILE_SCHOOL_REGEX",
+            source: source.clone(),
+        })
+}
+
+fn profile_team_id_regex() -> CrawlResult<&'static Regex> {
+    PROFILE_TEAM_ID_REGEX
+        .as_ref()
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "PROFILE_TEAM_ID_REGEX",
+            source: source.clone(),
+        })
+}
+
+fn profile_grad_regex() -> CrawlResult<&'static Regex> {
+    PROFILE_GRAD_REGEX
+        .as_ref()
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "PROFILE_GRAD_REGEX",
+            source: source.clone(),
+        })
+}
+
+fn profile_city_regex() -> CrawlResult<&'static Regex> {
+    PROFILE_CITY_REGEX
+        .as_ref()
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "PROFILE_CITY_REGEX",
+            source: source.clone(),
+        })
+}
+
+fn profile_gender_regex() -> CrawlResult<&'static Regex> {
+    PROFILE_GENDER_REGEX
+        .as_ref()
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "PROFILE_GENDER_REGEX",
+            source: source.clone(),
+        })
+}
+
+fn profile_canonical_regex() -> CrawlResult<&'static Regex> {
+    PROFILE_CANONICAL_REGEX
+        .as_ref()
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "PROFILE_CANONICAL_REGEX",
+            source: source.clone(),
+        })
+}
+
+fn profile_table_regex() -> CrawlResult<&'static Regex> {
+    PROFILE_TABLE_REGEX
+        .as_ref()
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "PROFILE_TABLE_REGEX",
+            source: source.clone(),
+        })
+}
+
+fn profile_row_regex() -> CrawlResult<&'static Regex> {
+    PROFILE_ROW_REGEX
+        .as_ref()
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "PROFILE_ROW_REGEX",
+            source: source.clone(),
+        })
+}
+
+fn profile_cell_regex() -> CrawlResult<&'static Regex> {
+    PROFILE_CELL_REGEX
+        .as_ref()
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "PROFILE_CELL_REGEX",
+            source: source.clone(),
+        })
+}
+
 mod team_index;
 pub use team_index::{parse_team_index, TeamIndexRead};
+
+pub mod profile;
+pub use profile::{
+    parse_profile, ParsedProfile, ProfileHeader, ProfilePersonalRecord, ProfileQuarantine,
+    ProfileRowRejection, ProfileRowRejectionKind, ProfileVerdict,
+};
 
 pub(in crate::milesplit) mod markup;
 pub(in crate::milesplit) mod roster;
