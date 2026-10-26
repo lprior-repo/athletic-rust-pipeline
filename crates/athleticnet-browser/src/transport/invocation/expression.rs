@@ -116,7 +116,7 @@ impl Write for Expression {
 
 #[cfg(test)]
 mod tests {
-    use super::super::super::{redirect_mode, FetchArguments};
+    use super::super::super::{redirect_mode, referrer_policy_mode, FetchArguments};
     use super::build;
 
     fn arguments(redirect: &'static str) -> FetchArguments<'static> {
@@ -128,6 +128,7 @@ mod tests {
             max_body: 8,
             headers: &[],
             redirect,
+            referrer_policy: referrer_policy_mode(redirect == "follow"),
         }
     }
 
@@ -149,5 +150,9 @@ mod tests {
             "opt-in deployments send redirect:follow, got: {following}"
         );
         assert!(!following.contains(r#""redirect":"error""#));
+        assert!(
+            following.contains(r#""referrer_policy":"no-referrer""#),
+            "followed hops carry no referrer, got: {following}"
+        );
     }
 }

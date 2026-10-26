@@ -66,6 +66,7 @@ struct FetchArguments<'a> {
     max_body: usize,
     headers: &'a [(String, String)],
     redirect: &'static str,
+    referrer_policy: &'static str,
 }
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -161,6 +162,7 @@ async fn capture_attempt(
         max_body: crate::protocol::MAX_SOURCE_RESPONSE_BYTES,
         headers: request.headers.as_slice(),
         redirect: redirect_mode(same_site_origin.is_some()),
+        referrer_policy: referrer_policy_mode(same_site_origin.is_some()),
     };
     *invocation_slot = Some(invocation::prepare(page, &arguments).await?);
     let invocation = invocation_slot.as_ref().ok_or(BrowserError::Protocol)?;
@@ -194,6 +196,17 @@ fn redirect_mode(follow_same_site: bool) -> &'static str {
         "follow"
     } else {
         "error"
+    }
+}
+
+/// Follow-mode fetches send no referrer: the hop target must see the same
+/// bare request a direct navigation sends, not the redirecting origin.
+/// Opt-out deployments keep the browser default exactly.
+fn referrer_policy_mode(follow_same_site: bool) -> &'static str {
+    if follow_same_site {
+        "no-referrer"
+    } else {
+        "strict-origin-when-cross-origin"
     }
 }
 
