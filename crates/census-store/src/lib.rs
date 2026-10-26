@@ -50,7 +50,7 @@ pub use input_revisions::{PublicIdentityInputRevisionTokenV2, PublicIdentityInpu
 mod public_identity;
 pub use public_identity::paged_generation;
 pub use public_identity::{
-    replay_frozen_public_identity_v1, replay_frozen_public_identity_v2,
+    is_qualification_lifecycle, replay_frozen_public_identity_v1, replay_frozen_public_identity_v2,
     CapturedFrozenPublicIdentityV2, FrozenPublicIdentityBundleV2, FrozenPublicIdentityDemandV2,
     GraphAuthorityReferenceV1, IdentityCommitOutcomeV1, LocalAdjudicationCommitOutcomeV1,
     LocalAdjudicationInventoryV1, MembershipWithholdingInventoryV1, MembershipWithholdingOutcomeV1,

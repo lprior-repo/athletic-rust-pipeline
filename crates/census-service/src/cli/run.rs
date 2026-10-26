@@ -42,6 +42,19 @@ pub(crate) fn run() -> Result<()> {
         .block_on(run_async(cli))
 }
 
+fn open_offline_store(root: &std::path::Path) -> Result<Store> {
+    match Store::open(root) {
+        Ok(store) => Ok(store),
+        Err(census_store::StoreError::PublicIdentity(
+            census_store::PublicIdentityError::OptInRequired,
+        )) => {
+            let (store, _writer) = Store::open_public_identity_qualification_v3(root)?.into_parts();
+            Ok(store)
+        }
+        Err(error) => Err(error.into()),
+    }
+}
+
 async fn run_async(cli: Cli) -> Result<()> {
     if let Command::Review(args) = &cli.command {
         args.validate_configuration()?;
@@ -62,7 +75,7 @@ async fn run_async(cli: Cli) -> Result<()> {
         }
         Command::Review(args) => {
             let prepared = args.prepare()?;
-            let store = Store::open(cli.store_root())?;
+            let store = open_offline_store(&cli.store_root())?;
             review::run_review(&store, &prepared).await
         }
         Command::National(args) => national::run_national(&cli, args).await,
@@ -95,6 +108,10 @@ async fn run_async(cli: Cli) -> Result<()> {
         }
         Command::SchoolAddressJoin(args) => school_address_join::run(&cli, args),
         Command::SchoolSites(args) => school_sites::run(&cli, args).await,
+        Command::Index(_) | Command::FjallStats => {
+            let store = open_offline_store(&cli.store_root())?;
+            dispatch::dispatch(&cli, &store).await
+        }
         _ => {
             let store = Store::open(cli.store_root())?;
             dispatch::dispatch(&cli, &store).await

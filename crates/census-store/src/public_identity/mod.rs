@@ -61,7 +61,7 @@ pub use frozen::{
 pub(crate) use qualification::{preflight_keyspaces, require_legacy, validate};
 pub use qualification::{PublicIdentityQualificationStore, PublicIdentityWriterV1};
 
-pub(crate) fn is_qualification_lifecycle(revision: Option<u32>) -> bool {
+pub fn is_qualification_lifecycle(revision: Option<u32>) -> bool {
     matches!(
         revision,
         Some(

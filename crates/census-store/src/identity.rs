@@ -13,6 +13,9 @@ impl Store {
         &self,
         decisions: &[AcceptedAthleteIdentity],
     ) -> StoreResult<u64> {
+        if decisions.is_empty() {
+            return Ok(0);
+        }
         crate::public_identity::refuse_identity_write(self, Table::AthleteIdentityDecisions)?;
         if decisions.len() > MAX_IDENTITY_APPLICATION_BATCH {
             return Err(StoreError::Refused {

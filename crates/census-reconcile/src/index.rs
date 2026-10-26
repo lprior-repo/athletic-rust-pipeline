@@ -2,7 +2,7 @@ use census_domain::model::{CollectionSnapshot, RetainedConflict, ReviewCase};
 use std::collections::HashMap;
 
 use census_report::report::ReportResult;
-use census_store::{Entity, Store, StoreSnapshot, Table};
+use census_store::{is_qualification_lifecycle, Entity, Store, StoreSnapshot, Table};
 
 mod apply;
 mod coverage;
@@ -85,7 +85,12 @@ pub fn derive(
     school_year: census_domain::model::SchoolYear,
 ) -> ReportResult<IndexReport> {
     store.store_identity()?;
-    let identity_applications = apply::apply_decisions(store, finished_at)?;
+    let identity_applications =
+        if is_qualification_lifecycle(store.store_format()?.lifecycle_revision) {
+            0
+        } else {
+            apply::apply_decisions(store, finished_at)?
+        };
     let mut stage = store.stage_derived()?;
     let base = stage_digest(stage.view())?;
     let dataset = census_report::export::ExportDataset::from_snapshot(store, stage.view())?;
