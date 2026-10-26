@@ -39,6 +39,7 @@ impl Fixture {
             executable: self.root.join("browser"),
             profile_dir: self.root.join("profile"),
             source_origin: url::Url::parse("https://www.athletic.net/")?,
+            follow_same_site_redirects: false,
             tabs: 1,
             request_timeout: Duration::from_secs(1),
             challenge_wait: Duration::from_secs(1),

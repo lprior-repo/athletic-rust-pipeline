@@ -9,6 +9,7 @@ pub struct BrowserSettings {
     pub executable: PathBuf,
     pub profile_dir: PathBuf,
     pub source_origin: Url,
+    pub follow_same_site_redirects: bool,
     pub tabs: usize,
     pub request_timeout: Duration,
     pub challenge_wait: Duration,

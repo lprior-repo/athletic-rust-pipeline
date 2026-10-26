@@ -42,6 +42,7 @@ fn main() -> ProbeResult {
         executable: PathBuf::from("/usr/bin/chromium"),
         profile_dir: profile,
         source_origin: origin,
+        follow_same_site_redirects: false,
         tabs: 1,
         request_timeout: Duration::from_secs(30),
         challenge_wait: Duration::from_secs(2),

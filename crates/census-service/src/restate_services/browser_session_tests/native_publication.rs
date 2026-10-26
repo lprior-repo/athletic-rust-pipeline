@@ -26,6 +26,7 @@ fn fixture_settings(
         executable,
         profile_dir,
         source_origin,
+        follow_same_site_redirects: false,
         tabs: 1,
         request_timeout: Duration::from_secs(15),
         challenge_wait: Duration::from_secs(5),

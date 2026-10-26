@@ -150,6 +150,7 @@ async fn launch(
         executable: PathBuf::from(CHROMIUM),
         profile_dir: profile.to_path_buf(),
         source_origin: origin,
+        follow_same_site_redirects: false,
         tabs: 1,
         request_timeout: REQUEST_TIMEOUT,
         challenge_wait: CHALLENGE_WAIT,

@@ -60,6 +60,7 @@ fn fixture_settings(executable: PathBuf, profile_dir: PathBuf) -> anyhow::Result
         executable,
         profile_dir,
         source_origin: Url::parse("https://www.athletic.net/")?,
+        follow_same_site_redirects: false,
         tabs: 1,
         request_timeout: Duration::from_secs(30),
         challenge_wait: Duration::from_secs(10),

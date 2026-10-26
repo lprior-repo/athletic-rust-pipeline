@@ -207,6 +207,7 @@ fn restate_endpoint_advertises_the_lane_when_it_serves_one() -> TestResult {
                     executable: PathBuf::from("/nonexistent/chromium"),
                     profile_dir: dir.path().join("profile"),
                     source_origin: Url::parse("https://www.athletic.net/")?,
+                    follow_same_site_redirects: false,
                     tabs: 1,
                     request_timeout: Duration::from_secs(30),
                     challenge_wait: Duration::from_secs(5),

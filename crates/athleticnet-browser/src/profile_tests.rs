@@ -10,6 +10,7 @@ fn settings(profile_dir: PathBuf) -> Result<BrowserSettings, url::ParseError> {
         executable: PathBuf::from("/usr/bin/chromium"),
         profile_dir,
         source_origin: Url::parse("https://www.athletic.net/")?,
+        follow_same_site_redirects: false,
         tabs: 2,
         request_timeout: Duration::from_secs(30),
         challenge_wait: Duration::from_secs(5),

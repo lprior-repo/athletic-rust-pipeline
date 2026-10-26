@@ -34,6 +34,7 @@ impl Actor {
                 executable: PathBuf::from("/no-browser-required"),
                 profile_dir: std::env::temp_dir(),
                 source_origin: url::Url::parse("https://www.athletic.net/")?,
+                follow_same_site_redirects: false,
                 tabs: 1,
                 request_timeout: Duration::from_secs(1),
                 challenge_wait: Duration::from_secs(1),

@@ -74,6 +74,7 @@ impl Actor {
         let timeout = self.settings.request_timeout;
         let request = item.request.clone();
         let source_origin = self.settings.source_origin.clone();
+        let follow_redirects = self.settings.follow_same_site_redirects;
         let clock = self.clock.clone();
         let span = tracing::info_span!("browser.job", slot, nonce);
         self.jobs.spawn(
@@ -86,7 +87,9 @@ impl Actor {
                                 transport::fetch_rankings(&page, action, timeout, gate, &source_origin, nonce, clock.as_ref()).await
                             }
                             crate::request::RequestAction::Fetch {} => {
-                                transport::fetch(&page, &request, timeout, gate, clock.as_ref()).await
+                                let same_site = follow_redirects
+                                    .then(|| source_origin.clone());
+                                transport::fetch(&page, &request, same_site.as_ref(), timeout, gate, clock.as_ref()).await
                             }
                         }
                     } => result,

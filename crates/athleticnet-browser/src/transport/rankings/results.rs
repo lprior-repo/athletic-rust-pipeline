@@ -21,7 +21,8 @@ pub(super) async fn fetch_results(
         Some(body) => serde_json::to_string(&body).map_err(|_| BrowserError::Protocol)?,
         None => return Err(BrowserError::Protocol),
     };
-    let mut response = super::super::fetch(page, &request, request_timeout, gate, clock).await?;
+    let mut response =
+        super::super::fetch(page, &request, None, request_timeout, gate, clock).await?;
     let next_page = next_page_after(&response.body, action.page);
     response.rankings = Some(RankingPageObservation {
         capture: RankingsCapture::Results,

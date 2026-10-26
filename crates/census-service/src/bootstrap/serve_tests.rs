@@ -47,6 +47,7 @@ fn serving_lane() -> TestResult<ServeOptions> {
             executable: PathBuf::from("/nonexistent/chromium"),
             profile_dir,
             source_origin: url::Url::parse("https://www.athletic.net")?,
+            follow_same_site_redirects: false,
             tabs: 2,
             request_timeout: Duration::from_secs(30),
             challenge_wait: Duration::from_secs(30),

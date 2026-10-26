@@ -34,7 +34,7 @@ const USAGE: &str = "census-serve [--listen ADDR] [--data-dir DIR] \
                      [--max-concurrent N] [--drain-timeout SECONDS] [--memory-budget-gib GIB] \
                      [--memory-cgroup HIERARCHY_PATH] \
                      [--browser-profile DIR] [--browser-executable PATH] [--browser-headless] \
-                     [--browser-source-origin URL] [--help]";
+                     [--browser-source-origin URL] [--browser-follow-same-site-redirects] [--help]";
 
 #[cfg(test)]
 use drain::drain;

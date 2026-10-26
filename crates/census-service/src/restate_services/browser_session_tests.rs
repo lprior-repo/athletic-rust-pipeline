@@ -21,6 +21,7 @@ fn settings() -> anyhow::Result<BrowserSettings> {
         executable: PathBuf::from("/nonexistent/chromium"),
         profile_dir: PathBuf::from("/nonexistent/profile"),
         source_origin: Url::parse("https://www.athletic.net/")?,
+        follow_same_site_redirects: false,
         tabs: 1,
         request_timeout: Duration::from_secs(30),
         challenge_wait: Duration::from_secs(10),

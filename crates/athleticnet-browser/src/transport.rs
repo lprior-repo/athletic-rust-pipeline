@@ -24,6 +24,7 @@ pub(crate) mod pending;
 pub(crate) mod progress;
 mod rankings;
 mod request_binding;
+mod same_site;
 mod script;
 pub(crate) mod transfer;
 pub(super) use capture::{capture_body, response_headers};
@@ -94,6 +95,7 @@ struct ResponseEvidence {
 pub(crate) async fn fetch(
     page: &Page,
     request: &RequestSpec,
+    same_site_origin: Option<&url::Url>,
     request_timeout: Duration,
     gate: Arc<ProfileGate>,
     clock: &dyn Clock,
@@ -111,7 +113,15 @@ pub(crate) async fn fetch(
     let mut invocation = None;
     let attempt = tokio::time::timeout_at(
         deadline,
-        capture_attempt(page, request, deadline, &gate, clock, &mut invocation),
+        capture_attempt(
+            page,
+            request,
+            same_site_origin,
+            deadline,
+            &gate,
+            clock,
+            &mut invocation,
+        ),
     )
     .await;
     let error = match attempt {
@@ -125,6 +135,7 @@ pub(crate) async fn fetch(
 async fn capture_attempt(
     page: &Page,
     request: &RequestSpec,
+    same_site_origin: Option<&url::Url>,
     deadline: tokio::time::Instant,
     gate: &ProfileGate,
     clock: &dyn Clock,
@@ -151,7 +162,14 @@ async fn capture_attempt(
     };
     *invocation_slot = Some(invocation::prepare(page, &arguments).await?);
     let invocation = invocation_slot.as_ref().ok_or(BrowserError::Protocol)?;
-    let mut capture = FetchCapture::new(page, gate, request, request_body.as_deref(), invocation);
+    let mut capture = FetchCapture::new(
+        page,
+        gate,
+        request,
+        request_body.as_deref(),
+        invocation,
+        same_site_origin.cloned(),
+    );
     drive_capture(&mut capture, listeners, deadline, clock).await?;
     let response = complete_fetch(capture).await?;
     invocation::release(page, invocation).await?;
@@ -166,8 +184,12 @@ fn request_method(request: &RequestSpec) -> &'static str {
     }
 }
 
-fn matches_request(event: &EventRequestWillBeSent, request: &RequestSpec) -> bool {
-    event.request.url == request.url.as_str()
+fn matches_request(
+    event: &EventRequestWillBeSent,
+    request: &RequestSpec,
+    expected_url: &str,
+) -> bool {
+    event.request.url == expected_url
         && event
             .request
             .method

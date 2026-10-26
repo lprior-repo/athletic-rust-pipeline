@@ -461,3 +461,54 @@ fn options_accept_and_refuse_browser_source_origins() -> TestResult {
     }
     Ok(())
 }
+
+#[test]
+fn options_gate_same_site_redirect_following() -> TestResult {
+    let plain = ServeOptions::from_env(Vec::<String>::new().into_iter())?;
+    if plain.lane.is_some() {
+        return Err("no flag means no lane".into());
+    }
+
+    let args = [
+        "--browser-profile",
+        "/tmp/profile",
+        "--browser-executable",
+        "/usr/bin/chromium",
+        "--browser-follow-same-site-redirects",
+    ]
+    .into_iter()
+    .map(str::to_string);
+    let lane = ServeOptions::from_env_with_path(args, None)?
+        .lane
+        .ok_or("missing configured browser lane")?;
+    if !lane.follow_same_site_redirects {
+        return Err("expected same-site redirect following enabled".into());
+    }
+    if lane.source_origin.as_str() != "https://www.athletic.net/" {
+        return Err("the follow flag must not change the default origin".into());
+    }
+
+    let without_profile = ["--browser-follow-same-site-redirects"]
+        .into_iter()
+        .map(str::to_string);
+    if !matches!(ServeOptions::from_env_with_path(without_profile, None), Err(BootstrapError::LaneFlagWithoutProfile { flag }) if flag == "--browser-follow-same-site-redirects")
+    {
+        return Err("expected follow flag without profile refusal".into());
+    }
+
+    let headed = [
+        "--browser-profile",
+        "/tmp/profile",
+        "--browser-executable",
+        "/usr/bin/chromium",
+    ]
+    .into_iter()
+    .map(str::to_string);
+    let lane = ServeOptions::from_env_with_path(headed, None)?
+        .lane
+        .ok_or("missing configured browser lane")?;
+    if lane.follow_same_site_redirects {
+        return Err("same-site redirect following must default off".into());
+    }
+    Ok(())
+}

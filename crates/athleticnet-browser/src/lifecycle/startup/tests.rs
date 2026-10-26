@@ -13,6 +13,7 @@ fn settings(profile_dir: PathBuf) -> Result<BrowserSettings, url::ParseError> {
         executable: PathBuf::from("/no-browser-required"),
         profile_dir,
         source_origin: Url::parse("https://www.athletic.net/")?,
+        follow_same_site_redirects: false,
         tabs: 1,
         request_timeout: Duration::from_secs(1),
         challenge_wait: Duration::from_secs(1),

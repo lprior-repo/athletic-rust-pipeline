@@ -9,8 +9,11 @@ use chromiumoxide::Page;
 use reqwest::header::CONTENT_TYPE;
 use tokio::time::timeout;
 
+use super::same_site::{hop_within_origin, MAX_REDIRECT_HOPS};
 use super::transfer::refuse_excess_wire;
-use super::{capture, matches_request, record_response, FetchResult, ResponseEvidence};
+use super::{
+    capture, matches_request, record_response, request_method, FetchResult, ResponseEvidence,
+};
 use crate::challenge::html_body_challenge;
 use crate::request::RequestSpec;
 use crate::{gate::ProfileGate, BrowserError, BrowserResponse};
@@ -37,6 +40,10 @@ pub(super) struct FetchCapture<'a> {
     pub(super) request: &'a RequestSpec,
     pub(super) request_body: Option<&'a str>,
     pub(super) invocation: &'a Invocation,
+    same_site_origin: Option<url::Url>,
+    expected_url: String,
+    redirect_hops: u8,
+    awaiting_hop: bool,
     request_id: Option<RequestId>,
     pending: PendingTransfers,
     encoded_total: Option<f64>,
@@ -55,6 +62,7 @@ impl<'a> FetchCapture<'a> {
         request: &'a RequestSpec,
         request_body: Option<&'a str>,
         invocation: &'a Invocation,
+        same_site_origin: Option<url::Url>,
     ) -> Self {
         Self {
             page,
@@ -62,6 +70,10 @@ impl<'a> FetchCapture<'a> {
             request,
             request_body,
             invocation,
+            same_site_origin,
+            expected_url: request.url.as_str().to_string(),
+            redirect_hops: 0,
+            awaiting_hop: false,
             request_id: None,
             pending: PendingTransfers::default(),
             encoded_total: None,
@@ -119,7 +131,16 @@ impl<'a> FetchCapture<'a> {
                 BrowserError::Protocol
             });
         }
-        if !matches_request(&event, self.request) || !self.invocation.binding().matches(&event) {
+        if event
+            .redirect_response
+            .as_ref()
+            .is_some_and(|redirected| redirected.url == self.expected_url)
+        {
+            return self.follow_hop(&event, remaining).await;
+        }
+        if !matches_request(&event, self.request, &self.expected_url)
+            || !self.invocation.binding().matches(&event)
+        {
             return Ok(());
         }
         if self.request_id.is_some() {
@@ -139,6 +160,66 @@ impl<'a> FetchCapture<'a> {
         if event.redirect_response.is_some() {
             return Err(BrowserError::Redirect);
         }
+        self.bind_tracked(&event).await
+    }
+
+    /// Re-anchor tracking onto a same-site redirect hop.
+    ///
+    /// The hop's linkage is the `redirect_response` naming the URL the lane
+    /// already tracks: CDP events come from the browser, never the page, so
+    /// a page cannot forge this handoff. The isolated-world binding check is
+    /// skipped for the hop itself because Chromium reissues redirect hops
+    /// outside the script frame; the body confirm below still runs.
+    async fn follow_hop(
+        &mut self,
+        event: &Arc<EventRequestWillBeSent>,
+        remaining: Duration,
+    ) -> Result<(), BrowserError> {
+        let origin = self
+            .same_site_origin
+            .clone()
+            .ok_or(BrowserError::Redirect)?;
+        if self.redirect_hops >= MAX_REDIRECT_HOPS {
+            return Err(BrowserError::Redirect);
+        }
+        if !hop_within_origin(&event.request.url, &origin) {
+            return Err(BrowserError::Redirect);
+        }
+        if !event
+            .request
+            .method
+            .eq_ignore_ascii_case(request_method(self.request))
+        {
+            return Err(BrowserError::Redirect);
+        }
+        let confirm = timeout(
+            remaining,
+            capture::matches_request_body(self.page, event, self.request_body),
+        )
+        .await;
+        match confirm {
+            Ok(Ok(true)) => {}
+            Ok(Ok(false)) => return Ok(()),
+            Ok(Err(e)) => return Err(e),
+            Err(_) => return Err(BrowserError::Timeout),
+        }
+        self.redirect_hops = self.redirect_hops.saturating_add(1);
+        self.expected_url = event.request.url.clone();
+        self.request_id = None;
+        self.response = None;
+        self.pending = PendingTransfers::default();
+        self.progress = WireTransfers::default();
+        self.encoded_total = None;
+        self.loading_finished = false;
+        self.redirect_status = None;
+        self.awaiting_hop = false;
+        self.bind_tracked(event).await
+    }
+
+    async fn bind_tracked(
+        &mut self,
+        event: &Arc<EventRequestWillBeSent>,
+    ) -> Result<(), BrowserError> {
         let id = event.request_id.clone();
         self.request_id = Some(id.clone());
         self.progress.bind(&id);
@@ -174,6 +255,18 @@ impl<'a> FetchCapture<'a> {
                 return Err(BrowserError::Protocol);
             }
             self.verify_response_url(&event)?;
+            let status: u16 = event
+                .response
+                .status
+                .try_into()
+                .map_err(|_| BrowserError::Protocol)?;
+            if self.same_site_origin.is_some()
+                && (300..400).contains(&status)
+                && event.response.url == self.expected_url
+            {
+                self.awaiting_hop = true;
+                return Ok(());
+            }
             record_response(
                 &event,
                 &mut self.response,
@@ -218,6 +311,9 @@ impl<'a> FetchCapture<'a> {
             return Ok(());
         }
         if self.request_id.as_ref() == Some(&event.request_id) {
+            if self.awaiting_hop {
+                return Err(BrowserError::Redirect);
+            }
             self.progress
                 .finish(&event.request_id, event.encoded_data_length)?;
             self.loading_finished = true;
@@ -240,7 +336,7 @@ impl<'a> FetchCapture<'a> {
     }
 
     fn verify_response_url(&self, event: &EventResponseReceived) -> Result<(), BrowserError> {
-        if event.response.url != self.request.url.as_str() {
+        if event.response.url != self.expected_url {
             return Err(BrowserError::Redirect);
         }
         Ok(())

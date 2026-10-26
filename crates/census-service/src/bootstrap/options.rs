@@ -83,6 +83,7 @@ struct LaneFlags {
     executable: Option<PathBuf>,
     headless: bool,
     source_origin: Option<String>,
+    follow_redirects: bool,
 }
 
 impl LaneFlags {
@@ -92,13 +93,18 @@ impl LaneFlags {
         path: Option<&OsStr>,
     ) -> Result<(), BootstrapError> {
         if self.profile.is_none()
-            && (self.executable.is_some() || self.headless || self.source_origin.is_some())
+            && (self.executable.is_some()
+                || self.headless
+                || self.source_origin.is_some()
+                || self.follow_redirects)
         {
             return Err(BootstrapError::LaneFlagWithoutProfile {
                 flag: if self.executable.is_some() {
                     "--browser-executable"
                 } else if self.source_origin.is_some() {
                     "--browser-source-origin"
+                } else if self.follow_redirects {
+                    "--browser-follow-same-site-redirects"
                 } else {
                     "--browser-headless"
                 }
@@ -111,6 +117,7 @@ impl LaneFlags {
                 self.executable,
                 self.headless,
                 self.source_origin,
+                self.follow_redirects,
                 path,
             )?);
         }
@@ -146,7 +153,8 @@ fn apply_flag<I: Iterator<Item = String>>(
         "--browser-profile"
         | "--browser-executable"
         | "--browser-headless"
-        | "--browser-source-origin" => {
+        | "--browser-source-origin"
+        | "--browser-follow-same-site-redirects" => {
             apply_browser_flag(flag, args, lane)?;
         }
         "--help" | "-h" => return Err(BootstrapError::HelpRequested),
@@ -229,6 +237,7 @@ fn apply_browser_flag<I: Iterator<Item = String>>(
         "--browser-profile" => lane.profile = Some(PathBuf::from(next()?)),
         "--browser-executable" => lane.executable = Some(PathBuf::from(next()?)),
         "--browser-source-origin" => lane.source_origin = Some(next()?),
+        "--browser-follow-same-site-redirects" => lane.follow_redirects = true,
         _ => lane.headless = true,
     }
     Ok(())
@@ -239,6 +248,7 @@ fn lane(
     executable: Option<PathBuf>,
     headless: bool,
     source_origin: Option<String>,
+    follow_redirects: bool,
     path: Option<&OsStr>,
 ) -> Result<BrowserSettings, BootstrapError> {
     let profile_dir = absolute(profile_dir)?;
@@ -252,6 +262,7 @@ fn lane(
         },
         profile_dir,
         source_origin: lane_origin(source_origin)?,
+        follow_same_site_redirects: follow_redirects,
         tabs: 2,
         request_timeout: LANE_REQUEST_TIMEOUT,
         challenge_wait: LANE_CHALLENGE_WAIT,
