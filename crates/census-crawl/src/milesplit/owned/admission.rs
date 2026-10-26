@@ -3,7 +3,7 @@ use super::error::{
     OwnedParseArithmetic, OwnedParseLocator, OwnedParseResource, OwnedParseResourceFailure,
 };
 
-pub(super) const MAX_DECODE_BYTES: usize = 128 * 1024 * 1024;
+pub(super) const MAX_DECODE_BYTES: usize = 512 * 1024 * 1024;
 const MAX_WORK: usize = 2_000_000;
 const MAX_DEPTH: usize = 127;
 const VALUE_NODE_BYTES: usize = 512;

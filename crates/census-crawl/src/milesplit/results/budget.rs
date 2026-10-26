@@ -3,8 +3,8 @@ use serde::Serialize;
 use std::io::{self, Write};
 
 pub(super) const WINDOW_ROWS: usize = 64;
-pub(super) const WINDOW_BYTES: usize = 8 * 1024 * 1024;
-pub(super) const WINDOW_WORK: usize = 131_072;
+pub(super) const WINDOW_BYTES: usize = 32 * 1024 * 1024;
+pub(super) const WINDOW_WORK: usize = 524_288;
 pub(super) const METADATA_LABELS: usize = 4096;
 pub(super) use crate::SCHOOL_BINDINGS;
 const COPY_BOUND: usize = 64;
