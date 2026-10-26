@@ -82,6 +82,7 @@ struct LaneFlags {
     profile: Option<PathBuf>,
     executable: Option<PathBuf>,
     headless: bool,
+    source_origin: Option<String>,
 }
 
 impl LaneFlags {
@@ -90,10 +91,14 @@ impl LaneFlags {
         options: &mut ServeOptions,
         path: Option<&OsStr>,
     ) -> Result<(), BootstrapError> {
-        if self.profile.is_none() && (self.executable.is_some() || self.headless) {
+        if self.profile.is_none()
+            && (self.executable.is_some() || self.headless || self.source_origin.is_some())
+        {
             return Err(BootstrapError::LaneFlagWithoutProfile {
                 flag: if self.executable.is_some() {
                     "--browser-executable"
+                } else if self.source_origin.is_some() {
+                    "--browser-source-origin"
                 } else {
                     "--browser-headless"
                 }
@@ -101,7 +106,13 @@ impl LaneFlags {
             });
         }
         if let Some(profile_dir) = self.profile {
-            options.lane = Some(lane(profile_dir, self.executable, self.headless, path)?);
+            options.lane = Some(lane(
+                profile_dir,
+                self.executable,
+                self.headless,
+                self.source_origin,
+                path,
+            )?);
         }
         Ok(())
     }
@@ -132,7 +143,10 @@ fn apply_flag<I: Iterator<Item = String>>(
                 scope: PathBuf::from(value("--memory-cgroup")?),
             };
         }
-        "--browser-profile" | "--browser-executable" | "--browser-headless" => {
+        "--browser-profile"
+        | "--browser-executable"
+        | "--browser-headless"
+        | "--browser-source-origin" => {
             apply_browser_flag(flag, args, lane)?;
         }
         "--help" | "-h" => return Err(BootstrapError::HelpRequested),
@@ -214,6 +228,7 @@ fn apply_browser_flag<I: Iterator<Item = String>>(
     match flag {
         "--browser-profile" => lane.profile = Some(PathBuf::from(next()?)),
         "--browser-executable" => lane.executable = Some(PathBuf::from(next()?)),
+        "--browser-source-origin" => lane.source_origin = Some(next()?),
         _ => lane.headless = true,
     }
     Ok(())
@@ -223,6 +238,7 @@ fn lane(
     profile_dir: PathBuf,
     executable: Option<PathBuf>,
     headless: bool,
+    source_origin: Option<String>,
     path: Option<&OsStr>,
 ) -> Result<BrowserSettings, BootstrapError> {
     let profile_dir = absolute(profile_dir)?;
@@ -235,7 +251,7 @@ fn lane(
             })?,
         },
         profile_dir,
-        source_origin: lane_origin()?,
+        source_origin: lane_origin(source_origin)?,
         tabs: 2,
         request_timeout: LANE_REQUEST_TIMEOUT,
         challenge_wait: LANE_CHALLENGE_WAIT,
@@ -253,20 +269,34 @@ fn browser_on_path(path: Option<&OsStr>) -> Option<PathBuf> {
         .map(|dir| dir.join(DEFAULT_BROWSER_EXECUTABLE))
         .find(|candidate| candidate.is_absolute() && candidate.is_file())
 }
-fn lane_origin() -> Result<Url, BootstrapError> {
+fn lane_origin(cli_origin: Option<String>) -> Result<Url, BootstrapError> {
+    if let Some(raw) = cli_origin {
+        if !raw.is_empty() {
+            return parse_source_origin(raw);
+        }
+    }
     #[cfg(feature = "native-fault-injection")]
     if let Ok(override_origin) = std::env::var("CENSUS_BROWSER_SOURCE_ORIGIN") {
         if !override_origin.is_empty() {
-            return Url::parse(&override_origin).map_err(|source| {
-                BootstrapError::LaneOriginUnusable {
-                    origin: override_origin,
-                    source,
-                }
-            });
+            return parse_source_origin(override_origin);
         }
     }
-    Url::parse(LANE_ORIGIN).map_err(|source| BootstrapError::LaneOriginUnusable {
-        origin: LANE_ORIGIN.to_string(),
+    parse_source_origin(LANE_ORIGIN.to_string())
+}
+
+fn parse_source_origin(raw: String) -> Result<Url, BootstrapError> {
+    let url = Url::parse(&raw).map_err(|source| BootstrapError::LaneOriginUnusable {
+        origin: raw.clone(),
         source,
-    })
+    })?;
+    if url.scheme() != "http" && url.scheme() != "https" {
+        return Err(BootstrapError::LaneOriginSchemeUnsupported {
+            origin: raw,
+            scheme: url.scheme().to_string(),
+        });
+    }
+    if !url.username().is_empty() || url.password().is_some() {
+        return Err(BootstrapError::LaneOriginHasUserinfo { origin: raw });
+    }
+    Ok(url)
 }

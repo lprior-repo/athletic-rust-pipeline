@@ -117,6 +117,12 @@ pub enum BootstrapError {
         origin: String,
         source: url::ParseError,
     },
+    #[error(
+        "the browser lane's origin {origin} uses {scheme}: only http and https origins bind a lane"
+    )]
+    LaneOriginSchemeUnsupported { origin: String, scheme: String },
+    #[error("the browser lane's origin {origin} carries userinfo: credentials never bind a lane")]
+    LaneOriginHasUserinfo { origin: String },
     #[error("{flag} configures the browser lane, which --browser-profile enables")]
     LaneFlagWithoutProfile { flag: String },
     #[error("{program} is on no PATH entry: name the browser with --browser-executable")]

@@ -377,3 +377,87 @@ fn drain_completes_tasks_that_finish_before_the_deadline() -> TestResult {
             Ok(())
         })
 }
+
+#[test]
+fn options_accept_and_refuse_browser_source_origins() -> TestResult {
+    let args = [
+        "--browser-profile",
+        "/tmp/profile",
+        "--browser-executable",
+        "/usr/bin/chromium",
+        "--browser-source-origin",
+        "https://www.milesplit.com",
+    ]
+    .into_iter()
+    .map(str::to_string);
+    let lane = ServeOptions::from_env_with_path(args, None)?
+        .lane
+        .ok_or("missing configured browser lane")?;
+    if lane.source_origin.as_str() != "https://www.milesplit.com/" {
+        return Err(format!(
+            "source_origin: left={:?}, right=\"https://www.milesplit.com/\"",
+            lane.source_origin.as_str()
+        )
+        .into());
+    }
+
+    let alone = ["--browser-source-origin", "https://www.milesplit.com"]
+        .into_iter()
+        .map(str::to_string);
+    if !matches!(ServeOptions::from_env_with_path(alone, None), Err(BootstrapError::LaneFlagWithoutProfile { flag }) if flag == "--browser-source-origin")
+    {
+        return Err("expected --browser-source-origin without profile refusal".into());
+    }
+
+    let credentialed = [
+        "--browser-profile",
+        "/tmp/profile",
+        "--browser-executable",
+        "/usr/bin/chromium",
+        "--browser-source-origin",
+        "https://lane:secret@www.milesplit.com/",
+    ]
+    .into_iter()
+    .map(str::to_string);
+    if !matches!(
+        ServeOptions::from_env_with_path(credentialed, None),
+        Err(BootstrapError::LaneOriginHasUserinfo { .. })
+    ) {
+        return Err("expected credentialed origin refusal".into());
+    }
+
+    let exotic = [
+        "--browser-profile",
+        "/tmp/profile",
+        "--browser-executable",
+        "/usr/bin/chromium",
+        "--browser-source-origin",
+        "ftp://www.milesplit.com/",
+    ]
+    .into_iter()
+    .map(str::to_string);
+    if !matches!(
+        ServeOptions::from_env_with_path(exotic, None),
+        Err(BootstrapError::LaneOriginSchemeUnsupported { .. })
+    ) {
+        return Err("expected non-http origin refusal".into());
+    }
+
+    let broken = [
+        "--browser-profile",
+        "/tmp/profile",
+        "--browser-executable",
+        "/usr/bin/chromium",
+        "--browser-source-origin",
+        "://not a url",
+    ]
+    .into_iter()
+    .map(str::to_string);
+    if !matches!(
+        ServeOptions::from_env_with_path(broken, None),
+        Err(BootstrapError::LaneOriginUnusable { .. })
+    ) {
+        return Err("expected unparsable origin refusal".into());
+    }
+    Ok(())
+}

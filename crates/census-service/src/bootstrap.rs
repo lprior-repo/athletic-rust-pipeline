@@ -33,7 +33,8 @@ const USAGE: &str = "census-serve [--listen ADDR] [--data-dir DIR] \
                      [--capture-protocol fresh-qualification-v3] \
                      [--max-concurrent N] [--drain-timeout SECONDS] [--memory-budget-gib GIB] \
                      [--memory-cgroup HIERARCHY_PATH] \
-                     [--browser-profile DIR] [--browser-executable PATH] [--browser-headless] [--help]";
+                     [--browser-profile DIR] [--browser-executable PATH] [--browser-headless] \
+                     [--browser-source-origin URL] [--help]";
 
 #[cfg(test)]
 use drain::drain;
