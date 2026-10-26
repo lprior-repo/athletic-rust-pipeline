@@ -188,9 +188,6 @@ fn request_method(request: &RequestSpec) -> &'static str {
     }
 }
 
-/// The in-page fetch follows server redirects only on deployments that
-/// opted into same-site following; everywhere else the page itself refuses
-/// the redirect exactly as the lane manager would.
 fn redirect_mode(follow_same_site: bool) -> &'static str {
     if follow_same_site {
         "follow"
@@ -199,9 +196,6 @@ fn redirect_mode(follow_same_site: bool) -> &'static str {
     }
 }
 
-/// Follow-mode fetches send no referrer: the hop target must see the same
-/// bare request a direct navigation sends, not the redirecting origin.
-/// Opt-out deployments keep the browser default exactly.
 fn referrer_policy_mode(follow_same_site: bool) -> &'static str {
     if follow_same_site {
         "no-referrer"

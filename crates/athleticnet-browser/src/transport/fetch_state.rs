@@ -170,13 +170,6 @@ impl<'a> FetchCapture<'a> {
         self.bind_tracked(&event).await
     }
 
-    /// Re-anchor tracking onto a same-site redirect hop.
-    ///
-    /// The hop's linkage is the `redirect_response` naming the URL the lane
-    /// already tracks: CDP events come from the browser, never the page, so
-    /// a page cannot forge this handoff. The isolated-world binding check is
-    /// skipped for the hop itself because Chromium reissues redirect hops
-    /// outside the script frame; the body confirm below still runs.
     async fn follow_hop(
         &mut self,
         event: &Arc<EventRequestWillBeSent>,
@@ -269,12 +262,6 @@ impl<'a> FetchCapture<'a> {
         Ok(())
     }
 
-    /// Hold a same-site 3xx for its redirect hop instead of recording it.
-    ///
-    /// The 3xx response can arrive before the tracked request binds (the
-    /// bind confirm round-trips through the page), so both the live and the
-    /// pending-drain paths defer through here. Anything the hop rule rejects
-    /// still fails as a redirect exactly as before.
     fn defer_redirect(&self, event: &EventResponseReceived) -> bool {
         let status: u16 = match event.response.status.try_into() {
             Ok(status) => status,

@@ -79,12 +79,6 @@ pub enum ProfileRowRejectionKind {
     FieldTooLarge,
 }
 
-/// Parse one captured MileSplit athlete profile page.
-///
-/// The header binds the athlete to a school team, graduation year and
-/// gender; the `prTable` rows carry the visible Personal Records table.
-/// Event and mark labels stay textual here: the map layer owns the
-/// `EventKind`/mark interpretation it already applies to result rows.
 pub fn parse_profile(html: &str) -> CrawlResult<ProfileVerdict> {
     body_bound(html)?;
     let header = match read_header(html)? {

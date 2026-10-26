@@ -2,13 +2,8 @@ use url::Url;
 
 use crate::request::same_site;
 
-/// Maximum server redirects one capture follows before refusing the chain.
 pub(super) const MAX_REDIRECT_HOPS: u8 = 5;
 
-/// Decide whether a redirect hop stays inside the trust boundary of the
-/// lane's bound origin. Unparsable hop URLs fail closed; the trust rule
-/// itself lives with the request builders so the lane manager and the
-/// service-layer refusal share one definition.
 pub(super) fn hop_within_origin(hop: &str, origin: &Url) -> bool {
     let Ok(target) = Url::parse(hop) else {
         return false;
