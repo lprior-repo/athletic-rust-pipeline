@@ -113,3 +113,41 @@ impl Write for Expression {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::super::super::{redirect_mode, FetchArguments};
+    use super::build;
+
+    fn arguments(redirect: &'static str) -> FetchArguments<'static> {
+        FetchArguments {
+            url: "https://www.milesplit.com/athletes/1-a",
+            method: "GET",
+            body: None,
+            timeout_ms: 1_000,
+            max_body: 8,
+            headers: &[],
+            redirect,
+        }
+    }
+
+    #[test]
+    fn the_page_refuses_redirects_unless_following_is_enabled() {
+        let refusing = build(&arguments(redirect_mode(false))).expect("expression builds");
+        assert!(
+            refusing.contains(r#""redirect":"error""#),
+            "default deployments keep redirect:error, got: {refusing}"
+        );
+        assert!(!refusing.contains(r#""redirect":"follow""#));
+    }
+
+    #[test]
+    fn opted_in_deployments_let_the_page_follow_redirects() {
+        let following = build(&arguments(redirect_mode(true))).expect("expression builds");
+        assert!(
+            following.contains(r#""redirect":"follow""#),
+            "opt-in deployments send redirect:follow, got: {following}"
+        );
+        assert!(!following.contains(r#""redirect":"error""#));
+    }
+}

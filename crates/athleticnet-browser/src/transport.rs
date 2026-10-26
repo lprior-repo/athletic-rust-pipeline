@@ -65,6 +65,7 @@ struct FetchArguments<'a> {
     timeout_ms: u64,
     max_body: usize,
     headers: &'a [(String, String)],
+    redirect: &'static str,
 }
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -159,6 +160,7 @@ async fn capture_attempt(
         timeout_ms: fetch_loop::timeout_millis(remaining)?,
         max_body: crate::protocol::MAX_SOURCE_RESPONSE_BYTES,
         headers: request.headers.as_slice(),
+        redirect: redirect_mode(same_site_origin.is_some()),
     };
     *invocation_slot = Some(invocation::prepare(page, &arguments).await?);
     let invocation = invocation_slot.as_ref().ok_or(BrowserError::Protocol)?;
@@ -181,6 +183,17 @@ fn request_method(request: &RequestSpec) -> &'static str {
         "POST"
     } else {
         "GET"
+    }
+}
+
+/// The in-page fetch follows server redirects only on deployments that
+/// opted into same-site following; everywhere else the page itself refuses
+/// the redirect exactly as the lane manager would.
+fn redirect_mode(follow_same_site: bool) -> &'static str {
+    if follow_same_site {
+        "follow"
+    } else {
+        "error"
     }
 }
 

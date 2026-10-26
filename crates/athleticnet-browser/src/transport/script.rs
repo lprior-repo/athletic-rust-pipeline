@@ -10,7 +10,7 @@ pub(super) const FETCH_FUNCTION: &str = r#"async function(spec) {
     globalThis.__adlaw_transport_completion = completion;
     const timer = setTimeout(() => controller.abort(), spec.timeout_ms);
     try {
-        const init = {method: spec.method, redirect: 'error', signal: controller.signal, headers: {}};
+        const init = {method: spec.method, redirect: spec.redirect, signal: controller.signal, headers: {}};
         for (const pair of spec.headers) {
             init.headers[pair[0]] = pair[1];
         }
