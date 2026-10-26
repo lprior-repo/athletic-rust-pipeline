@@ -122,6 +122,10 @@ impl Fetcher {
         self
     }
 
+    pub fn family_parallelism(&self) -> usize {
+        self.family_parallelism
+    }
+
     pub(super) fn family_of(&self, host: &str) -> Option<String> {
         let host = host.trim().to_ascii_lowercase();
         self.family_delays

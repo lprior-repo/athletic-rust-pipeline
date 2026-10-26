@@ -304,6 +304,44 @@ fn legacy_file_cap_refuses_excess_name_before_its_allocation() -> TestResult {
     Ok(())
 }
 
+#[tokio::test]
+async fn concurrent_discovery_matches_sequential_pages_files_and_quarantine() -> TestResult {
+    let fixtures = [
+        "let meetResultFiles = [{\"id\":1,\"name\":\"Results\",\"isMeetPro\":0}];",
+        "let meetResultFiles = [{\"id\":2,\"name\":\"Results\",\"isMeetPro\":0}];",
+        "<select id=\"ddResultsPage\"><option value=\"https://oh.milesplit.com/meets/123-fixture/results/3\">Results</option></select>",
+        "<div id=\"meetResultsBody\">Results</div>",
+    ];
+    let run = |lanes: usize| {
+        let fixtures = fixtures;
+        async move {
+            let (_dir, fetcher) = scratch()?;
+            let fetcher = fetcher.with_family_parallelism(lanes);
+            let mut pages = Vec::new();
+            for (index, html) in fixtures.iter().enumerate() {
+                let url = format!("{URL}-{index}");
+                seed_cache(fetcher.cache_dir(), &url, 200, html)?;
+                pages.push(MeetPage {
+                    results_url: url,
+                    jurisdiction: UsJurisdiction::Ohio,
+                });
+            }
+            let (bounded, _) =
+                read_meet_pages(&fetcher, pages, &options(), MeetPageLimits::standard())
+                    .await
+                    .into_parts();
+            bounded
+                .map(|bounded| (bounded.files, bounded.pages_read, bounded.quarantined))
+                .map_err(|error| Box::new(error) as Box<dyn std::error::Error>)
+        }
+    };
+    let sequential = run(1).await?;
+    let concurrent = run(4).await?;
+    check!(eq; sequential, concurrent);
+    check!(eq; sequential.1, 4);
+    Ok(())
+}
+
 #[test]
 fn inline_file_zero_allowance_refuses_before_name_allocation() -> TestResult {
     let mut allocation = Allocation::new(MeetPageLimits::new(8192));

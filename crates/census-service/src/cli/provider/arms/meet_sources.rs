@@ -1,7 +1,9 @@
 use anyhow::{Context, Result};
-use census_crawl::{self as providers, AdapterContext, AdapterReport};
+use census_crawl::{self as providers, AdapterContext, AdapterReport, CollectionDisposition};
 use census_domain::model::SourceMeetRef;
+use census_domain::UsJurisdiction;
 use census_service::census;
+use futures::stream::{self, StreamExt};
 
 use super::super::ProviderArgs;
 use super::DEFAULT_COLLECT_CONCURRENCY;
@@ -50,8 +52,81 @@ pub(crate) async fn milesplit_results_report(
     let scope = args
         .season_year
         .map_or(census::SeasonScope::All, census::SeasonScope::Year);
-    let meets = census::select_meets(stored, &states, scope, args.limit);
-    let selected: Vec<providers::milesplit::MeetPage> = meets
+    let lanes = context.fetcher.family_parallelism().max(1);
+    let stored_ref = stored.as_slice();
+    let mut per_state: Vec<(UsJurisdiction, Result<AdapterReport>)> =
+        stream::iter(states.iter().copied())
+            .map(|state| async move {
+                let outcome = collect_state_results(context, args, stored_ref, scope, state).await;
+                (state, outcome)
+            })
+            .buffer_unordered(lanes)
+            .collect()
+            .await;
+    per_state.sort_by(|left, right| left.0.code().cmp(right.0.code()));
+    let mut merged = AdapterReport::new("milesplit_results", "result rows");
+    let mut complete = true;
+    for (state, outcome) in per_state {
+        match outcome {
+            Ok(report) => {
+                complete = complete && report.disposition.is_complete();
+                merge_state_report(&mut merged, state, &report);
+            }
+            Err(error) => {
+                complete = false;
+                merged.errors = merged.errors.saturating_add(1);
+                merged.note(format!("state {} failed: {error:#}", state.code()));
+            }
+        }
+    }
+    merged.disposition = if complete {
+        CollectionDisposition::Complete
+    } else {
+        CollectionDisposition::Partial
+    };
+    merged.note(format!("states={}", states.len()));
+    Ok(merged)
+}
+
+#[tracing::instrument(skip(context, args, stored), fields(state = state.code()))]
+async fn collect_state_results(
+    context: &AdapterContext<'_>,
+    args: &ProviderArgs,
+    stored: &[SourceMeetRef],
+    scope: census::SeasonScope,
+    state: UsJurisdiction,
+) -> Result<AdapterReport> {
+    let (selected, meets_in_scope) = select_state_pages(stored, scope, args.limit, state);
+    let pages = read_pages(context, &selected)
+        .await
+        .with_context(|| format!("reading {} meet pages", state.code()))?;
+    let mut report = collect_state_urls(context, &pages, state).await?;
+    report.note(format!(
+        "state {} meets_in_scope={meets_in_scope}",
+        state.code()
+    ));
+    report.note(format!(
+        "state {} meet_pages_selected={}",
+        state.code(),
+        selected.len()
+    ));
+    note_pages(&mut report, &pages);
+    Ok(report)
+}
+
+fn select_state_pages(
+    stored: &[SourceMeetRef],
+    scope: census::SeasonScope,
+    limit: Option<usize>,
+    state: UsJurisdiction,
+) -> (Vec<providers::milesplit::MeetPage>, usize) {
+    let scoped: Vec<SourceMeetRef> = stored
+        .iter()
+        .filter(|meet| meet.jurisdiction == state)
+        .cloned()
+        .collect();
+    let meets = census::select_meets(scoped, &[state], scope, limit);
+    let selected = meets
         .iter()
         .filter(|meet| providers::milesplit::is_results_page(&meet.results_url))
         .map(|meet| providers::milesplit::MeetPage {
@@ -59,7 +134,14 @@ pub(crate) async fn milesplit_results_report(
             jurisdiction: meet.jurisdiction,
         })
         .collect();
-    let pages = read_pages(context, &selected).await?;
+    (selected, meets.len())
+}
+
+async fn collect_state_urls(
+    context: &AdapterContext<'_>,
+    pages: &providers::milesplit::MeetPages,
+    state: UsJurisdiction,
+) -> Result<AdapterReport> {
     let pro_marked = pages
         .files
         .iter()
@@ -76,12 +158,54 @@ pub(crate) async fn milesplit_results_report(
         &providers::milesplit::ResultSetOptions { urls },
     )
     .await
-    .context("milesplit result sets")?;
-    report.note(format!("meets_in_scope={}", meets.len()));
-    report.note(format!("meet_pages_selected={}", selected.len()));
-    report.note(format!("pro_marked_result_files={pro_marked}"));
-    note_pages(&mut report, &pages);
+    .with_context(|| format!("collecting {} result sets", state.code()))?;
+    report.note(format!(
+        "state {} pro_marked_result_files={pro_marked}",
+        state.code()
+    ));
     Ok(report)
+}
+
+fn merge_state_report(merged: &mut AdapterReport, state: UsJurisdiction, report: &AdapterReport) {
+    merge_state_counters(merged, report);
+    merged.note(format!(
+        "state {} unit={} rows={}",
+        state.code(),
+        report.unit,
+        report.rows
+    ));
+    for note in &report.notes {
+        merged.note(format!("state {}: {note}", state.code()));
+    }
+    merged.unfinished.extend(report.unfinished.iter().cloned());
+}
+
+fn merge_state_counters(merged: &mut AdapterReport, report: &AdapterReport) {
+    merged.rows = merged.rows.saturating_add(report.rows);
+    merged.requests = merged.requests.saturating_add(report.requests);
+    merged.from_cache = merged.from_cache.saturating_add(report.from_cache);
+    merged.errors = merged.errors.saturating_add(report.errors);
+    merged.with_email = merged.with_email.saturating_add(report.with_email);
+    merged.rejections = merged.rejections.saturating_add(report.rejections);
+    merged.unresolved = match (merged.unresolved, report.unresolved) {
+        (Some(left), Some(right)) => Some(census_crawl::UnresolvedCounters {
+            rows: left.rows.saturating_add(right.rows),
+            labels: left.labels.saturating_add(right.labels),
+        }),
+        (Some(left), None) => Some(left),
+        (None, right) => right,
+    };
+    merged.resolution = match (merged.resolution, report.resolution) {
+        (Some(left), Some(right)) => Some(census_crawl::ResolutionCounters {
+            rows: left.rows.saturating_add(right.rows),
+            resolved: left.resolved.saturating_add(right.resolved),
+            unresolved: left.unresolved.saturating_add(right.unresolved),
+            retained: left.retained.saturating_add(right.retained),
+            quarantined: left.quarantined.saturating_add(right.quarantined),
+        }),
+        (Some(left), None) => Some(left),
+        (None, right) => right,
+    };
 }
 
 async fn read_pages(

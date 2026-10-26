@@ -23,7 +23,7 @@ fn body_byte_boundary_admits_capture_size_before_the_independent_decoded_budget_
                 requested,
                 limit,
                 ..
-            })) => check!(eq; (requested, limit), (expected, 128 * 1024 * 1024)),
+            })) => check!(eq; (requested, limit), (expected, 512 * 1024 * 1024)),
             outcome => {
                 return Err(format!(
                     "capture admitted within its bound, then decoded budget refused: {outcome:?}"

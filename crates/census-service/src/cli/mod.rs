@@ -135,6 +135,15 @@ pub(super) fn build_fetcher_authorizing(
     hosts.retain(|host| !host.trim().is_empty());
     hosts.sort();
     hosts.dedup();
+    if cli.source_parallelism == 0
+        || cli.source_parallelism > census_service::restate_services::MAX_SOURCE_PARALLELISM
+    {
+        anyhow::bail!(
+            "source_parallelism {} is outside 1..={}",
+            cli.source_parallelism,
+            census_service::restate_services::MAX_SOURCE_PARALLELISM
+        );
+    }
     Ok(Fetcher::new(
         store.http_cache_dir(),
         cli.user_agent.clone(),
@@ -143,6 +152,7 @@ pub(super) fn build_fetcher_authorizing(
         hosts,
     )?
     .with_family_budgets(census_crawl::default_family_delays())
+    .with_family_parallelism(cli.source_parallelism)
     .with_origin_locks(census_service::census::DEFAULT_ORIGIN_LOCK_ROOT))
 }
 

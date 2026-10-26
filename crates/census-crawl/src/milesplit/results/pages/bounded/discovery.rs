@@ -1,7 +1,8 @@
 use super::{lossy_body, raw_url, resource, Allocation, MAX_FILES, MAX_TEXT};
 use crate::milesplit::results::pages::{ListedResultFile, MeetPage, MeetPages};
-use crate::net::{FetchOptions, Fetcher};
+use crate::net::{FetchOptions, FetchOutcome, Fetcher};
 use crate::{CrawlError, CrawlResult};
+use futures::StreamExt;
 
 #[tracing::instrument(skip_all)]
 pub(super) async fn discover(
@@ -10,18 +11,49 @@ pub(super) async fn discover(
     options: &FetchOptions,
     allocation: &mut Allocation,
 ) -> CrawlResult<MeetPages> {
-    let mut out = MeetPages::default();
+    let lanes = fetcher.family_parallelism().max(1);
+    let mut staged: Vec<MeetPage> = Vec::new();
     for (ordinal, page) in pages.into_iter().enumerate() {
-        if out.stopped() {
-            break;
-        }
         if ordinal >= MAX_FILES {
             return Err(resource("meet pages", ordinal.saturating_add(1), MAX_FILES));
         }
         if page.results_url.len() > MAX_TEXT {
             return Err(resource("meet-page URL", page.results_url.len(), MAX_TEXT));
         }
-        let outcome = fetcher.get(&page.results_url, options).await?;
+        staged.push(page);
+    }
+    let mut out = MeetPages::default();
+    for chunk in staged.chunks(lanes.max(1)) {
+        if out.stopped() {
+            break;
+        }
+        let outcomes: Vec<CrawlResult<FetchOutcome>> = futures::stream::iter(chunk)
+            .map(|page| async move {
+                fetcher
+                    .get(&page.results_url, options)
+                    .await
+                    .map_err(CrawlError::from)
+            })
+            .buffered(lanes.max(1))
+            .collect()
+            .await;
+        for (page, outcome) in chunk.iter().zip(outcomes.into_iter()) {
+            if out.stopped() {
+                break;
+            }
+            process_page(&mut out, page, outcome?, allocation)?;
+        }
+    }
+    Ok(out)
+}
+
+fn process_page(
+    out: &mut MeetPages,
+    page: &MeetPage,
+    outcome: FetchOutcome,
+    allocation: &mut Allocation,
+) -> CrawlResult<()> {
+    {
         if outcome.status != 200 {
             return Err(crate::net::FetchError::Http {
                 status: outcome.status,
@@ -43,18 +75,22 @@ pub(super) async fn discover(
             allocation,
         ) {
             Ok(files) => {
-                record_files(&mut out, &page, files, allocation)?;
+                record_files(&mut *out, page, files, allocation)?;
             }
             Err(CrawlError::Schema { detail, .. }) => {
                 if detail.len() > MAX_TEXT {
                     return Err(resource("meet-page diagnostic", detail.len(), MAX_TEXT));
                 }
-                allocation.push(&mut out.quarantined, (page.results_url, detail), MAX_FILES)?;
+                allocation.push(
+                    &mut out.quarantined,
+                    (page.results_url.clone(), detail),
+                    MAX_FILES,
+                )?;
             }
             Err(error) => return Err(error),
         }
     }
-    Ok(out)
+    Ok(())
 }
 
 fn record_files(

@@ -104,8 +104,9 @@ fn oversized_body_and_decoded_growth_are_resource_errors_even_before_json_decodi
             return Err(format!("oversized body is a typed resource stop: {outcome:?}").into())
         }
     }
-    let body =
-        serde_json::to_vec(&json!({"data": [], "providerExtension": "x".repeat(4 * 1024 * 1024)}))?;
+    let body = serde_json::to_vec(
+        &json!({"data": [], "providerExtension": "x".repeat(17 * 1024 * 1024)}),
+    )?;
     match parse_owned_meet(&body, 725218) {
         Err(OwnedMeetParseError::Resource(OwnedParseResourceFailure::Limit {
             resource: OwnedParseResource::DecodedAllocation,
@@ -114,7 +115,7 @@ fn oversized_body_and_decoded_growth_are_resource_errors_even_before_json_decodi
             limit,
             retention: OwnedCaptureRetention::Unrecorded,
         })) => {
-            check!(eq; limit, 128 * 1024 * 1024);
+            check!(eq; limit, 512 * 1024 * 1024);
             check!(requested > limit);
         }
         outcome => {

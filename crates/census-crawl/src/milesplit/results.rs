@@ -1,10 +1,13 @@
 use super::map::ProviderSchools;
+use super::wire::ResultSetRef;
+use crate::net::FetchOptions;
 use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalTeam,
     SourceObservation,
 };
 use census_domain::UsJurisdiction;
+use futures::StreamExt;
 use std::collections::HashMap;
 
 mod accumulator;
@@ -91,8 +94,14 @@ pub async fn collect(
     }
     let before = stats_of(ctx).await;
     let mut run = Run::new(schools::read(ctx)?);
-    for (ordinal, request) in options.urls.iter().enumerate() {
-        run.request(ctx, request, ordinal).await?;
+    let lanes = ctx.fetcher.family_parallelism().max(1);
+    let mut ordinal = 0_usize;
+    for chunk in options.urls.chunks(lanes) {
+        prefetch_chunk(ctx, chunk).await;
+        for request in chunk {
+            run.request(ctx, request, ordinal).await?;
+            ordinal = ordinal.saturating_add(1);
+        }
     }
     run.release_owned();
     let after = stats_of(ctx).await;
@@ -101,6 +110,35 @@ pub async fn collect(
         options,
         report::finish(&run.stats, &run.counts, before, after)?,
     )
+}
+
+#[tracing::instrument(skip(ctx, chunk))]
+async fn prefetch_chunk(ctx: &AdapterContext<'_>, chunk: &[ResultSetRequest]) {
+    let lanes = ctx.fetcher.family_parallelism().max(1);
+    futures::stream::iter(chunk)
+        .map(|request| async move {
+            if request.url.len() > 4096 {
+                return;
+            }
+            let reference = ResultSetRef::parse(&request.url).or_else(|| {
+                ResultSetRef::parse_with_jurisdiction(&request.url, request.jurisdiction)
+            });
+            let Some(reference) = reference else {
+                return;
+            };
+            let options = ctx.fetch_options();
+            let _ = ctx.fetcher.get(&reference.url, &options).await;
+            if let Ok(owned_url) = super::fetch::owned_meet_url(&reference) {
+                let owned_options = FetchOptions {
+                    allow_not_found: true,
+                    ..options
+                };
+                let _ = ctx.fetcher.get(&owned_url, &owned_options).await;
+            }
+        })
+        .buffered(lanes)
+        .for_each(|_| async {})
+        .await;
 }
 
 #[tracing::instrument(skip(ctx))]
