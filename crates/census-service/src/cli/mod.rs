@@ -126,6 +126,19 @@ pub(super) fn build_fetcher(cli: &Cli, store: &Store) -> Result<Fetcher> {
     build_fetcher_authorizing(cli, store, Vec::new())
 }
 
+pub(super) fn open_offline_store(root: &std::path::Path) -> Result<Store> {
+    match Store::open(root) {
+        Ok(store) => Ok(store),
+        Err(census_store::StoreError::PublicIdentity(
+            census_store::PublicIdentityError::OptInRequired,
+        )) => {
+            let (store, _writer) = Store::open_public_identity_qualification_v3(root)?.into_parts();
+            Ok(store)
+        }
+        Err(error) => Err(error.into()),
+    }
+}
+
 pub(super) fn build_fetcher_authorizing(
     cli: &Cli,
     store: &Store,

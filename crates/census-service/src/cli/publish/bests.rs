@@ -8,7 +8,8 @@ use census_store::Store;
 use clap::Args;
 
 use crate::cli::{
-    cohort_label, live, resolve_restriction, restriction_display, school_year, Cli, Route,
+    cohort_label, live, open_offline_store, resolve_restriction, restriction_display, school_year,
+    Cli, Route,
 };
 
 #[derive(Args, Debug)]
@@ -56,7 +57,7 @@ pub(crate) async fn run_bests(cli: &Cli, args: &BestsArgs) -> Result<()> {
     match cli.route(args.ingress.as_deref())? {
         Route::Offline(root) => {
             reject_offline_generation(args.generation.as_deref())?;
-            run_bests_offline(&Store::open(root)?, args, grad_year, &jurisdictions)
+            run_bests_offline(&open_offline_store(root)?, args, grad_year, &jurisdictions)
         }
         Route::Ingress(origin) => run_bests_live(origin, args, grad_year, &jurisdictions).await,
     }

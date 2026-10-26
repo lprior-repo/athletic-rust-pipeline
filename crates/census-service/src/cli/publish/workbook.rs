@@ -12,8 +12,8 @@ use clap::Args;
 use std::path::PathBuf;
 
 use crate::cli::{
-    contact_school_year, live, publication_preflight, resolve_restriction, restriction_display,
-    scope_of, Cli, Route,
+    contact_school_year, live, open_offline_store, publication_preflight, resolve_restriction,
+    restriction_display, scope_of, Cli, Route,
 };
 
 mod derived;
@@ -171,7 +171,7 @@ fn run_workbook_offline(
     ) {
         (None, None) => {
             reject_offline_generation(args.generation.as_deref())?;
-            let store = Store::open(root)?;
+            let store = open_offline_store(root)?;
             workbook::build(&store, options).context("building the census workbook")
         }
         (store_identity, profile_id) => {

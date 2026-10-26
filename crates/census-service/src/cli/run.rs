@@ -43,16 +43,7 @@ pub(crate) fn run() -> Result<()> {
 }
 
 fn open_offline_store(root: &std::path::Path) -> Result<Store> {
-    match Store::open(root) {
-        Ok(store) => Ok(store),
-        Err(census_store::StoreError::PublicIdentity(
-            census_store::PublicIdentityError::OptInRequired,
-        )) => {
-            let (store, _writer) = Store::open_public_identity_qualification_v3(root)?.into_parts();
-            Ok(store)
-        }
-        Err(error) => Err(error.into()),
-    }
+    super::open_offline_store(root)
 }
 
 async fn run_async(cli: Cli) -> Result<()> {
