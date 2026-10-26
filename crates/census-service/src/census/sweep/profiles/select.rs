@@ -1,6 +1,5 @@
 use super::{inventory, Cursor, Selection, Target};
 use census_crawl::participation_evidence::provider_school::OwnedProviderSchoolPacketV1;
-use census_crawl::participation_evidence::provider_target::roster_child::read_owned_roster_profile_child_v1;
 use census_crawl::CrawlResult;
 use census_domain::evidence_subject_attachment::AttachmentReplayGrantV1;
 use census_domain::model::{AcquisitionDigest, GradYear};
@@ -83,22 +82,6 @@ fn select_member(
         },
         gaps,
     })
-}
-
-pub fn profile_url(
-    store: &Store,
-    packet: &AcquisitionDigest,
-    athlete_id: &str,
-) -> CrawlResult<String> {
-    let snapshot = store.snapshot();
-    let packet = inventory::read_packet(
-        &snapshot,
-        packet.as_str(),
-        &mut AttachmentReplayGrantV1::new(),
-    )?;
-    let owned = OwnedProviderSchoolPacketV1::from_packet(packet);
-    let checked = read_owned_roster_profile_child_v1(&owned, athlete_id)?;
-    Ok(checked.athlete().profile_url.clone())
 }
 
 fn refused(detail: &str) -> StoreError {

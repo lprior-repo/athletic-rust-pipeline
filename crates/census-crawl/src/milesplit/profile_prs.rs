@@ -11,7 +11,7 @@ const ADAPTER: &str = "milesplit_profiles";
 const MAX_ERROR_NOTES: usize = 50;
 const MAX_URL_BYTES: usize = 4096;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ProfilePrTarget {
     pub athlete_id: String,
     pub profile_url: String,

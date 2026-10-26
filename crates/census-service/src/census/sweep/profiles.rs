@@ -7,4 +7,4 @@ pub use super::access::Refusal as ProfileRefusal;
 pub use capture::ProfileSource;
 pub(crate) use model::Progress;
 pub use model::{CaptureOutcome, Cursor, Selection, Target};
-pub use select::{profile_url, select};
+pub use select::select;

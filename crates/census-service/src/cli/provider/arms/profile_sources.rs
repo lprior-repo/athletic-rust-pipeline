@@ -1,11 +1,13 @@
+use std::collections::{BTreeMap, HashMap};
+
 use anyhow::{Context, Result};
 use census_crawl::{self as providers, AdapterContext, AdapterReport, CollectionDisposition};
-use census_domain::model::GradYear;
+use census_domain::model::{CanonicalAthlete, CanonicalSchool, GradYear};
 use census_domain::UsJurisdiction;
+use census_store::{StoreSnapshot, Table};
 use futures::stream::{self, StreamExt};
 
 use super::super::ProviderArgs;
-use census_service::census::profiles::{self, Cursor, Selection};
 
 pub(crate) async fn milesplit_profiles_report(
     context: &AdapterContext<'_>,
@@ -13,11 +15,16 @@ pub(crate) async fn milesplit_profiles_report(
 ) -> Result<AdapterReport> {
     let states = crate::cli::resolve_states(args.all_states, &args.states)?;
     let cohort = grad_year(args.grad_year)?;
+    let snapshot = context.store.snapshot();
+    let grouped = group_targets(&snapshot, &states, cohort, args.limit)
+        .with_context(|| "enumerating profile targets".to_string())?;
     let lanes = context.fetcher.family_parallelism().max(1);
+    let grouped = &grouped;
     let mut per_state: Vec<(UsJurisdiction, Result<AdapterReport>)> =
         stream::iter(states.iter().copied())
             .map(|state| async move {
-                let outcome = collect_state_profiles(context, args, state, cohort).await;
+                let targets = grouped.get(&state).cloned().unwrap_or_default();
+                let outcome = collect_state_profiles(context, state, targets).await;
                 (state, outcome)
             })
             .buffer_unordered(lanes)
@@ -63,56 +70,98 @@ fn grad_year(raw: Option<i16>) -> Result<GradYear> {
     }
 }
 
-#[tracing::instrument(skip(context, args), fields(state = state.code()))]
+#[tracing::instrument(skip(context, targets), fields(state = state.code()))]
 async fn collect_state_profiles(
     context: &AdapterContext<'_>,
-    args: &ProviderArgs,
     state: UsJurisdiction,
-    cohort: GradYear,
+    targets: Vec<providers::milesplit::ProfilePrTarget>,
 ) -> Result<AdapterReport> {
-    let (targets, skipped) = enumerate_targets(context, args, state, cohort)?;
-    let mut report = providers::milesplit::collect_profile_prs(
+    providers::milesplit::collect_profile_prs(
         context,
         &providers::milesplit::ProfilePrOptions { targets },
     )
     .await
-    .with_context(|| format!("collecting {} profile PRs", state.code()))?;
-    if skipped > 0 {
-        report.note(format!("unresolvable_profile_url={skipped}"));
-    }
-    Ok(report)
+    .with_context(|| format!("collecting {} profile PRs", state.code()))
 }
 
-fn enumerate_targets(
-    context: &AdapterContext<'_>,
-    args: &ProviderArgs,
-    state: UsJurisdiction,
+fn group_targets(
+    snapshot: &StoreSnapshot<'_>,
+    states: &[UsJurisdiction],
     cohort: GradYear,
-) -> Result<(Vec<providers::milesplit::ProfilePrTarget>, usize)> {
-    let mut targets = Vec::new();
+    limit: Option<usize>,
+) -> Result<BTreeMap<UsJurisdiction, Vec<providers::milesplit::ProfilePrTarget>>> {
+    let wanted: HashMap<&str, UsJurisdiction> =
+        states.iter().map(|state| (state.code(), *state)).collect();
+    let schools: HashMap<String, UsJurisdiction> = snapshot
+        .scan::<CanonicalSchool>(Table::Schools)?
+        .into_iter()
+        .filter_map(|school| {
+            school
+                .state
+                .map(|state| (school.id.as_str().to_owned(), state))
+        })
+        .collect();
+    let mut grouped: BTreeMap<UsJurisdiction, Vec<providers::milesplit::ProfilePrTarget>> =
+        BTreeMap::new();
     let mut skipped = 0_usize;
-    let mut cursor: Option<Cursor> = None;
-    loop {
-        if args.limit.is_some_and(|limit| targets.len() >= limit) {
-            break;
+    for athlete in snapshot.athletes()? {
+        if athlete.grad_year != cohort {
+            continue;
         }
-        match profiles::select(context.store, state, cohort, cursor.as_ref())
-            .with_context(|| format!("selecting {} profile targets", state.code()))?
-        {
-            Selection::Profile(found) => {
-                cursor = Some(found.next.clone());
-                match profiles::profile_url(context.store, &found.packet, &found.athlete_id) {
-                    Ok(url) => targets.push(providers::milesplit::ProfilePrTarget {
-                        athlete_id: found.athlete_id,
-                        profile_url: url,
-                        site: state,
-                    }),
-                    Err(_) => skipped = skipped.saturating_add(1),
-                }
+        let Some((state, url)) = placement(&athlete, &schools) else {
+            skipped = skipped.saturating_add(1);
+            continue;
+        };
+        if !wanted.contains_key(state.code()) {
+            continue;
+        }
+        let targets = grouped.entry(state).or_default();
+        if limit.is_some_and(|cap| targets.len() >= cap) {
+            continue;
+        }
+        targets.push(providers::milesplit::ProfilePrTarget {
+            athlete_id: athlete.source.as_ref().map_or_else(
+                || athlete.id.as_str().to_owned(),
+                |source| source.id.clone(),
+            ),
+            profile_url: url,
+            site: state,
+        });
+    }
+    if skipped > 0 {
+        tracing::warn!("profile targets without a resolvable state or URL: {skipped}");
+    }
+    Ok(grouped)
+}
+
+fn placement(
+    athlete: &CanonicalAthlete,
+    schools: &HashMap<String, UsJurisdiction>,
+) -> Option<(UsJurisdiction, String)> {
+    let mut fallback: Option<String> = None;
+    for url in &athlete.public_profile_urls {
+        let Some(host) = host_of(url) else {
+            continue;
+        };
+        if !host.ends_with("milesplit.com") {
+            continue;
+        }
+        let code = host.split('.').next().unwrap_or(host);
+        if code.eq_ignore_ascii_case("www") {
+            if fallback.is_none() {
+                fallback = Some(url.clone());
             }
-            Selection::Advance { next, .. } => cursor = Some(next),
-            Selection::End => break,
+            continue;
+        }
+        if let Some(state) = UsJurisdiction::from_code(code) {
+            return Some((state, url.clone()));
         }
     }
-    Ok((targets, skipped))
+    let url = fallback.or_else(|| athlete.public_profile_urls.first().cloned())?;
+    let state = schools.get(athlete.school.as_str()).copied()?;
+    Some((state, url))
+}
+
+fn host_of(url: &str) -> Option<&str> {
+    url.split("://").nth(1)?.split('/').next()
 }
