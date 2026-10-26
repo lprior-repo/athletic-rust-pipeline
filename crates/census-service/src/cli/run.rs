@@ -112,6 +112,10 @@ async fn run_async(cli: Cli) -> Result<()> {
             let store = open_offline_store(&cli.store_root())?;
             dispatch::dispatch(&cli, &store).await
         }
+        Command::Provider(_) => {
+            let store = open_offline_store(&cli.store_root())?;
+            dispatch::dispatch(&cli, &store).await
+        }
         _ => {
             let store = Store::open(cli.store_root())?;
             dispatch::dispatch(&cli, &store).await
