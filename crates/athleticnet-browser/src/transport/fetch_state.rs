@@ -125,6 +125,13 @@ impl<'a> FetchCapture<'a> {
         remaining: Duration,
     ) -> Result<(), BrowserError> {
         if self.request_id.as_ref() == Some(&event.request_id) {
+            if event
+                .redirect_response
+                .as_ref()
+                .is_some_and(|redirected| redirected.url == self.expected_url)
+            {
+                return self.follow_hop(&event, remaining).await;
+            }
             return Err(if event.redirect_response.is_some() {
                 BrowserError::Redirect
             } else {
