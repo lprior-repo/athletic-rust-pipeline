@@ -240,20 +240,46 @@ impl<'a> FetchCapture<'a> {
         if let Some(pending) = std::mem::take(&mut self.pending).take(&id) {
             if let Some(response) = pending.response {
                 self.verify_response_url(&response)?;
-                record_response(
-                    &response,
-                    &mut self.response,
-                    &mut self.challenge_seen,
-                    self.gate,
-                )?;
+                if self.defer_redirect(&response) {
+                    self.awaiting_hop = true;
+                } else {
+                    record_response(
+                        &response,
+                        &mut self.response,
+                        &mut self.challenge_seen,
+                        self.gate,
+                    )?;
+                }
             }
             if let Some(encoded) = pending.finished {
-                self.progress.finish(&id, encoded)?;
-                self.encoded_total = Some(encoded);
-                self.loading_finished = true;
+                if !self.awaiting_hop {
+                    self.progress.finish(&id, encoded)?;
+                    self.encoded_total = Some(encoded);
+                    self.loading_finished = true;
+                }
             }
         }
         Ok(())
+    }
+
+    /// Hold a same-site 3xx for its redirect hop instead of recording it.
+    ///
+    /// The 3xx response can arrive before the tracked request binds (the
+    /// bind confirm round-trips through the page), so both the live and the
+    /// pending-drain paths defer through here. Anything the hop rule rejects
+    /// still fails as a redirect exactly as before.
+    fn defer_redirect(&self, event: &EventResponseReceived) -> bool {
+        let status: u16 = match event.response.status.try_into() {
+            Ok(status) => status,
+            Err(_) => return false,
+        };
+        let defer = self.same_site_origin.is_some()
+            && (300..400).contains(&status)
+            && event.response.url == self.expected_url;
+        if defer {
+            tracing::debug!("lane deferring redirect response, awaiting hop");
+        }
+        defer
     }
 
     fn on_response(&mut self, event: Arc<EventResponseReceived>) -> Result<(), BrowserError> {
@@ -269,15 +295,7 @@ impl<'a> FetchCapture<'a> {
                 return Err(BrowserError::Protocol);
             }
             self.verify_response_url(&event)?;
-            let status: u16 = event
-                .response
-                .status
-                .try_into()
-                .map_err(|_| BrowserError::Protocol)?;
-            if self.same_site_origin.is_some()
-                && (300..400).contains(&status)
-                && event.response.url == self.expected_url
-            {
+            if self.defer_redirect(&event) {
                 self.awaiting_hop = true;
                 return Ok(());
             }
