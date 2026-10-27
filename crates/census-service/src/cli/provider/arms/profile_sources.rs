@@ -1,11 +1,10 @@
 use std::collections::{BTreeMap, HashMap};
 
 use anyhow::{Context, Result};
-use census_crawl::{self as providers, AdapterContext, AdapterReport, CollectionDisposition};
+use census_crawl::{self as providers, AdapterContext, AdapterReport};
 use census_domain::model::{CanonicalAthlete, CanonicalSchool, GradYear};
 use census_domain::UsJurisdiction;
 use census_store::{StoreSnapshot, Table};
-use futures::stream::{self, StreamExt};
 
 use super::super::ProviderArgs;
 
@@ -18,46 +17,37 @@ pub(crate) async fn milesplit_profiles_report(
     let snapshot = context.store.snapshot();
     let grouped = group_targets(&snapshot, &states, cohort, args.limit)
         .with_context(|| "enumerating profile targets".to_string())?;
-    let lanes = context.fetcher.family_parallelism().max(1);
-    let grouped = &grouped;
-    let mut per_state: Vec<(UsJurisdiction, Result<AdapterReport>)> =
-        stream::iter(states.iter().copied())
-            .map(|state| async move {
-                let targets = grouped.get(&state).cloned().unwrap_or_default();
-                let outcome = collect_state_profiles(context, state, targets).await;
-                (state, outcome)
-            })
-            .buffer_unordered(lanes)
-            .collect()
-            .await;
-    per_state.sort_by(|left, right| left.0.code().cmp(right.0.code()));
-    let mut merged = AdapterReport::new("milesplit_profiles", "profile PR rows");
-    let mut complete = true;
-    for (state, outcome) in per_state {
-        match outcome {
-            Ok(report) => {
-                complete = complete && report.disposition.is_complete();
-                merged.rows = merged.rows.saturating_add(report.rows);
-                merged.requests = merged.requests.saturating_add(report.requests);
-                merged.from_cache = merged.from_cache.saturating_add(report.from_cache);
-                merged.errors = merged.errors.saturating_add(report.errors);
-                for note in report.notes {
-                    merged.note(format!("state {}: {note}", state.code()));
-                }
-            }
-            Err(error) => {
-                complete = false;
-                merged.errors = merged.errors.saturating_add(1);
-                merged.note(format!("state {} failed: {error:#}", state.code()));
+    let rosters: Vec<(UsJurisdiction, &Vec<providers::milesplit::ProfilePrTarget>)> = states
+        .iter()
+        .filter_map(|state| {
+            let targets = grouped.get(state)?;
+            (!targets.is_empty()).then_some((*state, targets))
+        })
+        .collect();
+    let depth = rosters
+        .iter()
+        .map(|(_, targets)| targets.len())
+        .max()
+        .unwrap_or(0);
+    let mut pool: Vec<providers::milesplit::ProfilePrTarget> = Vec::new();
+    for index in 0..depth {
+        for (_, targets) in &rosters {
+            if let Some(target) = targets.get(index) {
+                pool.push(target.clone());
             }
         }
     }
-    merged.disposition = if complete {
-        CollectionDisposition::Complete
-    } else {
-        CollectionDisposition::Partial
-    };
+    let report = collect_mixed_profiles(context, pool).await?;
+    let mut merged = AdapterReport::new("milesplit_profiles", "profile PR rows");
+    merged.rows = report.rows;
+    merged.requests = report.requests;
+    merged.from_cache = report.from_cache;
+    merged.errors = report.errors;
+    merged.disposition = report.disposition;
     merged.note(format!("states={}", states.len()));
+    for note in report.notes {
+        merged.note(note);
+    }
     Ok(merged)
 }
 
@@ -70,10 +60,8 @@ fn grad_year(raw: Option<i16>) -> Result<GradYear> {
     }
 }
 
-#[tracing::instrument(skip(context, targets), fields(state = state.code()))]
-async fn collect_state_profiles(
+async fn collect_mixed_profiles(
     context: &AdapterContext<'_>,
-    state: UsJurisdiction,
     targets: Vec<providers::milesplit::ProfilePrTarget>,
 ) -> Result<AdapterReport> {
     providers::milesplit::collect_profile_prs(
@@ -81,7 +69,7 @@ async fn collect_state_profiles(
         &providers::milesplit::ProfilePrOptions { targets },
     )
     .await
-    .with_context(|| format!("collecting {} profile PRs", state.code()))
+    .with_context(|| "collecting pooled profile PRs".to_string())
 }
 
 fn group_targets(

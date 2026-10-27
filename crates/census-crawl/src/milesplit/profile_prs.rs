@@ -2,7 +2,6 @@ use super::super::participation_evidence::provider_target::profile_pr;
 use crate::net::FetchOptions;
 use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_domain::UsJurisdiction;
-use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
@@ -129,12 +128,31 @@ pub async fn collect(
         report.note("no profile targets supplied; nothing was requested".to_string());
         return Ok(report);
     }
-    let lanes = ctx.fetcher.family_parallelism().max(1);
-    let outcomes = futures::stream::iter(options.targets.iter())
-        .map(|target| harvest(ctx, target))
-        .buffer_unordered(lanes)
-        .collect::<Vec<_>>()
-        .await;
+    let width = ctx.fetcher.family_parallelism().max(1);
+    let outcomes = std::thread::scope(|scope| {
+        let handle = tokio::runtime::Handle::current();
+        let chunk = options.targets.len().div_ceil(width).max(1);
+        let mut workers = Vec::new();
+        for targets in options.targets.chunks(chunk) {
+            let handle = handle.clone();
+            workers.push(scope.spawn(move || {
+                let mut driver = BatchDriver::new(ctx, &handle, targets.len());
+                for target in targets {
+                    driver.stage(target);
+                }
+                driver.finish()
+            }));
+        }
+        let mut outcomes = Vec::with_capacity(options.targets.len());
+        for worker in workers {
+            outcomes.extend(
+                worker
+                    .join()
+                    .map_err(|_| resource("profile harvest thread"))?,
+            );
+        }
+        Ok::<Vec<CrawlResult<Harvest>>, CrawlError>(outcomes)
+    })?;
     let counts = outcomes.iter().fold(Counts::default(), |counts, outcome| {
         accumulate(counts, outcome)
     });
@@ -188,7 +206,7 @@ fn truncate(note: String) -> String {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Harvest {
     Captured,
     Current,
@@ -196,14 +214,81 @@ enum Harvest {
     NoTable,
 }
 
-#[tracing::instrument(skip(ctx), fields(athlete = target.athlete_id.as_str()))]
-async fn harvest(ctx: &AdapterContext<'_>, target: &ProfilePrTarget) -> CrawlResult<Harvest> {
+const JOURNAL_BATCH_ROWS: usize = 128;
+
+struct BatchDriver<'ctx> {
+    ctx: &'ctx AdapterContext<'ctx>,
+    handle: tokio::runtime::Handle,
+    batch: crate::recording::RowBatch<'ctx>,
+    pending: Vec<Harvest>,
+    outcomes: Vec<CrawlResult<Harvest>>,
+}
+
+impl<'ctx> BatchDriver<'ctx> {
+    fn new(
+        ctx: &'ctx AdapterContext<'ctx>,
+        handle: &tokio::runtime::Handle,
+        capacity: usize,
+    ) -> Self {
+        Self {
+            ctx,
+            handle: handle.clone(),
+            batch: ctx.write_batch(),
+            pending: Vec::new(),
+            outcomes: Vec::with_capacity(capacity),
+        }
+    }
+
+    fn stage(&mut self, target: &ProfilePrTarget) {
+        let staged = self
+            .handle
+            .block_on(stage_table(self.ctx, &mut self.batch, target));
+        match staged {
+            Ok((harvest, true)) => {
+                self.outcomes.push(Ok(harvest));
+                self.pending.push(harvest);
+                if self.pending.len() >= JOURNAL_BATCH_ROWS {
+                    self.flush();
+                }
+            }
+            Ok((harvest, false)) => self.outcomes.push(Ok(harvest)),
+            Err(error) => self.outcomes.push(Err(error)),
+        }
+    }
+
+    fn flush(&mut self) {
+        if self.pending.is_empty() {
+            return;
+        }
+        let pending = std::mem::take(&mut self.pending);
+        let committed = std::mem::replace(&mut self.batch, self.ctx.write_batch())
+            .commit()
+            .is_ok();
+        if !committed {
+            for _ in pending {
+                self.outcomes.push(Err(resource("profile journal batch")));
+            }
+        }
+    }
+
+    fn finish(mut self) -> Vec<CrawlResult<Harvest>> {
+        self.flush();
+        self.outcomes
+    }
+}
+
+#[tracing::instrument(skip(ctx, batch), fields(athlete = target.athlete_id.as_str()))]
+async fn stage_table(
+    ctx: &AdapterContext<'_>,
+    batch: &mut crate::recording::RowBatch<'_>,
+    target: &ProfilePrTarget,
+) -> CrawlResult<(Harvest, bool)> {
     if target.profile_url.len() > MAX_URL_BYTES {
         return Err(resource("profile URL length"));
     }
     let key = journal_key(target);
     if !ctx.refresh && ctx.store.journal_contains(PROFILE_PR_PHASE, &key)? {
-        return Ok(Harvest::Current);
+        return Ok((Harvest::Current, false));
     }
     let outcome = ctx
         .fetcher
@@ -217,8 +302,8 @@ async fn harvest(ctx: &AdapterContext<'_>, target: &ProfilePrTarget) -> CrawlRes
         )
         .await?;
     match outcome.status {
-        404 => Ok(Harvest::NotFound),
-        200 => commit_table(ctx, target, &key, &outcome).await,
+        404 => Ok((Harvest::NotFound, false)),
+        200 => stage_row(ctx, batch, target, &key, &outcome).await,
         status => Err(crate::CrawlError::Fetch(crate::net::FetchError::Http {
             status,
             url: target.profile_url.clone(),
@@ -226,30 +311,29 @@ async fn harvest(ctx: &AdapterContext<'_>, target: &ProfilePrTarget) -> CrawlRes
     }
 }
 
-async fn commit_table(
+async fn stage_row(
     ctx: &AdapterContext<'_>,
+    batch: &mut crate::recording::RowBatch<'_>,
     target: &ProfilePrTarget,
     key: &str,
     outcome: &crate::net::FetchOutcome,
-) -> CrawlResult<Harvest> {
+) -> CrawlResult<(Harvest, bool)> {
     let body = std::str::from_utf8(&outcome.body).map_err(|_| resource("profile body encoding"))?;
     let parsed =
         profile_pr::read_source_rows(body, &target.profile_url, target.site, &target.athlete_id)?;
     let Some(rows) = parsed else {
-        return Ok(Harvest::NoTable);
+        return Ok((Harvest::NoTable, false));
     };
     let row = journal_row(target, &outcome.fetched_at, &outcome.content_digest, rows)?;
     let Some(row) = row else {
-        return Ok(Harvest::NoTable);
+        return Ok((Harvest::NoTable, false));
     };
     let existed = ctx.store.journal_payload(PROFILE_PR_PHASE, key)?.is_some();
-    let mut batch = ctx.write_batch();
     batch.journal_done(PROFILE_PR_PHASE, key, &row)?;
-    batch.commit()?;
     if existed {
-        return Ok(Harvest::Current);
+        return Ok((Harvest::Current, true));
     }
-    Ok(Harvest::Captured)
+    Ok((Harvest::Captured, true))
 }
 
 fn journal_row(
