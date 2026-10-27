@@ -16,7 +16,8 @@ pgrep -af 'census-service provider' | grep -v pgrep && {
 } || true
 
 env -u CI tools/moon-local run pipeline:build-native
-BIN=$(echo ~/.cache/athletic-cohort-build-*/moon-native/x86_64-unknown-linux-gnu/release/census-service)
+BIN=$(ls -t ~/.cache/athletic-cohort-build-*/moon-native/x86_64-unknown-linux-gnu/release/census-service 2>/dev/null | head -1)
+[ -n "$BIN" ] || { echo "no built census-service binary found"; exit 1; }
 "$BIN" consolidate --store "$STORE"
 "$BIN" bests --store "$STORE" --grad-year 2027
 "$BIN" workbook --store "$STORE" --school-year 2026 --grad-year 2027 \
