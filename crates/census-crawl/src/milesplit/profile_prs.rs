@@ -4,6 +4,7 @@ use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_domain::UsJurisdiction;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use std::collections::BTreeMap;
 
 pub const PROFILE_PR_PHASE: &str = "milesplit_profile_prs_v1";
 const ADAPTER: &str = "milesplit_profiles";
@@ -129,11 +130,11 @@ pub async fn collect(
         return Ok(report);
     }
     let width = ctx.fetcher.family_parallelism().max(1);
+    let shards = partition_by_host(&options.targets, width);
     let outcomes = std::thread::scope(|scope| {
         let handle = tokio::runtime::Handle::current();
-        let chunk = options.targets.len().div_ceil(width).max(1);
         let mut workers = Vec::new();
-        for targets in options.targets.chunks(chunk) {
+        for targets in &shards {
             let handle = handle.clone();
             workers.push(scope.spawn(move || {
                 let mut driver = BatchDriver::new(ctx, &handle, targets.len());
@@ -175,6 +176,87 @@ pub async fn collect(
     }
     report.finish_frontier();
     Ok(report)
+}
+
+fn partition_by_host<'t>(
+    targets: &'t [ProfilePrTarget],
+    width: usize,
+) -> Vec<Vec<&'t ProfilePrTarget>> {
+    let mut groups: BTreeMap<&'t str, Vec<&'t ProfilePrTarget>> = BTreeMap::new();
+    for target in targets {
+        groups
+            .entry(host_of(&target.profile_url))
+            .or_default()
+            .push(target);
+    }
+    let mut ordered: Vec<(&'t str, Vec<&'t ProfilePrTarget>)> = groups.into_iter().collect();
+    ordered.sort_by_key(|(_, group)| std::cmp::Reverse(group.len()));
+    let mut bins: Vec<Vec<(&'t str, Vec<&'t ProfilePrTarget>)>> = Vec::new();
+    let mut loads: Vec<usize> = Vec::new();
+    for (host, group) in ordered {
+        let slot = match bins.len() < width.max(1) {
+            true => {
+                bins.push(Vec::new());
+                loads.push(0);
+                bins.len() - 1
+            }
+            false => least_loaded(&loads),
+        };
+        loads[slot] += group.len();
+        bins[slot].push((host, group));
+    }
+    let mut splits: BTreeMap<&'t str, usize> = BTreeMap::new();
+    while bins.len() < width.max(1) {
+        let busy = most_loaded(&loads);
+        let Some(position) = widest_splittable(&bins[busy], &splits) else {
+            break;
+        };
+        let (host, group) = bins[busy].remove(position);
+        let mut head = group;
+        let tail = head.split_off(head.len() / 2);
+        *splits.entry(host).or_insert(0) += 1;
+        loads[busy] -= tail.len();
+        loads.push(tail.len());
+        bins[busy].push((host, head));
+        bins.push(vec![(host, tail)]);
+    }
+    bins.into_iter()
+        .map(|bin| bin.into_iter().flat_map(|(_, group)| group).collect())
+        .collect()
+}
+
+fn least_loaded(loads: &[usize]) -> usize {
+    loads
+        .iter()
+        .enumerate()
+        .min_by_key(|(_, load)| **load)
+        .map_or(0, |(index, _)| index)
+}
+
+fn most_loaded(loads: &[usize]) -> usize {
+    loads
+        .iter()
+        .enumerate()
+        .max_by_key(|(_, load)| **load)
+        .map_or(0, |(index, _)| index)
+}
+
+fn widest_splittable<'t>(
+    bin: &[(&'t str, Vec<&'t ProfilePrTarget>)],
+    splits: &BTreeMap<&'t str, usize>,
+) -> Option<usize> {
+    bin.iter()
+        .enumerate()
+        .filter(|(_, (host, group))| group.len() > 1 && splits.get(host).copied().unwrap_or(0) < 1)
+        .max_by_key(|(_, (_, group))| group.len())
+        .map(|(index, _)| index)
+}
+
+fn host_of(url: &str) -> &str {
+    url.split("://")
+        .nth(1)
+        .and_then(|rest| rest.split('/').next())
+        .unwrap_or(url)
 }
 
 fn accumulate(mut counts: Counts, outcome: &CrawlResult<Harvest>) -> Counts {

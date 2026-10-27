@@ -74,3 +74,43 @@ fn invalid_timestamp_refuses_journal_row() {
     let refused = journal_row(&target(), "not-a-timestamp", "abc123", parsed);
     assert!(refused.is_err());
 }
+
+fn host_target(host: &str, id: &str) -> ProfilePrTarget {
+    ProfilePrTarget {
+        athlete_id: id.to_string(),
+        profile_url: format!("https://{host}/athletes/{id}-name"),
+        site: UsJurisdiction::Alabama,
+    }
+}
+
+#[test]
+fn shards_cover_every_target_with_bounded_host_sharing() {
+    use std::collections::{BTreeMap, BTreeSet};
+    let mut targets = Vec::new();
+    for index in 0..100 {
+        targets.push(host_target("big.test", &format!("big-{index}")));
+    }
+    for index in 0..10 {
+        targets.push(host_target("mid.test", &format!("mid-{index}")));
+    }
+    for index in 0..3 {
+        targets.push(host_target("small.test", &format!("small-{index}")));
+    }
+    let shards = partition_by_host(&targets, 8);
+    assert!(!shards.is_empty() && shards.len() <= 8);
+    let mut seen: BTreeMap<&str, usize> = BTreeMap::new();
+    let mut host_shards: BTreeMap<&str, usize> = BTreeMap::new();
+    for shard in &shards {
+        let mut hosts = BTreeSet::new();
+        for target in shard {
+            *seen.entry(target.athlete_id.as_str()).or_insert(0) += 1;
+            hosts.insert(host_of(&target.profile_url));
+        }
+        for host in hosts {
+            *host_shards.entry(host).or_insert(0) += 1;
+        }
+    }
+    assert_eq!(seen.len(), 113);
+    assert!(seen.values().all(|count| *count == 1));
+    assert!(host_shards.values().all(|count| *count <= 2));
+}
