@@ -22,6 +22,59 @@ struct Selection<'a> {
 }
 
 impl ReportedProfilePrs {
+    pub(in crate::export::dataset) fn replay_journals(
+        snapshot: &StoreSnapshot<'_>,
+    ) -> ReportResult<Self> {
+        use census_store::{ReadBudget, StoreError};
+        let mut reported = Self::default();
+        for ordinal in 0_u16..256 {
+            let prefix = format!("{ordinal:02x}");
+            snapshot.for_each_journal_root_bounded(
+                JournalNamespace::new(PROFILE_PR_PHASE, &prefix)?,
+                ReadBudget {
+                    rows: 25_000,
+                    bytes: 64 * 1024 * 1024,
+                    record_bytes: census_store::MAX_JOURNAL_VALUE_BYTES,
+                },
+                |key| {
+                    let payload = snapshot
+                        .journal_payload(PROFILE_PR_PHASE, key)?
+                        .ok_or_else(|| StoreError::Refused {
+                            detail: format!("profile PR journal key {key} has no payload"),
+                        })?;
+                    let bytes =
+                        serde_json::to_vec(&payload).map_err(|error| StoreError::Refused {
+                            detail: error.to_string(),
+                        })?;
+                    let digest = format!("{:x}", Sha256::digest(&bytes));
+                    let count = u64::try_from(bytes.len()).map_err(|_| StoreError::Refused {
+                        detail: "profile PR journal row byte count".to_string(),
+                    })?;
+                    let root = ReportedProfileRootV1::journal(&digest, count).map_err(|error| {
+                        StoreError::Refused {
+                            detail: error.to_string(),
+                        }
+                    })?;
+                    let (subject, table) =
+                        replay::read(&root, &bytes).map_err(|error| StoreError::Refused {
+                            detail: error.to_string(),
+                        })?;
+                    if reported.roots.len() >= MAX_ROOTS {
+                        return Err(StoreError::Refused {
+                            detail: "reported profile PR root count exceeds its bound".to_string(),
+                        });
+                    }
+                    reported.roots.push(root);
+                    reported.tables.entry(subject).or_default().push(table);
+                    Ok::<(), StoreError>(())
+                },
+            )?;
+        }
+        reported.roots.sort_unstable_by(|a, b| a.key.cmp(&b.key));
+        reported.validate_roots()?;
+        Ok(reported)
+    }
+
     pub(in crate::export::dataset) fn extend_selected(
         loaded: &mut crate::export::dataset::Loaded,
         snapshot: &StoreSnapshot<'_>,

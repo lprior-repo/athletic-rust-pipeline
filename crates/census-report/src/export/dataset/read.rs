@@ -56,6 +56,7 @@ type ReadResults = (
     ReportResult<Vec<ReviewVerdictRecord>>,
     ReportResult<Vec<AppliedAthleteIdentity>>,
     ReportResult<Vec<RelayResult>>,
+    ReportResult<super::reported_profile_prs::ReportedProfilePrs>,
 );
 
 struct ReadTasks<'a> {
@@ -72,6 +73,10 @@ struct ReadTasks<'a> {
     verdicts: ReadTask<'a, ReviewVerdictRecord>,
     identity_decisions: ReadTask<'a, AppliedAthleteIdentity>,
     relays: ReadTask<'a, RelayResult>,
+    reported_profile_prs: std::thread::ScopedJoinHandle<
+        'a,
+        ReportResult<super::reported_profile_prs::ReportedProfilePrs>,
+    >,
 }
 
 impl<'a> ReadTasks<'a> {
@@ -93,6 +98,9 @@ impl<'a> ReadTasks<'a> {
             verdicts: spawn_table(scope, snapshot, Table::IdentityVerdicts),
             identity_decisions: spawn_table(scope, snapshot, Table::AthleteIdentityDecisions),
             relays: spawn_table(scope, snapshot, Table::RelayResults),
+            reported_profile_prs: scope.spawn(|| {
+                super::reported_profile_prs::ReportedProfilePrs::replay_journals(snapshot)
+            }),
         }
     }
 
@@ -111,6 +119,7 @@ impl<'a> ReadTasks<'a> {
             join(self.verdicts, "verdicts"),
             join(self.identity_decisions, "identity decisions"),
             join(self.relays, "relay results"),
+            join(self.reported_profile_prs, "reported profile PRs"),
         );
         resolve(joined, coverage)
     }
@@ -122,7 +131,7 @@ fn resolve(
 ) -> ReportResult<Loaded> {
     Ok(Loaded {
         selection: None,
-        reported_profile_prs: super::reported_profile_prs::ReportedProfilePrs::default(),
+        reported_profile_prs: joined.13?,
         athletes: joined.0?,
         schools: joined.1?,
         teams: joined.2?,
