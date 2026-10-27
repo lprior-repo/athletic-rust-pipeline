@@ -100,6 +100,11 @@ pub(crate) struct WorkbookArgs {
     )]
     #[arg(long, value_name = "ORIGIN")]
     ingress: Option<String>,
+    #[arg(
+        help = "Address corpus directory (school_directory.json) used to fill school addresses missing from store claims; unlinked schools land in address-quarantine.csv"
+    )]
+    #[arg(long, value_name = "DIR")]
+    address_corpus: Option<PathBuf>,
 }
 
 pub(crate) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
@@ -131,6 +136,7 @@ pub(crate) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
                 scope: scope_of(args.core),
                 jurisdictions,
                 school_year: contact_season,
+                address_corpus: args.address_corpus.clone(),
             };
             let path = run_workbook_offline(root, args, &options)?;
             println!("wrote {}", path.display());
@@ -251,6 +257,7 @@ async fn run_workbook_live(
         out: args.out.clone(),
         school_year: contact_season,
         jurisdictions: jurisdictions.to_vec(),
+        address_corpus: None,
     };
     let request = workbook_request(&options, export_job);
     let WorkbookReply { path, .. } = live::workbook(Some(origin), request, &generation).await?;

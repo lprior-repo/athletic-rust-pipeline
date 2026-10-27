@@ -8,6 +8,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn fixture_options(out: Option<std::path::PathBuf>) -> TestResult<Options> {
     Ok(Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out,
         limit: None,

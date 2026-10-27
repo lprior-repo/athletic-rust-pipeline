@@ -6,6 +6,7 @@ fn result_group_recipe_preserves_old_tuples_and_uses_a_distinct_current_identity
     let store = Store::open(directory.path().join("store"))?;
     let dataset = ExportDataset::load(&store)?;
     let options = Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,
@@ -67,6 +68,7 @@ fn current_recruiting_policy_has_a_distinct_recipe_from_all_prior_integration_po
     let store = Store::open(directory.path().join("store"))?;
     let current = ExportDataset::load(&store)?;
     let options = Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,
@@ -93,6 +95,7 @@ fn jurisdiction_order_and_duplicates_do_not_change_the_fence_recipe() -> TestRes
     let current = ExportDataset::load(&store)?;
     let option_set = |jurisdictions: Vec<census_domain::UsJurisdiction>| -> TestResult<Options> {
         Ok(Options {
+            address_corpus: None,
             grad_year: Some(2027),
             out: None,
             limit: None,
@@ -134,6 +137,7 @@ fn implicit_and_explicit_national_selection_bind_the_same_seal_scope() -> TestRe
         let store = Store::open(directory.path().join("store"))?;
         seed(&store, "National Scope Fixture")?;
         let options = Options {
+            address_corpus: None,
             grad_year: Some(2027),
             out: None,
             limit: None,

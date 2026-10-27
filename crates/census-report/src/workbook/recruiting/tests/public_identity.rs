@@ -16,7 +16,7 @@ async fn selected_recruiting_csv_and_sheets_publish_public_ids_with_explicit_can
         &[UsJurisdiction::Alabama, UsJurisdiction::Wisconsin],
     )?;
     let admission = crate::report::EventAdmission::of(&captured)?;
-    let dataset = dataset::Dataset::of(&derivation, school_year, Vec::new(), &admission)?;
+    let dataset = dataset::Dataset::of(&derivation, school_year, Vec::new(), &admission, None)?;
     let candidate = fixture.roster_athlete.as_str();
     let public_id = captured
         .verified_public_identities()?

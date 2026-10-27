@@ -33,6 +33,7 @@ fn chunk_readback(
     check!(eq; row, assert_winner(&live, expected)?);
     drop(live);
     let options = crate::workbook::Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: Some(directory.path().join("publication")),
         limit: None,

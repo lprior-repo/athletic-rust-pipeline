@@ -173,6 +173,7 @@ fn cen12_nces_parser_join_and_published_workbook_keep_exact_declared_tuples() ->
     let path = census_report::workbook::build(
         &store,
         &census_report::workbook::Options {
+            address_corpus: None,
             grad_year: None,
             out: Some(dir.path().join("book.xlsx")),
             limit: None,

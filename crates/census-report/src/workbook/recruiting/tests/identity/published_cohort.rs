@@ -88,6 +88,7 @@ fn accepted_alias_published_cohort_survives_collapse_and_publication() -> TestRe
     check!(eq; coverage.published_totals().athletes, census.totals.athletes);
 
     let options = crate::workbook::Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,

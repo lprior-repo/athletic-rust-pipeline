@@ -78,6 +78,7 @@ pub(super) fn admit_save_publish(
     let dataset = ExportDataset::reopen_frozen_with_digest(frozen, digest)?;
     dataset.save_frozen(save)?;
     let options = Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: Some(root.to_path_buf()),
         limit: None,

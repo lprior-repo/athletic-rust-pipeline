@@ -151,6 +151,7 @@ fn build_hostile_workbook() -> TestResult<(Store, tempfile::TempDir)> {
     coach(&store, &school_id)?;
     crate::export::ExportDataset::load(&store)?;
     let options = crate::workbook::Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,
@@ -209,6 +210,7 @@ fn meta_sheets_write_formula_prefixed_text_as_literal_strings() -> TestResult {
 
     crate::export::ExportDataset::load(&store)?;
     let options = crate::workbook::Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,

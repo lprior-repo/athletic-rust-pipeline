@@ -391,6 +391,7 @@ fn unsupported_graduation_cases_are_retained_in_review_without_a_canonical_athle
     let path = crate::workbook::build(
         &store,
         &crate::workbook::Options {
+            address_corpus: None,
             grad_year: Some(2027),
             out: Some(dir.path().join("unsupported-cohort.xlsx")),
             limit: None,
@@ -455,6 +456,7 @@ fn school_link_cases_are_retained_in_review_until_a_verdict_answers_them() -> Te
     let path = crate::workbook::build(
         &store,
         &crate::workbook::Options {
+            address_corpus: None,
             grad_year: Some(2027),
             out: Some(dir.path().join("school-links.xlsx")),
             limit: None,

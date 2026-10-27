@@ -16,6 +16,7 @@ fn selected_athlete_workbook_readback_rejects_candidate_fallback_and_corrupt_ide
         fixture.options.school_year,
         Vec::new(),
         &admission,
+        None,
     )?;
     let expectations = Expectations::of(&fixture.dataset, &fixture.options)?;
     let candidate = fixture
@@ -71,6 +72,7 @@ fn accepted_identity_workbook_readback_keeps_raw_retained_conflict_visible() -> 
         .append(census_store::Table::Athletes, &conflicted)?;
     let dataset = fixture::selected_dataset(&source.store)?;
     let options = crate::workbook::Options {
+        address_corpus: None,
         grad_year: None,
         out: None,
         limit: None,
@@ -84,6 +86,7 @@ fn accepted_identity_workbook_readback_keeps_raw_retained_conflict_visible() -> 
         options.school_year,
         Vec::new(),
         &expectations.admission,
+        None,
     )?;
     let ordered = ordered_athletes(&expectations);
     let position = ordered

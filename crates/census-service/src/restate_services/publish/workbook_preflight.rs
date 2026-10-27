@@ -39,6 +39,7 @@ pub(in crate::restate_services) fn checked_options(
         })
     })?;
     let options = workbook::Options {
+        address_corpus: None,
         grad_year: request.grad_year,
         out: request.out.as_deref().map(PathBuf::from),
         limit: request.limit,

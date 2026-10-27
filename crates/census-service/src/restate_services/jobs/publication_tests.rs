@@ -214,6 +214,7 @@ pub(in crate::restate_services) fn selected_options(
         return Err("controlled selection must contain one cohort".into());
     };
     Ok(workbook::Options {
+        address_corpus: None,
         grad_year: Some(cohort.get()),
         out: None,
         limit: None,

@@ -96,6 +96,7 @@ impl Fixture {
             store,
             expected,
             options: crate::workbook::Options {
+                address_corpus: None,
                 grad_year: Some(2027),
                 out: None,
                 limit: None,

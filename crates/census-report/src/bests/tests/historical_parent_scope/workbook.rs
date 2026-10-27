@@ -14,6 +14,7 @@ fn publish(directory: &Path, fixture: &Fixture) -> TestResult<(Store, PathBuf)> 
 
 fn publication_options(directory: &Path, scope: Scope) -> TestResult<crate::workbook::Options> {
     Ok(crate::workbook::Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: Some(directory.join("publication")),
         limit: None,

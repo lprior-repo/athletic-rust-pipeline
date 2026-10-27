@@ -40,6 +40,7 @@ fn selected_cohort_2026_workbook_and_seal_lifecycle() -> TestResult {
         store,
         &selection,
         &census_report::workbook::Options {
+            address_corpus: None,
             grad_year: None,
             out: None,
             limit: None,

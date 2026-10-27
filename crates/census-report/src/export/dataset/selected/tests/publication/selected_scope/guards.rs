@@ -28,6 +28,7 @@ pub(super) fn reject_option_overrides(
     directory: &Path,
 ) -> TestResult {
     let base = Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,

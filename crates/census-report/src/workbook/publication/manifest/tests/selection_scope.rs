@@ -37,6 +37,7 @@ impl Published {
         let objects = tempfile::tempdir()?;
         let dataset = fixture.capture(objects.path())?;
         let options = Options {
+            address_corpus: None,
             scope: Scope::AllSources,
             grad_year: Some(2027),
             limit: None,

@@ -10,6 +10,7 @@ pub struct Options {
     pub scope: Scope,
     pub jurisdictions: Vec<UsJurisdiction>,
     pub school_year: census_domain::model::SchoolYear,
+    pub address_corpus: Option<PathBuf>,
 }
 
 pub fn options_for_selected_dataset(
@@ -37,6 +38,7 @@ fn options_for_profile(
         scope: Scope::AllSources,
         jurisdictions: input.jurisdictions.clone(),
         school_year: input.contact_school_year,
+        address_corpus: None,
     })
 }
 
@@ -58,6 +60,7 @@ pub fn options_for_selected_request(
     selected.school_year = requested.school_year;
     selected.scope = requested.scope;
     selected.limit = requested.limit;
+    selected.address_corpus = requested.address_corpus.clone();
     super::publication::selected::ensure_profile_options(&profile, &selected)?;
     Ok(selected)
 }

@@ -15,6 +15,7 @@ const PREDECESSOR_POLICY22_RECIPE: &str =
 
 fn options() -> TestResult<Options> {
     Ok(Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,

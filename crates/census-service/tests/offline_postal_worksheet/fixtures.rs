@@ -152,6 +152,7 @@ pub(super) fn publish(store: &Store, root: &Path) -> TestResult<PathBuf> {
     Ok(workbook::build(
         store,
         &workbook::Options {
+            address_corpus: None,
             grad_year: Some(2027),
             out: Some(root.join("publication")),
             limit: None,

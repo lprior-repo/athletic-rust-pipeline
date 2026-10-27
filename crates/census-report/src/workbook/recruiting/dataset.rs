@@ -6,6 +6,7 @@ use std::collections::BTreeMap;
 use super::bounded::{bounded_claims, bounded_contacts, WORKBOOK_GROUP_BUDGET};
 use super::contact::{attach_research, SchoolContacts};
 use super::facts::{kind_index, pr_index, school_index, tally, AthleteTally};
+use crate::workbook::corpus_address::{CorpusAddresses, QuarantineRow};
 
 #[derive(Debug, Clone, Copy)]
 pub(super) struct Reconciliation {
@@ -34,6 +35,7 @@ pub(super) struct Dataset<'a> {
     pub(super) prs: Vec<SharedSelection>,
     pub(super) school_address: BTreeMap<String, String>,
     pub(super) pr_index: BTreeMap<String, Vec<usize>>,
+    address_quarantine: Vec<QuarantineRow>,
     audit: Reconciliation,
 }
 
@@ -43,6 +45,7 @@ impl<'a> Dataset<'a> {
         school_year: census_domain::model::SchoolYear,
         prs: Vec<SharedSelection>,
         admission: &crate::report::EventAdmission<'d>,
+        corpus: Option<&CorpusAddresses>,
     ) -> ReportResult<Self> {
         derivation.ensure_selected_affiliation()?;
         crate::workbook::public_identity::preflight(derivation.dataset(), derivation.athletes())?;
@@ -69,24 +72,30 @@ impl<'a> Dataset<'a> {
             contacts,
             published_coaches,
             audit,
+            corpus,
         )
     }
 
     fn assemble(
         inputs: Inputs<'a, '_, '_>,
         athletes: &'a [CanonicalAthlete],
-        school_address: BTreeMap<String, String>,
+        mut school_address: BTreeMap<String, String>,
         contacts: BTreeMap<String, SchoolContacts>,
         published_coaches: Vec<CanonicalCoach>,
         audit: Reconciliation,
+        corpus: Option<&CorpusAddresses>,
     ) -> ReportResult<Self> {
+        let schools = school_index(inputs.derivation.schools());
+        let address_quarantine = corpus
+            .map(|corpus| corpus.fill_gaps(&mut school_address, athletes, &schools))
+            .unwrap_or_default();
         Ok(Self {
             scope: inputs.derivation.scope(),
             grad_year: inputs.derivation.grad_year(),
             school_year: inputs.school_year,
             source: inputs.derivation.dataset(),
             public_identities: crate::workbook::public_identity::view(inputs.derivation.dataset())?,
-            schools: school_index(inputs.derivation.schools()),
+            schools,
             published_coaches,
             coach_spellings: super::coach_spelling::spellings(
                 inputs.derivation.coach_observations(),
@@ -97,12 +106,17 @@ impl<'a> Dataset<'a> {
             pr_index: pr_index(&inputs.prs),
             prs: inputs.prs,
             school_address,
+            address_quarantine,
             audit,
         })
     }
 
     pub(super) fn audit(&self) -> Reconciliation {
         self.audit
+    }
+
+    pub(super) fn address_quarantine(&self) -> &[QuarantineRow] {
+        &self.address_quarantine
     }
 
     pub(super) fn school_name(&self, school: &str) -> String {

@@ -45,6 +45,7 @@ fn publish(store: &Store) -> TestResult<PathBuf> {
     Ok(crate::workbook::build(
         store,
         &crate::workbook::Options {
+            address_corpus: None,
             grad_year: Some(2027),
             out: None,
             limit: None,

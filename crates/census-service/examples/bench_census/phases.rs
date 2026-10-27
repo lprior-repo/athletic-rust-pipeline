@@ -188,6 +188,7 @@ pub(super) fn workbook_phase(
         dataset,
         store,
         &workbook::Options {
+            address_corpus: None,
             grad_year: Some(2027),
             out: Some(out.clone()),
             limit: None,

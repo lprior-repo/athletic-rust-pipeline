@@ -24,6 +24,7 @@ pub(super) fn publish(
         return Err("controlled publication requires one selected cohort".into());
     };
     let options = Options {
+        address_corpus: None,
         grad_year: Some(cohort.get()),
         out: Some(root.to_path_buf()),
         limit: None,

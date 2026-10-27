@@ -117,6 +117,7 @@ fn publish_fixture(
 ) -> TestResult<PathBuf> {
     let store = fixture.store_with_replay(&directory.join("store"), observations)?;
     let options = crate::workbook::Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: Some(directory.join("publication")),
         limit: None,

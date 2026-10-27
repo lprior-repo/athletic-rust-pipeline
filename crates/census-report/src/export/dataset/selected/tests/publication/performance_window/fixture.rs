@@ -120,6 +120,7 @@ impl Fixture {
 
     pub fn publish(&self, dataset: &ExportDataset, root: &Path) -> TestResult<PathBuf> {
         let options = crate::workbook::Options {
+            address_corpus: None,
             grad_year: Some(2027),
             out: Some(root.to_path_buf()),
             limit: None,

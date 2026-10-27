@@ -36,6 +36,7 @@ fn conflicting_retained_rosters_publish_exclusions_and_replay_without_sources() 
     let lineage = dataset.lineage.clone();
     let publication_root = super::super::temporary()?;
     let options = Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: Some(publication_root.path().join("publication")),
         limit: None,

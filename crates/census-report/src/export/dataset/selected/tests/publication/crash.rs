@@ -69,6 +69,7 @@ fn selected_publication_worker() -> TestResult {
         ExportDataset::reopen_frozen_with_digest(&archive, &std::env::var(CHILD_DIGEST)?)?;
     let root = PathBuf::from(std::env::var_os(CHILD_ROOT).ok_or("worker publication root")?);
     let options = super::Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: Some(root),
         limit: None,

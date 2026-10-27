@@ -59,6 +59,7 @@ fn frozen_resume_uses_raw_native_request_options_before_profile_defaults() -> Te
         args.selected_profile_id.as_deref(),
     )?;
     let options = workbook::Options {
+        address_corpus: None,
         grad_year: None,
         out: None,
         limit: None,

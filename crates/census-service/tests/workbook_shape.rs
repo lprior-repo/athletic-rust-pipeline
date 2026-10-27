@@ -156,6 +156,7 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory(
 
     consolidate(&store)?;
     let options = census_report::workbook::Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,

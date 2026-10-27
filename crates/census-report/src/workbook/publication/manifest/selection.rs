@@ -41,6 +41,7 @@ impl Selection {
             })
             .collect::<ReportResult<Vec<_>>>()?;
         Ok(Options {
+            address_corpus: None,
             scope,
             grad_year: self.grad_year,
             limit: self.limit,

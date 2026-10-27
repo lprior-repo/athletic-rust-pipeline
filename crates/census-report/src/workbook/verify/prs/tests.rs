@@ -16,6 +16,7 @@ fn selected_populated_pr_sheet_readback_rejects_candidate_fallback_and_corrupt_i
         fixture.options.school_year,
         outcome.selections,
         &admission,
+        None,
     )?;
     let expectations = Expectations::of(&fixture.dataset, &fixture.options)?;
     let candidate = fixture

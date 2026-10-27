@@ -26,6 +26,7 @@ fn emitted(dataset: &crate::export::ExportDataset) -> TestResult<Vec<BTreeMap<St
         SchoolYear::new(2026).ok_or("school year")?,
         Vec::new(),
         &admission,
+        None,
     )?;
     let mut rows = rows(&recruiting, None);
     let header = rows.next().ok_or("athlete headers")??;

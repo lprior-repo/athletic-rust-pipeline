@@ -22,6 +22,7 @@ pub(in crate::restate_services) fn bind(
             store,
             &selection,
             &workbook::Options {
+                address_corpus: None,
                 grad_year: None,
                 out: None,
                 limit: None,

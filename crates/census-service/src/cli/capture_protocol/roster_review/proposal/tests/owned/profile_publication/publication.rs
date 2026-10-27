@@ -9,6 +9,7 @@ pub(super) fn verify(
     digest: &str,
 ) -> TestResult {
     let options = workbook::Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: Some(
             fixture

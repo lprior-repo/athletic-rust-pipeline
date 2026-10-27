@@ -29,6 +29,7 @@ fn a_legacy_2026_cohort_is_refused_by_the_current_seal_authority() -> TestResult
     bind_cohort_2026(&store)?;
     let retained = store.run_manifest()?.ok_or("retained legacy binding")?;
     let options = census_report::workbook::Options {
+        address_corpus: None,
         grad_year: Some(2026),
         out: None,
         limit: None,

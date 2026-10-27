@@ -21,6 +21,7 @@ pub(super) struct Fixture {
 
 pub(super) fn options(year: Option<i16>) -> TestResult<Options> {
     Ok(Options {
+        address_corpus: None,
         grad_year: year,
         out: None,
         limit: None,

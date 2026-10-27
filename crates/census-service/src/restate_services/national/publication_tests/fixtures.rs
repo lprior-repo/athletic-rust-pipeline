@@ -166,6 +166,7 @@ fn selected_workbook(call: &Frame, request: Value, journal: &mut Journal) -> Tes
         .and_then(census_domain::model::SchoolYear::new)
         .ok_or("National selected workbook omitted its school year")?;
     let options = census_report::workbook::Options {
+        address_corpus: None,
         grad_year: Some(grad_year.get()),
         out: workbook_request.out.map(std::path::PathBuf::from),
         limit: workbook_request.limit,

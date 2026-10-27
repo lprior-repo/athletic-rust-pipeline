@@ -52,6 +52,7 @@ pub(in crate::workbook::verify) fn publication(
         ),
     )?;
     let options = Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,

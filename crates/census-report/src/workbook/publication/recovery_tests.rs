@@ -5,6 +5,7 @@ mod requested_advanced;
 
 fn options(out: Option<PathBuf>) -> TestResult<Options> {
     Ok(Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out,
         limit: None,

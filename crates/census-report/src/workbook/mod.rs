@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 mod cells;
+pub(crate) mod corpus_address;
 pub mod meta;
 mod public_identity;
 mod reported;
@@ -139,8 +140,33 @@ fn render_artifacts(
 ) -> ReportResult<()> {
     let path = directory.join("workbook.xlsx");
     let started = Instant::now();
-    let recruiting = recruiting::Recruiting::of(derivation, options.school_year, bests, admission)?;
+    let corpus = options
+        .address_corpus
+        .as_deref()
+        .map(corpus_address::CorpusAddresses::load)
+        .transpose()?;
+    if let Some(corpus) = &corpus {
+        tracing::info!(
+            rows = corpus.rows(),
+            digest = corpus.digest(),
+            "workbook build step: address corpus"
+        );
+    }
+    let recruiting = recruiting::Recruiting::of(
+        derivation,
+        options.school_year,
+        bests,
+        admission,
+        corpus.as_ref(),
+    )?;
     tracing::info!(ms = millis(started), "workbook build step: recruiting");
+    if let Some(corpus) = &corpus {
+        corpus_address::write_quarantine_csv(
+            &directory.join("address-quarantine.csv"),
+            corpus.digest(),
+            recruiting.address_quarantine(),
+        )?;
+    }
     let population =
         Derivation::for_publication(dataset, options.scope, None, &options.jurisdictions)?;
     let views = Views::of(

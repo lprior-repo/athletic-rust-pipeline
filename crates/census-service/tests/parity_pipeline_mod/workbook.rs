@@ -33,6 +33,7 @@ pub fn build_publication(
     let written = workbook::build(
         store,
         &workbook::Options {
+            address_corpus: None,
             grad_year: Some(constants::COHORT),
             out: Some(publication_root),
             limit: None,

@@ -98,6 +98,7 @@ fn valid_best_results_sidecars_pass_and_forgeries_fail() -> TestResult {
     let mut dataset = ExportDataset::load(&store)?;
     dataset.lineage.policy_revision = 20;
     let options = Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,

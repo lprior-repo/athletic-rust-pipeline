@@ -110,6 +110,7 @@ fn selected_job_refuses_documentary_withdrawal_immediately_before_final_pointer_
     let next =
         ExportDataset::for_job_request(&installed.store, "selected-final-fence-g1", &request)?;
     let options = crate::workbook::Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: Some(root.clone()),
         limit: None,
@@ -161,6 +162,7 @@ fn selected_job_interrupted_intent_requires_verified_current_input_for_recovery(
     drop(initial);
     let next = ExportDataset::for_job_request(&installed.store, "selected-recovery-g1", &request)?;
     let options = crate::workbook::Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: Some(root.clone()),
         limit: None,

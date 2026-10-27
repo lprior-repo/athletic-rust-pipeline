@@ -33,6 +33,7 @@ fn selected_alias_headers() -> Vec<&'static str> {
 
 fn options() -> TestResult<Options> {
     Ok(Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,

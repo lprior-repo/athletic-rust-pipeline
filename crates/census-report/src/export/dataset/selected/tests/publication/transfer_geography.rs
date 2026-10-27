@@ -48,6 +48,7 @@ async fn exercise(jurisdiction: UsJurisdiction, included: bool) -> TestResult {
     let lineage = dataset.lineage.clone();
     let root = publication_root.path().join("publication");
     let options = Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: Some(root.clone()),
         limit: None,

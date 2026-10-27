@@ -97,6 +97,7 @@ fn publish(
     let store = Store::open(directory.path().join("store"))?;
     seed(&store)?;
     let options = Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,
@@ -396,6 +397,7 @@ fn workbook_publishes_one_accepted_athlete_with_complete_joined_details() -> Tes
     seed_complete(&store)?;
 
     let options = Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,

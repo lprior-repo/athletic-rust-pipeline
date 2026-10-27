@@ -19,6 +19,7 @@ use fixture::{fixture, Fixture, TestResult};
 
 fn options() -> TestResult<Options> {
     Ok(Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,

@@ -110,6 +110,7 @@ impl Population {
         let mut dataset = ExportDataset::load(&store)?;
         dataset.lineage.policy_revision = 21;
         let options = Options {
+            address_corpus: None,
             grad_year: Some(2027),
             out: None,
             limit: None,

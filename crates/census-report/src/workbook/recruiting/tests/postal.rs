@@ -39,6 +39,7 @@ fn seed(store: &Store) -> TestResult<(CanonicalSchool, CanonicalAthlete)> {
 
 fn published(store: &Store) -> TestResult<(std::path::PathBuf, ExportDataset, Options)> {
     let options = Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,

@@ -85,6 +85,7 @@ fn admit_save_publish(
     )?;
     dataset.save_frozen(archive)?;
     let options = Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: Some(root.to_path_buf()),
         limit: None,

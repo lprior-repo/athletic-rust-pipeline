@@ -5,6 +5,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn full_options() -> TestResult<census_report::workbook::Options> {
     Ok(census_report::workbook::Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,

@@ -74,6 +74,7 @@ fn selected_recruiting_projection_rejects_naked_empty_bests() -> TestResult {
                 SchoolYear::DEFAULT,
                 Vec::new(),
                 &admission,
+                None,
             )
             .map(|_| ())
         }),
@@ -225,6 +226,7 @@ fn profile() -> TestResult<QueryProfileV1> {
 
 fn options(out: Option<PathBuf>, limit: Option<usize>) -> Options {
     Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out,
         limit,

@@ -15,6 +15,7 @@ fn selected_publication_derives_cohort_without_accepting_an_override() -> source
     let output = tempfile::tempdir()?;
     let root = output.path().join("publication");
     let mut requested = workbook::Options {
+        address_corpus: None,
         grad_year: Some(2028),
         out: Some(root.clone()),
         limit: None,

@@ -65,6 +65,7 @@ mod tests {
         census_report::workbook::build(
             &store,
             &census_report::workbook::Options {
+                address_corpus: None,
                 grad_year: Some(2027),
                 out: None,
                 limit: None,

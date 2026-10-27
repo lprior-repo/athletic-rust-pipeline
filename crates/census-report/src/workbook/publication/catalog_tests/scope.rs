@@ -156,6 +156,7 @@ fn render(
         options.school_year,
         selected.selections,
         &admission,
+        None,
     )?;
     let censuses = crate::workbook::Censuses::of(dataset, directory, &options.jurisdictions)?;
     let views = crate::workbook::Views::of(

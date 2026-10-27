@@ -23,6 +23,7 @@ fn cutover(grad_year: Option<i16>, prior_policy: u32) -> TestResult {
     let store = Store::open(&store_path)?;
     let root = store.out_dir().join("publication");
     let options = Options {
+        address_corpus: None,
         grad_year,
         out: Some(root.clone()),
         limit: None,

@@ -21,6 +21,7 @@ pub(super) fn publish_and_readback(
 ) -> Result<(Value, [String; 13])> {
     let school = dataset.schools.values().next().context("school absent")?;
     let options = workbook::Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: Some(root.join("publication")),
         limit: None,

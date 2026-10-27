@@ -15,6 +15,7 @@ async fn genuine_reported_interpretations_match_workbook_csv_and_cold_readback()
             &crate::export::ExportJobRequest::SelectedPublicationV1 { selection },
         )?;
         let options = crate::workbook::Options {
+            address_corpus: None,
             grad_year: Some(2027),
             out: None,
             limit: None,

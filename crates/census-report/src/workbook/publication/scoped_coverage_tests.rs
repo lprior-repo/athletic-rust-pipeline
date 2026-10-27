@@ -19,6 +19,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn options(scope: Scope, jurisdictions: Vec<UsJurisdiction>) -> TestResult<Options> {
     Ok(Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,

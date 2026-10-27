@@ -24,6 +24,7 @@ fn changed_conflict_policy_has_a_distinct_publication_recipe() -> TestResult {
     let mut previous = current.lineage.clone();
     previous.policy_revision = 7;
     let options = Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,
@@ -107,6 +108,7 @@ fn a_stale_exporter_cannot_replace_a_newer_generation() -> TestResult {
     seed(&store, "New School")?;
     let newer = ExportDataset::load(&store)?;
     let options = Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,
@@ -131,6 +133,7 @@ fn a_failed_generation_keeps_the_previous_publication() -> TestResult {
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path().join("store"))?;
     let options = Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,
@@ -158,6 +161,7 @@ fn a_corrupt_sidecar_invalidates_the_whole_generation() -> TestResult {
     let published = crate::workbook::build(
         &store,
         &Options {
+            address_corpus: None,
             grad_year: Some(2027),
             out: None,
             limit: None,
@@ -219,6 +223,7 @@ fn source_advance_during_render_cannot_switch_the_publication_pointer() -> TestR
     let directory = tempfile::tempdir()?;
     let store = Store::open(directory.path().join("store"))?;
     let options = Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,
@@ -395,6 +400,7 @@ fn build_for_season(store: &Store, out: &std::path::Path, season: i16) -> TestRe
     Ok(crate::workbook::build(
         store,
         &Options {
+            address_corpus: None,
             grad_year: Some(2027),
             out: Some(out.to_path_buf()),
             limit: None,
@@ -512,6 +518,7 @@ fn a_publication_of_another_cohort_never_seals_this_census() -> TestResult {
     let workbook = crate::workbook::build(
         &store,
         &Options {
+            address_corpus: None,
             grad_year: Some(2028),
             out: Some(directory.path().join("publication-2028")),
             limit: None,
@@ -554,6 +561,7 @@ fn a_publication_assessed_in_another_school_year_cannot_seal_the_run() -> TestRe
     let workbook = crate::workbook::build(
         &store,
         &Options {
+            address_corpus: None,
             grad_year: Some(2027),
             out: Some(directory.path().join("publication-2027")),
             limit: None,

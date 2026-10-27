@@ -18,6 +18,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn options(root: &std::path::Path) -> TestResult<workbook::Options> {
     Ok(workbook::Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: Some(root.join("publication")),
         limit: None,

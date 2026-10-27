@@ -47,6 +47,7 @@ impl<'a> Recruiting<'a> {
         school_year: census_domain::model::SchoolYear,
         prs: Vec<bests::SharedSelection>,
         admission: &crate::report::EventAdmission<'d>,
+        corpus: Option<&crate::workbook::corpus_address::CorpusAddresses>,
     ) -> ReportResult<Self> {
         let reported = crate::workbook::reported::Projection::of(
             derivation.dataset(),
@@ -55,9 +56,13 @@ impl<'a> Recruiting<'a> {
             &prs,
         )?;
         Ok(Self {
-            dataset: Dataset::of(derivation, school_year, prs, admission)?,
+            dataset: Dataset::of(derivation, school_year, prs, admission, corpus)?,
             reported,
         })
+    }
+
+    pub(super) fn address_quarantine(&self) -> &[crate::workbook::corpus_address::QuarantineRow] {
+        self.dataset.address_quarantine()
     }
 
     pub(super) fn write_athletes(&self, book: &mut Workbook, path: &Path) -> ReportResult<()> {

@@ -10,6 +10,7 @@ pub(super) fn publish(directory: &Path, fixture: &Fixture) -> TestResult<PathBuf
     crate::workbook::build(
         &store,
         &crate::workbook::Options {
+            address_corpus: None,
             grad_year: Some(2027),
             out: Some(directory.join("publication")),
             limit: None,

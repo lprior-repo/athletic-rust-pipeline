@@ -143,6 +143,7 @@ async fn execute(surface: Option<Value>, status: Option<&str>, numeric_best: boo
     let path = workbook::build(
         &store,
         &workbook::Options {
+            address_corpus: None,
             grad_year: Some(2027),
             out: Some(directory.path().join("publication")),
             limit: None,

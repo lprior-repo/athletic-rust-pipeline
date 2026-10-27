@@ -46,6 +46,7 @@ fn publish_original(
     );
     let dataset = ExportDataset::for_job_request(&store, &job, &native.export_job)?;
     let requested = workbook::Options {
+        address_corpus: None,
         grad_year: None,
         out: Some(original.to_path_buf()),
         limit: None,

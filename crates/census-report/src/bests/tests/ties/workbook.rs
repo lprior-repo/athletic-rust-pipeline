@@ -126,6 +126,7 @@ fn publish_and_readback(
     let dataset = ExportDataset::load(&store)?;
     let row = assert_winner(&dataset, expected)?;
     let options = crate::workbook::Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: Some(directory.path().join("publication")),
         limit: None,

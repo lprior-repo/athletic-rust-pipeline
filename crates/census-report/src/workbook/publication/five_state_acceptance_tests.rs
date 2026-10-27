@@ -29,6 +29,7 @@ fn synthetic_five_state_workbook_keeps_provenance_wind_and_relay_facts_after_fro
     let (athletes, teams, relay_only, relay) = seed(&store)?;
     let dataset = ExportDataset::load(&store)?;
     let options = Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,

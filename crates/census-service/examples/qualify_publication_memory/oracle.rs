@@ -30,6 +30,7 @@ pub fn publish(root: &Path, out: &Path) -> Result<()> {
     ensure!(store.walk_table(Table::Athletes)?.rows == manifest.counts.stored_athletes);
     ensure!(store.walk_table(Table::Performances)?.rows == manifest.counts.performances);
     let options = workbook::Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: Some(out.join("bundle")),
         limit: None,

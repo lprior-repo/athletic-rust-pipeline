@@ -12,6 +12,7 @@ pub(super) fn options(profile: &QueryProfileV1, out: &Path) -> Result<workbook::
         anyhow::bail!("unsupported qualification profile: exactly one graduation year required");
     };
     Ok(workbook::Options {
+        address_corpus: None,
         grad_year: Some(cohort.get()),
         out: Some(out.to_path_buf()),
         limit: None,

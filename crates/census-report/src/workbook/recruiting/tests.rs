@@ -446,11 +446,13 @@ fn recruiting<'a>(derivation: &'a Derivation<'_>) -> TestResult<Recruiting<'a>> 
         SchoolYear::new(2026).ok_or("invalid fixture season")?,
         prs,
         &admission,
+        None,
     )?)
 }
 
 fn verified_publication(store: &Store, expected_athletes: u64) -> TestResult {
     let options = crate::workbook::Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,
@@ -1225,6 +1227,7 @@ fn every_sheet_publishes_hostile_source_text_as_literal_cells() -> TestResult {
     )?;
 
     let options = crate::workbook::Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,

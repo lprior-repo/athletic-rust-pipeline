@@ -58,6 +58,7 @@ fn report_bests_and_workbook_chain_over_synthetic_entities() -> TestResult {
     let path = workbook::build(
         &store,
         &workbook::Options {
+            address_corpus: None,
             grad_year: Some(2027),
             out: Some(dir.path().join("e2e-census.xlsx")),
             limit: None,

@@ -10,6 +10,7 @@ use std::path::Path;
 
 pub(super) fn options() -> TestResult<Options> {
     Ok(Options {
+        address_corpus: None,
         grad_year: None,
         out: None,
         limit: None,

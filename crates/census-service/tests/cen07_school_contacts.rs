@@ -65,6 +65,7 @@ fn publish(store: &Store, out: PathBuf) -> TestResult<PathBuf> {
     Ok(workbook::build(
         store,
         &workbook::Options {
+            address_corpus: None,
             grad_year: Some(2027),
             out: Some(out),
             limit: None,

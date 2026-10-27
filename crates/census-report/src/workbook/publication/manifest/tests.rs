@@ -53,6 +53,7 @@ pub(in crate::workbook) fn seed(store: &Store, name: &str) -> TestResult {
 
 pub(in crate::workbook) fn options() -> TestResult<Options> {
     Ok(Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,

@@ -125,6 +125,7 @@ fn bests_options(dataset: &ExportDataset) -> TestResult<crate::bests::Options> {
 fn publish(fixture: &Fixture, dataset: &ExportDataset, root: &Path) -> TestResult<PathBuf> {
     let bests = bests_options(dataset)?;
     let options = Options {
+        address_corpus: None,
         grad_year: bests.grad_year,
         out: Some(root.to_path_buf()),
         limit: None,

@@ -27,6 +27,7 @@ fn naked_normalized_writer_refuses_even_fully_verified_selected_zero_limit() -> 
             &output,
             &dataset,
             &Options {
+                address_corpus: None,
                 grad_year: None,
                 out: None,
                 limit,

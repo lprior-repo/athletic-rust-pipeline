@@ -52,6 +52,7 @@ fn assert_csv(path: &Path, expected: &str, nanos: i64) -> TestResult {
 
 fn assert_xlsx(store: &Store, out: &Path, expected: &str, normalized: f64) -> TestResult {
     let options = crate::workbook::Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: Some(out.join("publication")),
         limit: None,

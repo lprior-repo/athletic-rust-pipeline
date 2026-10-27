@@ -56,7 +56,17 @@ impl<'a> Expectations<'a> {
             &options.jurisdictions,
         )?;
         crate::grouping::Admission::new("recruiting schools").rows(derivation.schools())?;
-        let school_address = super::postal::athlete_address_index(dataset, derivation.athletes())?;
+        let mut school_address =
+            super::postal::athlete_address_index(dataset, derivation.athletes())?;
+        if let Some(dir) = options.address_corpus.as_deref() {
+            let corpus = crate::workbook::corpus_address::CorpusAddresses::load(dir)?;
+            let by_id: BTreeMap<&str, &census_domain::model::CanonicalSchool> = derivation
+                .schools()
+                .iter()
+                .map(|school| (school.id.as_str(), school))
+                .collect();
+            let _ = corpus.fill_gaps(&mut school_address, derivation.athletes(), &by_id);
+        }
         let bests = selected_bests(dataset, options)?;
         let schools = schools(derivation.schools());
         let pr_index = index(&bests);

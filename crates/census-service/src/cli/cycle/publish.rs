@@ -14,6 +14,7 @@ pub(super) fn publication_options(args: &RunArgs) -> Result<workbook::Options> {
         Vec::new()
     };
     Ok(workbook::Options {
+        address_corpus: None,
         grad_year: publication_preflight::publication_cohort(
             args.grad_year,
             args.selected_store_identity.is_some() || args.selected_profile_id.is_some(),

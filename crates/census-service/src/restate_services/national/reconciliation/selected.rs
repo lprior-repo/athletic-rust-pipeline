@@ -17,6 +17,7 @@ pub(super) fn inspect(
         store,
         selection,
         &workbook::Options {
+            address_corpus: None,
             grad_year: Some(cohort.get()),
             out: None,
             limit: None,

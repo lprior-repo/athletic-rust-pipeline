@@ -30,6 +30,7 @@ fn altered_metadata_cells_are_rejected() -> TestResult {
     store.append(Table::Schools, &school)?;
 
     let options = Options {
+        address_corpus: None,
         grad_year: Some(2027),
         out: None,
         limit: None,
