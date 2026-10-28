@@ -11,16 +11,6 @@ use census_store::{StoreError, StoreResult};
 use super::lanes::STATE_ED;
 use super::{Counters, LaneEvidence, OutcomeRow};
 
-pub(super) fn parse_key_label(key: &IdentifiedKey) -> String {
-    match key {
-        IdentifiedKey::Nces(id) => format!("nces:{}", id.as_str()),
-        IdentifiedKey::Pss(id) => format!("pss:{}", id.as_str()),
-        IdentifiedKey::StateRecord { state, id } => {
-            format!("state:{}:{}", state.code(), id.as_str())
-        }
-    }
-}
-
 pub(super) fn rule_name(rule: &LinkRule) -> &'static str {
     match rule {
         LinkRule::ExactName => "exact_name",

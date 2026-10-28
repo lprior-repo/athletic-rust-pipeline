@@ -1,8 +1,6 @@
 use crate::report::{ReportError, ReportResult};
 use census_domain::model::{CanonicalAthlete, CanonicalSchool};
-use census_domain::school_directory::{
-    DirectoryIndex, IdentifiedKey, LinkDecision, SchoolDirectoryEntry,
-};
+use census_domain::school_directory::{DirectoryIndex, LinkDecision, SchoolDirectoryEntry};
 use census_domain::UsJurisdiction;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
@@ -203,22 +201,12 @@ impl QuarantineRow {
         };
         let mut names: Vec<String> = candidates
             .iter()
-            .map(|candidate| candidate_label(&candidate.key))
+            .map(|candidate| candidate.key.label())
             .collect();
         names.sort();
         names.dedup();
         names.truncate(5);
         self.candidates = names.join(" | ");
-    }
-}
-
-fn candidate_label(key: &IdentifiedKey) -> String {
-    match key {
-        IdentifiedKey::Nces(id) => format!("nces:{}", id.as_str()),
-        IdentifiedKey::Pss(id) => format!("pss:{}", id.as_str()),
-        IdentifiedKey::StateRecord { state, id } => {
-            format!("state:{}:{}", state.code(), id.as_str())
-        }
     }
 }
 

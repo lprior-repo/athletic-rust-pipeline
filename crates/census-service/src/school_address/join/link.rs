@@ -6,8 +6,7 @@ use census_store::StoreResult;
 use super::lanes::ASSOCIATION_PREFIX;
 use super::support::{
     allocation, already_owns, authority_kind, bump, bump_rule, lane_evidence, owner_id,
-    parse_key_label, postal_claim, retain_evidence, stamp_website, Authority, DirectoryAuthority,
-    Target,
+    postal_claim, retain_evidence, stamp_website, Authority, DirectoryAuthority, Target,
 };
 use super::{Job, LaneEvidence, LaneSelection};
 
@@ -41,7 +40,7 @@ impl<'a> Job<'a> {
                      per-capture provenance or lists a capture that does not hold this school, so \
                      the claim cannot name its bytes",
                     authority.token,
-                    parse_key_label(&target.matched.key),
+                    target.matched.key.label(),
                     candidates.join(", ")
                 );
                 return self.missing_evidence(school, state, &matched.rule, detail);
@@ -51,7 +50,7 @@ impl<'a> Job<'a> {
                     "several captures of {} carry {} ({}); pass one capture per school or drop the \
                      duplicate before building the generation",
                     authority.token,
-                    parse_key_label(&target.matched.key),
+                    target.matched.key.label(),
                     candidates.join(", ")
                 );
                 return self.refuse(school, state, &matched.rule, detail);
@@ -73,7 +72,7 @@ impl<'a> Job<'a> {
             None => {
                 let detail = format!(
                     "{} published under {} cannot own a directory identity",
-                    parse_key_label(&target.matched.key),
+                    target.matched.key.label(),
                     target.matched.source.label()
                 );
                 self.refuse(target.school, target.state, &target.matched.rule, detail)?;
@@ -92,10 +91,7 @@ impl<'a> Job<'a> {
             },
         };
         let Some(id) = owner_id(&target.matched.key) else {
-            let detail = format!(
-                "{} carries no school id",
-                parse_key_label(&target.matched.key)
-            );
+            let detail = format!("{} carries no school id", target.matched.key.label());
             self.refuse(target.school, target.state, &target.matched.rule, detail)?;
             return Ok(None);
         };
@@ -109,7 +105,7 @@ impl<'a> Job<'a> {
             if conflict {
                 let detail = format!(
                     "{} is already owned by another association on this school",
-                    parse_key_label(&target.matched.key)
+                    target.matched.key.label()
                 );
                 self.refuse(target.school, target.state, &target.matched.rule, detail)?;
                 return Ok(None);

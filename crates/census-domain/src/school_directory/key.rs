@@ -152,6 +152,16 @@ impl IdentifiedKey {
             DirectoryKey::Weak(_) => None,
         }
     }
+
+    pub fn label(&self) -> String {
+        match self {
+            Self::Nces(id) => format!("nces:{}", id.as_str()),
+            Self::Pss(id) => format!("pss:{}", id.as_str()),
+            Self::StateRecord { state, id } => {
+                format!("state:{}:{}", state.code(), id.as_str())
+            }
+        }
+    }
 }
 
 impl From<IdentifiedKey> for DirectoryKey {

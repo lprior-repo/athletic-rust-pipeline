@@ -4,9 +4,7 @@ use census_domain::UsJurisdiction;
 use census_store::StoreResult;
 
 use super::attest::owned_record;
-use super::support::{
-    allocation, bump, bump_review_reason, parse_key_label, reason_name, row, rule_name,
-};
+use super::support::{allocation, bump, bump_review_reason, reason_name, row, rule_name};
 use super::{Job, Mode, SCHOOL_IDENTITY_FAMILY};
 
 pub(super) mod context;
@@ -96,7 +94,7 @@ impl<'a> Job<'a> {
                 bump_review_reason(&mut self.counters, &reason)?;
                 let mut labels: Vec<String> = candidates
                     .iter()
-                    .map(|candidate| parse_key_label(&candidate.key))
+                    .map(|candidate| candidate.key.label())
                     .collect();
                 labels.sort_unstable();
                 labels.dedup();
