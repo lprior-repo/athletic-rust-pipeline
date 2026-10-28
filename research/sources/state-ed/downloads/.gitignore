@@ -1,9 +1,0 @@
-# Operator-fetched NYSED pages and operator-converted shards are scratch (placement and rules:
-# ../HANDOFF.md): 27 index pages plus one profile per school exceed any sensible committed size.
-# Keep scripts and prose tracked; never commit the HTML captures or converted CSVs.
-*.html
-*.csv
-*.xlsx
-*.pdf
-*.zip
-*.sas7bdat
