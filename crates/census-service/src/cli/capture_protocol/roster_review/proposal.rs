@@ -9,11 +9,11 @@ use census_domain::model::{
 use census_domain::roster_affiliation_authority::{
     LocallyCheckedRosterProposalV1, RosterParserClaimV1,
 };
+use census_service::school_address::export::sha256_hex;
 use census_store::{
     RetainedCaptureRootReadV1, RetainedCaptureRootSchemaV1, RosterIssuanceInspectionV1,
     RosterSourceEvidenceV1, RosterSourceReviewObjectsV1, Store,
 };
-use sha2::Digest;
 
 mod derivation;
 
@@ -38,10 +38,6 @@ struct SourceObjects {
     inventory: Vec<u8>,
     admission: Vec<u8>,
     verification: Vec<u8>,
-}
-
-fn sha256_hex(bytes: &[u8]) -> String {
-    format!("{:x}", sha2::Sha256::digest(bytes))
 }
 
 fn object(bytes: &[u8]) -> serde_json::Value {

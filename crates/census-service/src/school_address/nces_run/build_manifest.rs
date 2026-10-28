@@ -4,7 +4,8 @@ use census_domain::school_directory::nces_address::{
 };
 use std::path::PathBuf;
 
-use super::{prepare, retention, verified_input, NcesSelectedInputV1};
+use super::super::export::sha256_hex;
+use super::{prepare, retention, NcesSelectedInputV1};
 
 pub(super) struct ManifestOutput {
     pub(super) ccd_ref: NcesArtifactReferenceV1,
@@ -53,7 +54,7 @@ pub(super) fn build(
         ],
     };
     let manifest_bytes = serde_json::to_vec(&replay_manifest)?;
-    let input_manifest_digest = verified_input::sha256_hex(&manifest_bytes);
+    let input_manifest_digest = sha256_hex(&manifest_bytes);
 
     Ok(ManifestOutput {
         ccd_ref,

@@ -7,7 +7,7 @@ use census_domain::UsJurisdiction;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-use super::verified_input::sha256_hex;
+use super::super::export::sha256_hex;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

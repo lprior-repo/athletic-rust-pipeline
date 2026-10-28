@@ -16,8 +16,8 @@ fn national_nces_captures_retain_foreign_rows_but_publish_only_selected_jurisdic
     .concat();
     std::fs::write(fixture.source_root.join("ccd.csv"), &ccd)?;
     std::fs::write(fixture.source_root.join("pss.csv"), &pss)?;
-    fixture.selection.ccd.sha256 = verified_input::sha256_hex(&ccd);
-    fixture.selection.pss.sha256 = verified_input::sha256_hex(&pss);
+    fixture.selection.ccd.sha256 = crate::school_address::export::sha256_hex(&ccd);
+    fixture.selection.pss.sha256 = crate::school_address::export::sha256_hex(&pss);
 
     let receipt = accept(&fixture.store, &fixture.selection)?;
     let sequence = fixture.store.snapshot().sequence();

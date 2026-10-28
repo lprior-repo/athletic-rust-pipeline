@@ -91,8 +91,8 @@ fn assert_no_writes(fixture: &Fixture, sequence: u64) -> TestResult {
 fn nces_address_run_accepts_exact_hash_pinned_five_state_inputs_and_reopens_frozen_output(
 ) -> TestResult {
     let fixture = fixture()?;
-    check!(eq; verified_input::sha256_hex(CCD), CCD_SHA256);
-    check!(eq; verified_input::sha256_hex(PSS), PSS_SHA256);
+    check!(eq; crate::school_address::export::sha256_hex(CCD), CCD_SHA256);
+    check!(eq; crate::school_address::export::sha256_hex(PSS), PSS_SHA256);
     let receipt = accept(&fixture.store, &fixture.selection)?;
     check!(eq; receipt.run_manifest_digest(), fixture.run_digest);
     check!(eq; receipt.scope(), FIVE_STATE_SCOPE);

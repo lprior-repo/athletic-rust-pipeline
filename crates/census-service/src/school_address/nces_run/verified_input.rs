@@ -1,5 +1,5 @@
+use super::super::export::sha256_hex;
 use anyhow::{bail, Context, Result};
-use sha2::{Digest, Sha256};
 use std::io::Read;
 use std::path::{Component, Path};
 
@@ -57,8 +57,4 @@ pub(super) fn read_verified(
         sha256,
         byte_length,
     })
-}
-
-pub(super) fn sha256_hex(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
 }

@@ -23,7 +23,7 @@ const CSV_HEADER: [&str; 16] = [
     "address_kind",
 ];
 
-pub(super) fn sha256_hex(bytes: &[u8]) -> String {
+pub fn sha256_hex(bytes: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(bytes);
     format!("{:x}", hasher.finalize())

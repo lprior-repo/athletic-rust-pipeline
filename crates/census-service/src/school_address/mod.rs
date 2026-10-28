@@ -1,4 +1,4 @@
-mod export;
+pub mod export;
 mod generation;
 mod generation_error;
 mod geocode;
