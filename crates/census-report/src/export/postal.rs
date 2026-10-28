@@ -1,5 +1,5 @@
 use census_domain::model::{CanonicalAthlete, CanonicalSchool, SchoolPostalAddress};
-use census_domain::school_directory::AddressKind;
+use census_domain::school_directory::{AddressKind, PostalAddress};
 use std::collections::BTreeMap;
 
 use super::ExportDataset;
@@ -209,6 +209,55 @@ fn append_field(field: &mut String, value: &str, count: usize) -> ReportResult<(
     }
     field.push_str(value);
     Ok(())
+}
+
+pub(crate) fn street_city(address: &PostalAddress) -> String {
+    [
+        address.line1().map(|value| value.as_str()),
+        address.line2().map(|value| value.as_str()),
+        address.city().map(|value| value.as_str()),
+    ]
+    .into_iter()
+    .flatten()
+    .filter(|part| !part.is_empty())
+    .fold(String::new(), |mut line, part| {
+        if !line.is_empty() {
+            line.push_str(", ");
+        }
+        line.push_str(part);
+        line
+    })
+}
+
+pub(crate) fn append_state_zip(line: &mut String, address: &PostalAddress) {
+    let state = address.state().map(|state| state.code());
+    let zip = address.zip().map(|value| value.to_string());
+    let head = separator(line);
+    match (state, zip.as_deref()) {
+        (Some(state), Some(zip)) => {
+            line.push_str(head);
+            line.push_str(state);
+            line.push(' ');
+            line.push_str(zip);
+        }
+        (Some(state), None) => {
+            line.push_str(head);
+            line.push_str(state);
+        }
+        (None, Some(zip)) => {
+            line.push_str(head);
+            line.push_str(zip);
+        }
+        (None, None) => {}
+    }
+}
+
+fn separator(line: &str) -> &'static str {
+    if line.is_empty() {
+        ""
+    } else {
+        ", "
+    }
 }
 
 fn defect(detail: &str) -> ReportError {

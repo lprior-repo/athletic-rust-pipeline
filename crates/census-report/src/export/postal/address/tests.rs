@@ -2,7 +2,7 @@ use super::*;
 use crate::export::postal::postal_fields;
 use crate::export::postal::tests::{captured_school, CAPTURE_DAY, SUMMARY_URL};
 use census_domain::model::{Evidence, SchoolPostalAddress, SourceIdentity, SourceRef};
-use census_domain::school_directory::{AddressKind, CityName, StreetLine, ZipCode};
+use census_domain::school_directory::{AddressKind, CityName, PostalAddress, StreetLine, ZipCode};
 use census_domain::UsJurisdiction;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
